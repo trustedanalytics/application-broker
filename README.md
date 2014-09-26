@@ -1,4 +1,4 @@
-atk-generic-service-broker
+generic-cf-service-broker
 ==========================
 
-A generic service broker to provision ATK dependencies
+A generic service broker to provision ATK and other dependencies
