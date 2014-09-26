@@ -16,6 +16,7 @@ func (p *CatalogProvider) Initialize() error {
 	return nil
 }
 
+// NewSerivce gets service pointer for this id
 func (p *CatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
 	log.Printf("making service: %s", id)
 
@@ -46,6 +47,7 @@ func (p *CatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
 	return s, nil
 }
 
+// NewCatalog gets the catalog
 func (p *CatalogProvider) NewCatalog() (*catalog.CFCatalog, error) {
 	log.Println("making catalog")
 	c := &catalog.CFCatalog{}

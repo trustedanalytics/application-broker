@@ -22,20 +22,24 @@ type BrokerService struct {
 // Initialize loads all broker service dependencies
 func (s *BrokerService) Initialize() {
 
+	// allows us to pass the host and port in
 	flag.StringVar(&s.Host, "h", "0.0.0.0", "host")
 	flag.StringVar(&s.Port, "p", "8888", "port")
 	flag.Parse()
 
-	h := &BrokerHandlers{}
+	ch := &CatalogHandler{}
 	ws := &rest.WebService{}
 	ws.Path("/v2").
 		Consumes(rest.MIME_JSON).
 		Produces(rest.MIME_JSON)
 
-	ws.Route(ws.GET("/catalog").To(h.GetCatalog).
+	// catalog routes
+	ws.Route(ws.GET("/catalog").To(ch.GetCatalog).
 		Doc("get a catalog").
 		Operation("GetCatalog").
 		Writes(catalog.CFCatalog{}))
+
+	// service routes
 
 	rest.Add(ws)
 }
