@@ -28,7 +28,7 @@ func (h *CatalogHandler) GetCatalog(request *restful.Request, response *restful.
 	if err != nil {
 		log.Printf("error on crating catalog: %v", err)
 		response.WriteErrorString(
-			http.StatusExpectationFailed,
+			http.StatusInternalServerError,
 			"Error creating catalog")
 	} else {
 		response.WriteEntity(c)

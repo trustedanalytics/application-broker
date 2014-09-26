@@ -28,18 +28,28 @@ func (s *BrokerService) Initialize() {
 	flag.Parse()
 
 	ch := &CatalogHandler{}
+	ch.Initialize()
+
+	sh := &ServiceHandler{}
+	sh.Initialize()
+
 	ws := &rest.WebService{}
 	ws.Path("/v2").
 		Consumes(rest.MIME_JSON).
 		Produces(rest.MIME_JSON)
 
 	// catalog routes
-	ws.Route(ws.GET("/catalog").To(ch.GetCatalog).
-		Doc("get a catalog").
+	ws.Route(ws.GET("/catalog").
+		To(ch.GetCatalog).
 		Operation("GetCatalog").
 		Writes(catalog.CFCatalog{}))
 
 	// service routes
+	ws.Route(ws.PUT("/service_instances/{id}").
+		To(sh.GetInstances).
+		Param(ws.PathParameter("id", "service id").DataType("string")).
+		Operation("GetInstances").
+		Reads(catalog.CFServiceState{}))
 
 	rest.Add(ws)
 }
