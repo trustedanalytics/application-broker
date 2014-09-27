@@ -1,23 +1,23 @@
 package main
 
 import (
-	catalog "github.com/intel-data/cf-catalog"
+	"github.com/intel-data/cf-catalog"
 	"log"
 )
 
 // CatalogProvider object
-type CatalogProvider struct {
+type MockedCatalogProvider struct {
 }
 
 // Initialize configures the catalog provider
-func (p *CatalogProvider) Initialize() error {
+func (p *MockedCatalogProvider) Initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the source of catalog data here
 	return nil
 }
 
 // NewSerivce gets service pointer for this id
-func (p *CatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
+func (p *MockedCatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
 	log.Printf("making service: %s", id)
 
 	s := &catalog.CFService{}
@@ -47,9 +47,9 @@ func (p *CatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
 	return s, nil
 }
 
-// NewCatalog gets the catalog
-func (p *CatalogProvider) NewCatalog() (*catalog.CFCatalog, error) {
-	log.Println("making catalog")
+// GetCatalog gets the catalog
+func (p *MockedCatalogProvider) GetCatalog() (*catalog.CFCatalog, error) {
+	log.Println("getting catalog...")
 	c := &catalog.CFCatalog{}
 
 	// TODO: query service store and generate these on the fly

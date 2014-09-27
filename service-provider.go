@@ -1,33 +1,32 @@
 package main
 
 import (
-	catalog "github.com/intel-data/cf-catalog"
+	"fmt"
+	"github.com/intel-data/cf-catalog"
 	"log"
 )
 
 // ServiceProvider object
-type ServiceProvider struct {
+type SimpleServiceProvider struct {
+	DashboardRootURL string
 }
 
 // Initialize configures the service provider
-func (p *ServiceProvider) Initialize() error {
+func (p *SimpleServiceProvider) Initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the source of service data here
+	p.DashboardRootURL = "https://somename.gotapaas.com"
 	return nil
 }
 
-// GetServiceInstance gets service pointer for this id
-func (p *ServiceProvider) GetServiceInstance(id string) (*catalog.CFServiceState, error) {
+// GetServiceDashboard gets service pointer for this id
+func (p *SimpleServiceProvider) GetServiceDashboard(id string) (*catalog.CFServiceDashboard, error) {
 	log.Printf("getting service: %s", id)
 
-	s := &catalog.CFServiceState{}
+	d := &catalog.CFServiceDashboard{}
 
 	// TODO: everything will have to be derived from the source of services
+	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.DashboardRootURL)
 
-	s.ServiceID = catalog.NewID()
-	s.PlanID = catalog.NewID()
-	s.OrganizationGUID = catalog.NewID()
-	s.SpaceGUID = catalog.NewID()
-
-	return s, nil
+	return d, nil
 }

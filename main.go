@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	rest "github.com/emicklei/go-restful"
-	catalog "github.com/intel-data/cf-catalog"
+	"github.com/intel-data/cf-catalog"
 	"log"
 	"net/http"
 )
@@ -46,9 +46,9 @@ func (s *BrokerService) Initialize() {
 
 	// service routes
 	ws.Route(ws.PUT("/service_instances/{id}").
-		To(sh.GetInstances).
+		To(sh.GetInstance).
 		Param(ws.PathParameter("id", "service id").DataType("string")).
-		Operation("GetInstances").
+		Operation("GetInstance").
 		Reads(catalog.CFServiceState{}))
 
 	rest.Add(ws)
