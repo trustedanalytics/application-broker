@@ -16,8 +16,20 @@ func (p *MockedCatalogProvider) Initialize() error {
 	return nil
 }
 
-// NewSerivce gets service pointer for this id
-func (p *MockedCatalogProvider) NewSerivce(id string) (*catalog.CFService, error) {
+// TODO: fix the return types to standard object, error when implemented
+func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *catalog.CFPlan {
+	log.Printf("making service plan: %s", id)
+
+	pl := &catalog.CFPlan{}
+	pl.ID = id
+	pl.Name = name
+	pl.Description = desc
+	pl.Free = true
+
+	return pl
+}
+
+func (p *MockedCatalogProvider) newSerivce(id string) (*catalog.CFService, error) {
 	log.Printf("making service: %s", id)
 
 	s := &catalog.CFService{}
@@ -30,18 +42,11 @@ func (p *MockedCatalogProvider) NewSerivce(id string) (*catalog.CFService, error
 	s.Description = "Dynamically configurable service broker"
 	s.Bindable = false
 	s.Tags = []string{"generic", "service", "broker"}
+
 	s.Plans = []*catalog.CFPlan{
-		{
-			ID:          id + "-1",
-			Name:        "Service 1",
-			Description: "Service 1 description",
-			Free:        true,
-		}, {
-			ID:          id + "-2",
-			Name:        "Service 2",
-			Description: "Service 2 description",
-			Free:        true,
-		},
+		p.newSerivcePlan(s.ID+"-1", s.Name+"-1", s.Description+"-1"),
+		p.newSerivcePlan(s.ID+"-2", s.Name+"-2", s.Description+"-2"),
+		p.newSerivcePlan(s.ID+"-3", s.Name+"-3", s.Description+"-3"),
 	}
 
 	return s, nil
@@ -54,14 +59,14 @@ func (p *MockedCatalogProvider) GetCatalog() (*catalog.CFCatalog, error) {
 
 	// TODO: query service store and generate these on the fly
 	s1ID := "3427569C-2A11-456C-974C-106B221E5EB2"
-	s1, err := p.NewSerivce(s1ID)
+	s1, err := p.newSerivce(s1ID)
 	if err != nil {
 		log.Printf("Error while making service: %s", s1ID)
 		return nil, err
 	}
 
 	s2ID := "458F5495-FB29-4127-A9E6-370E2F20670A"
-	s2, err := p.NewSerivce(s1ID)
+	s2, err := p.newSerivce(s1ID)
 	if err != nil {
 		log.Printf("Error while making service: %s", s2ID)
 		return nil, err

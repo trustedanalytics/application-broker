@@ -49,7 +49,7 @@ func (s *BrokerService) Initialize() {
 		To(sh.GetInstance).
 		Param(ws.PathParameter("id", "service id").DataType("string")).
 		Operation("GetInstance").
-		Reads(catalog.CFServiceState{}))
+		Reads(catalog.CFServiceProvisioningResponse{}))
 
 	rest.Add(ws)
 }

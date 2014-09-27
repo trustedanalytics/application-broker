@@ -20,10 +20,10 @@ func (p *SimpleServiceProvider) Initialize() error {
 }
 
 // GetServiceDashboard gets service pointer for this id
-func (p *SimpleServiceProvider) GetServiceDashboard(id string) (*catalog.CFServiceDashboard, error) {
+func (p *SimpleServiceProvider) GetServiceDashboard(id string) (*catalog.CFServiceProvisioningResponse, error) {
 	log.Printf("getting service: %s", id)
 
-	d := &catalog.CFServiceDashboard{}
+	d := &catalog.CFServiceProvisioningResponse{}
 
 	// TODO: everything will have to be derived from the source of services
 	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.DashboardRootURL)

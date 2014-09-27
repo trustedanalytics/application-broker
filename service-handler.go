@@ -10,7 +10,7 @@ import (
 // ServiceProvider defines the required provider functionality
 type ServiceProvider interface {
 	Initialize() error
-	GetServiceDashboard(id string) (*catalog.CFServiceDashboard, error)
+	GetServiceDashboard(id string) (*catalog.CFServiceProvisioningResponse, error)
 }
 
 // ServiceHandler object
@@ -33,7 +33,7 @@ func (h *ServiceHandler) GetInstance(request *restful.Request, response *restful
 	id := request.PathParameter("id")
 	log.Printf("getting service instance for id: %s", id)
 
-	s := &catalog.CFServiceState{}
+	s := &catalog.CFServiceProvisioningResponse{}
 	err := request.ReadEntity(s)
 
 	if err != nil {
