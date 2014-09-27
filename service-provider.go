@@ -58,3 +58,12 @@ func (p *SimpleServiceProvider) DeleteServiceBinding(instanceId, serviceId strin
 
 	return nil
 }
+
+// DeleteService delete service
+func (p *SimpleServiceProvider) DeleteService(instanceId string) error {
+	log.Printf("setting service binding: %s", instanceId)
+
+	// TODO: implement
+
+	return nil
+}

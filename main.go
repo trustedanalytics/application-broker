@@ -49,17 +49,21 @@ func (s *BrokerService) Initialize() {
 		Param(ws.PathParameter("id", "service id").DataType("string")).
 		Reads(catalog.CFServiceProvisioningResponse{}))
 
-	ws.Route(ws.PUT("/service_instances/{instanceId}/service_bindings/{bindingId}").
+	ws.Route(ws.PUT("/service_instances/{instId}/service_bindings/{bindId}").
 		To(sh.SetServiceInstanceBinding).
-		Param(ws.PathParameter("instanceId", "service instance id").DataType("string")).
-		Param(ws.PathParameter("bindingId", "service binding id").DataType("string")).
+		Param(ws.PathParameter("instId", "instance id").DataType("string")).
+		Param(ws.PathParameter("bindId", "binding id").DataType("string")).
 		Reads(catalog.CFServiceBindingRequest{}).
 		Writes(catalog.CFServiceBindingResponse{}))
 
-	ws.Route(ws.DELETE("/service_instances/{instanceId}/service_bindings/{bindingId}").
+	ws.Route(ws.DELETE("/service_instances/{instId}/service_bindings/{bindId}").
 		To(sh.DeleteServiceInstanceBinding).
-		Param(ws.PathParameter("instanceId", "service instance id").DataType("string")).
-		Param(ws.PathParameter("bindingId", "service binding id").DataType("string")))
+		Param(ws.PathParameter("instId", "instance id").DataType("string")).
+		Param(ws.PathParameter("bindId", "binding id").DataType("string")))
+
+	ws.Route(ws.DELETE("/service_instances/{instId}").
+		To(sh.DeleteServiceInstance).
+		Param(ws.PathParameter("instId", "instance id").DataType("string")))
 
 	rest.Add(ws)
 }

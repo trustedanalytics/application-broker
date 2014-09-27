@@ -30,7 +30,7 @@ func (h *CatalogHandler) Initialize() error {
 
 // GetCatalog returns a populated catalog for dynamically created services
 func (h *CatalogHandler) GetCatalog(request *restful.Request, response *restful.Response) {
-	log.Println("creating catalog...")
+	log.Println("getting catalog...")
 	c, err := h.Provider.GetCatalog()
 	if err != nil {
 		log.Printf("error on crating catalog: %v", err)
