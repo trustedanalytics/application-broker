@@ -5,6 +5,12 @@ import (
 	"log"
 )
 
+const (
+	AppID          = "3427569C-2A11-456C-974C-106B221E5EB2"
+	AppName        = "generic-cf-service-broker"
+	AppDescription = "Dynamically configurable service broker"
+)
+
 // CatalogProvider object
 type MockedCatalogProvider struct {
 }
@@ -18,7 +24,7 @@ func (p *MockedCatalogProvider) Initialize() error {
 
 // TODO: fix the return types to standard object, error when implemented
 func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *catalog.CFPlan {
-	log.Printf("making service plan: %s", id)
+	log.Printf("creating service plan: %s", id)
 	pl := &catalog.CFPlan{}
 	pl.ID = id
 	pl.Name = name
@@ -28,13 +34,13 @@ func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *catalog.C
 }
 
 func (p *MockedCatalogProvider) newSerivce(id string) (*catalog.CFService, error) {
-	log.Printf("making service: %s", id)
+	log.Printf("creating service: %s", id)
 	s := &catalog.CFService{}
 	// TODO: everything will have to be derived from the source of services
 	s.ID = id
-	s.Name = "generic-cf-service-broker"
-	s.Description = "Dynamically configurable service broker"
-	s.Bindable = false
+	s.Name = AppName
+	s.Description = AppDescription
+	s.Bindable = true
 	s.Tags = []string{"generic", "service", "broker"}
 	s.Plans = []*catalog.CFPlan{
 		p.newSerivcePlan(s.ID+"-1", s.Name+"-1", s.Description+"-1"),
@@ -52,21 +58,11 @@ func (p *MockedCatalogProvider) GetCatalog() (*catalog.CFCatalog, error) {
 
 	// downside of embedding in go is that you no longer can just
 	// {ID:"123", Name:"abc", Desc: "some"}
-	s1ID := "3427569C-2A11-456C-974C-106B221E5EB2"
-	s1, err := p.newSerivce(s1ID)
+	s, err := p.newSerivce(AppID)
 	if err != nil {
-		log.Printf("Error while making service: %s", s1ID)
+		log.Printf("Error while making service: %v", err)
 		return nil, err
 	}
-
-	s2ID := "458F5495-FB29-4127-A9E6-370E2F20670A"
-	s2, err := p.newSerivce(s1ID)
-	if err != nil {
-		log.Printf("Error while making service: %s", s2ID)
-		return nil, err
-	}
-
-	c.Services = []*catalog.CFService{s1, s2}
-
+	c.Services = []*catalog.CFService{s}
 	return c, nil
 }
