@@ -41,15 +41,25 @@ func (s *BrokerService) Initialize() {
 	// catalog routes
 	ws.Route(ws.GET("/catalog").
 		To(ch.GetCatalog).
-		Operation("GetCatalog").
 		Writes(catalog.CFCatalog{}))
 
 	// service routes
 	ws.Route(ws.PUT("/service_instances/{id}").
-		To(sh.GetInstance).
+		To(sh.SetServiceInstance).
 		Param(ws.PathParameter("id", "service id").DataType("string")).
-		Operation("GetInstance").
 		Reads(catalog.CFServiceProvisioningResponse{}))
+
+	ws.Route(ws.PUT("/service_instances/{instanceId}/service_bindings/{bindingId}").
+		To(sh.SetServiceInstanceBinding).
+		Param(ws.PathParameter("instanceId", "service instance id").DataType("string")).
+		Param(ws.PathParameter("bindingId", "service binding id").DataType("string")).
+		Reads(catalog.CFServiceBindingRequest{}).
+		Writes(catalog.CFServiceBindingResponse{}))
+
+	ws.Route(ws.DELETE("/service_instances/{instanceId}/service_bindings/{bindingId}").
+		To(sh.DeleteServiceInstanceBinding).
+		Param(ws.PathParameter("instanceId", "service instance id").DataType("string")).
+		Param(ws.PathParameter("bindingId", "service binding id").DataType("string")))
 
 	rest.Add(ws)
 }

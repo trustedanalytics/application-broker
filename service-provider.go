@@ -30,3 +30,31 @@ func (p *SimpleServiceProvider) GetServiceDashboard(id string) (*catalog.CFServi
 
 	return d, nil
 }
+
+// SetServiceBinding sets service binding for a service
+func (p *SimpleServiceProvider) SetServiceBinding(instanceId, serviceId string) (*catalog.CFServiceBindingResponse, error) {
+	log.Printf("setting service binding: %s/%s", instanceId, serviceId)
+
+	b := &catalog.CFServiceBindingResponse{}
+
+	b.Credentials = &catalog.CFServiceCredential{}
+	b.Credentials.URI = "mysql://user:pass@localhost:3306/dbname"
+	b.Credentials.Hostname = "localhost"
+	b.Credentials.Port = "3306"
+	b.Credentials.Name = "dbname"
+	b.Credentials.Vhost = "amqp://yser:pass@host/queue"
+	b.Credentials.Username = "user"
+	b.Credentials.Password = "pass"
+	b.SyslogDrainURL = "syslog://logs.example.com"
+
+	return b, nil
+}
+
+// DeleteServiceBinding delete service binding for a service
+func (p *SimpleServiceProvider) DeleteServiceBinding(instanceId, serviceId string) error {
+	log.Printf("setting service binding: %s/%s", instanceId, serviceId)
+
+	// TODO: implement
+
+	return nil
+}
