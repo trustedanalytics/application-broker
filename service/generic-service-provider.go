@@ -31,22 +31,6 @@ func (p *GenericServiceProvider) GetVersion() string {
 	return AppVersion
 }
 
-// CreateService create a service instance
-func (p *GenericServiceProvider) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *common.ServiceProviderError) {
-	log.Printf("creating service: %v", r)
-	d := &cf.ServiceCreationResponce{}
-	// TODO: implement
-	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.config.DashboardRootURL)
-	return d, nil
-}
-
-// DeleteService deletes a service instance
-func (p *GenericServiceProvider) DeleteService(id string) *common.ServiceProviderError {
-	log.Printf("deleting service: %s", id)
-	// TODO: implement
-	return nil
-}
-
 // GetCatalog parses catalog response
 func (p *GenericServiceProvider) GetCatalog() (*cf.Catalog, *common.ServiceProviderError) {
 	log.Println("getting catalog...")
@@ -67,6 +51,22 @@ func (p *GenericServiceProvider) GetCatalog() (*cf.Catalog, *common.ServiceProvi
 	}
 	c.Services = []*cf.Service{s}
 	return c, nil
+}
+
+// CreateService create a service instance
+func (p *GenericServiceProvider) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *common.ServiceProviderError) {
+	log.Printf("creating service: %v", r)
+	d := &cf.ServiceCreationResponce{}
+	// TODO: implement
+	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.config.DashboardRootURL)
+	return d, nil
+}
+
+// DeleteService deletes a service instance
+func (p *GenericServiceProvider) DeleteService(id string) *common.ServiceProviderError {
+	log.Printf("deleting service: %s", id)
+	// TODO: implement
+	return nil
 }
 
 // BindService creates a service instance binding
