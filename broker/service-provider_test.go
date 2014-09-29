@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"github.com/stretchr/testify/assert"

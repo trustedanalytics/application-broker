@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ func TestGetCatalog(t *testing.T) {
 	assert.NotNil(t, catalog.Services, "nil catalog services")
 
 	for i, srv := range catalog.Services {
-		log.Printf("service:%d - %s", i, srv)
+		log.Printf("service:%d", i)
 
 		// check the required fields
 		assert.NotEmpty(t, srv.ID, "nil service ID")
@@ -27,13 +27,13 @@ func TestGetCatalog(t *testing.T) {
 		assert.NotNil(t, srv.Plans, "nil service plans")
 		assert.NotNil(t, srv.Dashboard, "nil services dashboard")
 
-		log.Printf("dashboard: %s", i, srv.Dashboard)
+		log.Printf("dashboard: %d", i)
 		assert.NotNil(t, srv.Dashboard.ID, "nil services dashboard id")
 		assert.NotNil(t, srv.Dashboard.Secret, "nil services dashboard secret")
 		assert.NotNil(t, srv.Dashboard.URI, "nil services dashboard URL")
 
 		for j, pln := range srv.Plans {
-			log.Printf("service plan:%d - %s", j, pln)
+			log.Printf("service plan:%d[%d]", i, j)
 
 			// check the required fields
 			assert.NotEmpty(t, pln.ID, "nil plan ID")

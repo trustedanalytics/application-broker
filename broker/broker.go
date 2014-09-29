@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"fmt"
@@ -8,18 +8,29 @@ import (
 	"net/http"
 )
 
-// Server to manage requests
-type Server struct {
-	config Config
+// Broker to manage requests
+type Broker struct {
+	config         *Config
+	catalogHandler *CatalogHandler
+	serviceHandler *ServiceHandler
 }
 
-func (s *Server) start() {
+func New() *Broker {
 
 	ch := &CatalogHandler{}
 	ch.initialize()
 
 	sh := &ServiceHandler{}
 	sh.initialize()
+
+	return &Broker{
+		config:         BrokerConfig,
+		catalogHandler: ch,
+		serviceHandler: sh,
+	}
+}
+
+func (s *Broker) Start() {
 
 	ws := &restful.WebService{}
 	ws.Path("/v2").
@@ -28,30 +39,30 @@ func (s *Server) start() {
 
 	// catalog routes
 	ws.Route(ws.GET("/catalog").
-		To(ch.getCatalog).
+		To(s.catalogHandler.getCatalog).
 		Writes(cf.Catalog{}))
 
 	// service routes
 	ws.Route(ws.PUT("/service_instances/{serviceId}").
-		To(sh.createService).
+		To(s.serviceHandler.createService).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Reads(cf.ServiceCreationRequest{}).
 		Writes(cf.ServiceCreationResponce{}))
 
 	ws.Route(ws.PUT("/service_instances/{serviceId}/service_bindings/{bindingId}").
-		To(sh.createServiceBinding).
+		To(s.serviceHandler.createServiceBinding).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")).
 		Reads(cf.ServiceBindingRequest{}).
 		Writes(cf.ServiceBindingResponse{}))
 
 	ws.Route(ws.DELETE("/service_instances/{serviceId}/service_bindings/{bindingId}").
-		To(sh.deleteServiceBinding).
+		To(s.serviceHandler.deleteServiceBinding).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")))
 
 	ws.Route(ws.DELETE("/service_instances/{serviceId}").
-		To(sh.deleteService).
+		To(s.serviceHandler.deleteService).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")))
 
 	restful.Add(ws)

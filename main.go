@@ -1,18 +1,16 @@
 package main
 
 import (
+	"github.com/intel-data/generic-cf-service-broker/broker"
 	"log"
 )
 
-var c Config = Config{}
-
 func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	c.initialize()
 }
 
 func main() {
-	log.Println("starting server...")
-	s := &Server{config: c}
-	s.start()
+	log.Println("starting broker...")
+	s := broker.New()
+	s.Start()
 }

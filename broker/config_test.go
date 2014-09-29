@@ -1,4 +1,4 @@
-package main
+package broker
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -7,8 +7,7 @@ import (
 
 func TestConfig(t *testing.T) {
 
-	c := Config{}
-	c.initialize()
+	c := BrokerConfig
 
 	assert.NotEmpty(t, c, "nil config")
 	assert.NotEmpty(t, c.Username, "nil username")

@@ -1,8 +1,14 @@
-package main
+package broker
 
 import (
 	"flag"
 )
+
+var BrokerConfig *Config = &Config{}
+
+func init() {
+	BrokerConfig.initialize()
+}
 
 type Config struct {
 	Host     string
