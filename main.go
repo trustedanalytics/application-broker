@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"github.com/intel-data/generic-cf-service-broker/broker"
-	"github.com/intel-data/generic-cf-service-broker/service"
+	"github.com/intel-data/app-launching-service-broker/broker"
+	"github.com/intel-data/app-launching-service-broker/service"
 	"log"
 )
 

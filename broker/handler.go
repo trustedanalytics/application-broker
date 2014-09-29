@@ -2,7 +2,7 @@ package broker
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/intel-data/generic-cf-service-broker/common"
+	"github.com/intel-data/app-launching-service-broker/common"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
