@@ -69,8 +69,8 @@ func (s *Broker) Start() {
 
 	u := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	log.Printf("server: %s", u)
-
 	log.Fatal(http.ListenAndServe(u, nil))
+
 }
 
 func handleServerError(response *restful.Response, err error) {
