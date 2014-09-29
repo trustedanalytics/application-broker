@@ -10,32 +10,15 @@ const (
 	TestServiceId = "291E642F-E786-49EF-B6FC-F8AF96A36A37"
 )
 
-func TestGetServiceDashboard(t *testing.T) {
-
-	p := &SimpleServiceProvider{}
-	p.Initialize()
-
-	assert.NotNil(t, p, "nil provider")
-
-	/*
-		    cf.ServiceCreationRequest
-			srv, err := p.createService(TestServiceId)
-
-			assert.Nil(t, err, err)
-			assert.NotNil(t, srv, "nil service")
-			assert.NotEmpty(t, srv.DashboardURL, "missing dashboard element")
-	*/
-
-}
-
 func TestGetCatalog(t *testing.T) {
 
-	p := &MockedCatalogProvider{}
-	p.Initialize()
+	p, err := New()
+	assert.Nil(t, err, "error on create")
+	assert.NotNil(t, p, "nil provider")
 
-	catalog, err := p.getCatalog()
+	catalog, err2 := p.GetCatalog()
 
-	assert.Nil(t, err, err)
+	assert.Nil(t, err2, err2)
 	assert.NotNil(t, catalog, "nil catalog")
 	assert.NotNil(t, catalog.Services, "nil catalog services")
 

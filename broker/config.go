@@ -24,5 +24,4 @@ func (o *Config) initialize() {
 	flag.StringVar(&o.Username, "u", "operator", "User")
 	flag.StringVar(&o.Password, "s", "secret", "Secret")
 	flag.BoolVar(&o.Debug, "d", false, "Debug")
-	flag.Parse()
 }

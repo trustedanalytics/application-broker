@@ -3,7 +3,6 @@ package service
 import (
 	"flag"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -13,9 +12,9 @@ const (
 
 func TestConfig(t *testing.T) {
 
-	flag.Set("s", TestSourceApp)
+	flag.Set("src", TestSourceApp)
 
-	c := BrokerConfig
+	c := ServiceConfig
 
 	assert.NotEmpty(t, c, "nil config")
 	assert.Equal(t, c.Source, TestSourceApp, "Invalid source")
