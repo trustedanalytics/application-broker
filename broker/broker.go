@@ -3,6 +3,7 @@ package broker
 import (
 	"fmt"
 	"github.com/emicklei/go-restful"
+	"github.com/intel-data/generic-cf-service-broker/common"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
@@ -73,11 +74,31 @@ func (s *Broker) Start() {
 
 }
 
-func handleServerError(response *restful.Response, err error) {
-	log.Fatalf("internal server error: %s", err)
-	response.WriteHeader(http.StatusInternalServerError)
-	response.WriteErrorString(http.StatusInternalServerError,
-		"Internal server error, please contact your platform operator")
+func handleSimpleServerError(response *restful.Response, err error) {
+	if err == nil {
+		return
+	}
+	handleServerError(response, common.NewServiceProviderError(common.ErrorException, err))
+}
+
+func handleServerError(response *restful.Response, err *common.ServiceProviderError) {
+	if err == nil {
+		return
+	}
+
+	log.Fatalf("internal server error: %s", err.String())
+
+	switch err.Code {
+	case common.ErrorInstanceExists:
+		response.WriteHeader(http.StatusConflict)
+	case common.ErrorInstanceNotFound:
+		response.WriteHeader(http.StatusNotFound)
+	default:
+		response.WriteHeader(http.StatusInternalServerError)
+		response.WriteErrorString(http.StatusInternalServerError,
+			"Internal server error, please contact your platform operator")
+	}
+
 }
 
 func hasRequiredParams(req *restful.Request, res *restful.Response, args ...string) bool {

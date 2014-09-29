@@ -1,6 +1,7 @@
-package broker
+package service
 
 import (
+	"github.com/intel-data/generic-cf-service-broker/common"
 	"github.com/intel-data/types-cf"
 	"log"
 )
@@ -16,7 +17,7 @@ const (
 type MockedCatalogProvider struct{}
 
 // Initialize configures the catalog provider
-func (p *MockedCatalogProvider) initialize() error {
+func (p *MockedCatalogProvider) Initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the source of catalog data here
 	return nil
@@ -50,17 +51,18 @@ func (p *MockedCatalogProvider) newSerivce(id string) (*cf.Service, error) {
 	return s, nil
 }
 
-func (p *MockedCatalogProvider) getCatalog() (*cf.Catalog, error) {
+// GetCatalog parses catalog response
+func (p *MockedCatalogProvider) GetCatalog() (*cf.Catalog, *common.ServiceProviderError) {
 	log.Println("getting catalog...")
 	c := &cf.Catalog{}
-	// TODO: query service store and generate these on the fly
+	// TODO: implement the service creation logic here
 
 	// downside of embedding in go is that you no longer can just
 	// {ID:"123", Name:"abc", Desc: "some"}
 	s, err := p.newSerivce(AppID)
 	if err != nil {
 		log.Printf("Error while making service: %v", err)
-		return nil, err
+		return nil, common.NewServiceProviderError(common.ErrorException, err)
 	}
 	s.Dashboard = &cf.Dashboard{
 		ID:     s.ID + "-9",

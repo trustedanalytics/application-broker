@@ -1,4 +1,4 @@
-package broker
+package service
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -9,7 +9,7 @@ import (
 func TestGetCatalog(t *testing.T) {
 
 	p := &MockedCatalogProvider{}
-	p.initialize()
+	p.Initialize()
 
 	catalog, err := p.getCatalog()
 

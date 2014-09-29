@@ -1,4 +1,4 @@
-package broker
+package service
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ const (
 func TestGetServiceDashboard(t *testing.T) {
 
 	p := &SimpleServiceProvider{}
-	p.initialize()
+	p.Initialize()
 
 	assert.NotNil(t, p, "nil provider")
 

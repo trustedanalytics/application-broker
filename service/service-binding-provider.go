@@ -1,6 +1,7 @@
-package broker
+package service
 
 import (
+	"github.com/intel-data/generic-cf-service-broker/common"
 	"github.com/intel-data/types-cf"
 	"log"
 )
@@ -9,14 +10,18 @@ import (
 type SimpleServiceBindingProvider struct{}
 
 // Initialize configures the service provider
-func (p *SimpleServiceBindingProvider) initialize() error {
+func (p *SimpleServiceBindingProvider) Initialize() error {
 	log.Println("initializing...")
 	return nil
 }
 
-func (p *SimpleServiceBindingProvider) bindService(r *cf.ServiceBindingRequest, serviceID, bindingID string) (*cf.ServiceBindingResponse, error) {
+// BindService creates a service instance binding
+func (p *SimpleServiceBindingProvider) BindService(r *cf.ServiceBindingRequest, serviceID, bindingID string) (*cf.ServiceBindingResponse, *common.ServiceProviderError) {
 	log.Printf("creating service binding: %v - %s/%s", r, serviceID, bindingID)
+
 	b := &cf.ServiceBindingResponse{}
+
+	// TODO: implement the service binding logic here
 	b.Credentials = &cf.Credential{}
 	b.Credentials.URI = "mysql://user:pass@localhost:3306/dbname"
 	b.Credentials.Hostname = "localhost"
@@ -29,7 +34,8 @@ func (p *SimpleServiceBindingProvider) bindService(r *cf.ServiceBindingRequest, 
 	return b, nil
 }
 
-func (p *SimpleServiceBindingProvider) unbindService(serviceID, bindingID string) error {
+// UnbindService deletes service instance binding
+func (p *SimpleServiceBindingProvider) UnbindService(serviceID, bindingID string) *common.ServiceProviderError {
 	log.Printf("deleting service binding: %s/%s", serviceID, bindingID)
 	// TODO: implement
 	return nil

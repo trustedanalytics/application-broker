@@ -2,33 +2,29 @@ package broker
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/intel-data/types-cf"
+	"github.com/intel-data/generic-cf-service-broker/common"
+	"github.com/intel-data/generic-cf-service-broker/service"
 	"log"
 	"net/http"
 )
 
-// CatalogProvider defines the required provider functionality
-type CatalogProvider interface {
-	getCatalog() (*cf.Catalog, error)
-}
-
 // CatalogHandler object
 type CatalogHandler struct {
-	provider CatalogProvider
+	provider common.CatalogProvider
 }
 
 func (h *CatalogHandler) initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the provider, is there a IOC pattern in go?
-	c := &MockedCatalogProvider{}
-	c.initialize()
+	c := &service.MockedCatalogProvider{}
+	c.Initialize()
 	h.provider = c
 	return nil
 }
 
 func (h *CatalogHandler) getCatalog(request *restful.Request, response *restful.Response) {
 	log.Println("getting catalog...")
-	c, err := h.provider.getCatalog()
+	c, err := h.provider.GetCatalog()
 	if err != nil {
 		handleServerError(response, err)
 	} else {

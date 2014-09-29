@@ -2,27 +2,17 @@ package broker
 
 import (
 	"github.com/emicklei/go-restful"
+	"github.com/intel-data/generic-cf-service-broker/common"
+	"github.com/intel-data/generic-cf-service-broker/service"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
 )
 
-// ServiceProvider defines the required provider functionality
-type ServiceProvider interface {
-	createService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, error)
-	deleteService(id string) error
-}
-
-// ServiceBindingProvider defines the required provider functionality
-type ServiceBindingProvider interface {
-	bindService(r *cf.ServiceBindingRequest, serviceID, bindingID string) (*cf.ServiceBindingResponse, error)
-	unbindService(serviceID, bindingID string) error
-}
-
 // ServiceHandler object
 type ServiceHandler struct {
-	serviceProvider        ServiceProvider
-	serviceBindingProvider ServiceBindingProvider
+	serviceProvider        common.ServiceProvider
+	serviceBindingProvider common.ServiceBindingProvider
 }
 
 func (h *ServiceHandler) initialize() error {
@@ -30,12 +20,12 @@ func (h *ServiceHandler) initialize() error {
 
 	// TODO: Load the provider, is there a IOC pattern in go?
 
-	s := &SimpleServiceProvider{}
-	s.initialize()
+	s := &service.SimpleServiceProvider{}
+	s.Initialize()
 	h.serviceProvider = s
 
-	b := &SimpleServiceBindingProvider{}
-	b.initialize()
+	b := &service.SimpleServiceBindingProvider{}
+	b.Initialize()
 	h.serviceBindingProvider = b
 
 	return nil
@@ -53,14 +43,14 @@ func (h *ServiceHandler) createService(request *restful.Request, response *restf
 	req := &cf.ServiceCreationRequest{}
 	err := request.ReadEntity(req)
 	if err != nil {
-		handleServerError(response, err)
+		handleSimpleServerError(response, err)
 		return
 	}
 
 	// get service dashboard
-	d, err := h.serviceProvider.createService(req)
-	if err != nil {
-		handleServerError(response, err)
+	d, err2 := h.serviceProvider.CreateService(req)
+	if err2 != nil {
+		handleServerError(response, err2)
 		return
 	}
 
@@ -77,26 +67,26 @@ func (h *ServiceHandler) createService(request *restful.Request, response *restf
 }
 
 func (h *ServiceHandler) createServiceBinding(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "serviceID", "bindingID") {
+	if !hasRequiredParams(request, response, "serviceId", "bindingId") {
 		return
 	}
 
-	serviceID := request.PathParameter("serviceID")
-	bindingID := request.PathParameter("bindingID")
+	serviceID := request.PathParameter("serviceId")
+	bindingID := request.PathParameter("bindingId")
 	log.Printf("creating binding %s/%s", serviceID, bindingID)
 
 	// parse request
 	req := &cf.ServiceBindingRequest{}
 	err := request.ReadEntity(req)
 	if err != nil {
-		handleServerError(response, err)
+		handleSimpleServerError(response, err)
 		return
 	}
 
 	// build response
-	res, err := h.serviceBindingProvider.bindService(req, serviceID, bindingID)
-	if err != nil {
-		handleServerError(response, err)
+	res, err2 := h.serviceBindingProvider.BindService(req, serviceID, bindingID)
+	if err2 != nil {
+		handleServerError(response, err2)
 		return
 	}
 
@@ -113,15 +103,15 @@ func (h *ServiceHandler) createServiceBinding(request *restful.Request, response
 }
 
 func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "serviceID", "bindingID") {
+	if !hasRequiredParams(request, response, "serviceId", "bindingId") {
 		return
 	}
 
-	serviceID := request.PathParameter("serviceID")
-	bindingID := request.PathParameter("bindingID")
+	serviceID := request.PathParameter("serviceId")
+	bindingID := request.PathParameter("bindingId")
 	log.Printf("deleting binding %s/%s", serviceID, bindingID)
 
-	err := h.serviceBindingProvider.unbindService(serviceID, bindingID)
+	err := h.serviceBindingProvider.UnbindService(serviceID, bindingID)
 	if err != nil {
 		handleServerError(response, err)
 		return
@@ -138,14 +128,14 @@ func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response
 }
 
 func (h *ServiceHandler) deleteService(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "serviceID") {
+	if !hasRequiredParams(request, response, "serviceId") {
 		return
 	}
 
-	serviceID := request.PathParameter("serviceID")
+	serviceID := request.PathParameter("serviceId")
 	log.Printf("deleting service: %s", serviceID)
 
-	err := h.serviceProvider.deleteService(serviceID)
+	err := h.serviceProvider.DeleteService(serviceID)
 	if err != nil {
 		handleServerError(response, err)
 		return
