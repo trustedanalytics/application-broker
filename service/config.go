@@ -2,6 +2,7 @@ package service
 
 import (
 	"flag"
+	"github.com/cloudfoundry-community/go-cfenv"
 )
 
 var ServiceConfig *Config = &Config{}
@@ -14,9 +15,13 @@ type Config struct {
 	Source           string
 	DashboardRootURL string
 	Debug            bool
+	Env              *cfenv.App
 }
 
-func (o *Config) initialize() {
-	flag.StringVar(&o.Source, "src", "spring-music", "Source application")
-	flag.StringVar(&o.DashboardRootURL, "url", "https://somename.gotapaas.com", "Root of the app dashboard")
+func (c *Config) initialize() {
+	flag.StringVar(&c.Source, "src", "spring-music", "Source App")
+	flag.StringVar(&c.DashboardRootURL, "url", "http://domain.com", "Root URL")
+
+	env, _ := cfenv.Current()
+	c.Env = env
 }

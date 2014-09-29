@@ -23,4 +23,5 @@ _testmain.go
 *.test
 *.prof
 
-generic-cf-service-broker
+Godeps
+app-launching-service-broker
