@@ -1,31 +1,31 @@
 package main
 
 import (
-	"github.com/intel-data/cf-catalog"
+	"github.com/intel-data/types-cf"
 	"log"
 )
 
 const (
 	AppID          = "3427569C-2A11-456C-974C-106B221E5EB2"
+	AppVersion     = "0.1.0"
 	AppName        = "generic-cf-service-broker"
 	AppDescription = "Dynamically configurable service broker"
 )
 
 // CatalogProvider object
-type MockedCatalogProvider struct {
-}
+type MockedCatalogProvider struct{}
 
 // Initialize configures the catalog provider
-func (p *MockedCatalogProvider) Initialize() error {
+func (p *MockedCatalogProvider) initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the source of catalog data here
 	return nil
 }
 
 // TODO: fix the return types to standard object, error when implemented
-func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *catalog.CFPlan {
+func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *cf.Plan {
 	log.Printf("creating service plan: %s", id)
-	pl := &catalog.CFPlan{}
+	pl := &cf.Plan{}
 	pl.ID = id
 	pl.Name = name
 	pl.Description = desc
@@ -33,16 +33,16 @@ func (p *MockedCatalogProvider) newSerivcePlan(id, name, desc string) *catalog.C
 	return pl
 }
 
-func (p *MockedCatalogProvider) newSerivce(id string) (*catalog.CFService, error) {
+func (p *MockedCatalogProvider) newSerivce(id string) (*cf.Service, error) {
 	log.Printf("creating service: %s", id)
-	s := &catalog.CFService{}
+	s := &cf.Service{}
 	// TODO: everything will have to be derived from the source of services
 	s.ID = id
 	s.Name = AppName
 	s.Description = AppDescription
 	s.Bindable = true
 	s.Tags = []string{"generic", "service", "broker"}
-	s.Plans = []*catalog.CFPlan{
+	s.Plans = []*cf.Plan{
 		p.newSerivcePlan(s.ID+"-1", s.Name+"-1", s.Description+"-1"),
 		p.newSerivcePlan(s.ID+"-2", s.Name+"-2", s.Description+"-2"),
 		p.newSerivcePlan(s.ID+"-3", s.Name+"-3", s.Description+"-3"),
@@ -50,10 +50,9 @@ func (p *MockedCatalogProvider) newSerivce(id string) (*catalog.CFService, error
 	return s, nil
 }
 
-// GetCatalog gets the catalog
-func (p *MockedCatalogProvider) GetCatalog() (*catalog.CFCatalog, error) {
+func (p *MockedCatalogProvider) getCatalog() (*cf.Catalog, error) {
 	log.Println("getting catalog...")
-	c := &catalog.CFCatalog{}
+	c := &cf.Catalog{}
 	// TODO: query service store and generate these on the fly
 
 	// downside of embedding in go is that you no longer can just
@@ -63,6 +62,11 @@ func (p *MockedCatalogProvider) GetCatalog() (*catalog.CFCatalog, error) {
 		log.Printf("Error while making service: %v", err)
 		return nil, err
 	}
-	c.Services = []*catalog.CFService{s}
+	s.Dashboard = &cf.Dashboard{
+		ID:     s.ID + "-9",
+		Secret: "secret",
+		URI:    "http://dashboard.host.com/d",
+	}
+	c.Services = []*cf.Service{s}
 	return c, nil
 }

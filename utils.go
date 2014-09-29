@@ -1,22 +1,29 @@
 package main
 
 import (
-	"github.com/emicklei/go-restful"
-	"log"
-	"net/http"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+	"io"
 )
 
-func hasRequiredParams(req *restful.Request, res *restful.Response, args ...string) bool {
-	for i, arg := range args {
-		log.Printf("validating:%d - %v", i, arg)
-		val := req.PathParameter(arg)
-		if len(val) < 1 {
-			log.Printf("nil %s", arg)
-			res.WriteErrorString(
-				http.StatusNotFound,
-				"Required parameter not provided: "+arg)
-			return false
-		}
+var (
+	passwordLength   = 24
+	passwordEncoding = base64.URLEncoding
+)
+
+func getRandomKey() []byte {
+	k := make([]byte, passwordLength)
+	if _, err := io.ReadFull(rand.Reader, k); err != nil {
+		return nil
 	}
-	return true
+	return k
+}
+
+func genPassword() (string, error) {
+	if key := getRandomKey(); key == nil {
+		return "", errors.New("error while generating random key")
+	} else {
+		return passwordEncoding.EncodeToString(key), nil
+	}
 }

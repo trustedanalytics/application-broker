@@ -2,63 +2,65 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/intel-data/cf-catalog"
+	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
 )
 
 // ServiceProvider defines the required provider functionality
 type ServiceProvider interface {
-	Initialize() error
-	GetServiceDashboard(id string) (*catalog.CFServiceProvisioningResponse, error)
-	SetServiceBinding(instanceId, serviceId string) (*catalog.CFServiceBindingResponse, error)
-	DeleteServiceBinding(instanceId, serviceId string) error
-	DeleteService(instanceId string) error
+	createService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, error)
+	deleteService(id string) error
+}
+
+// ServiceBindingProvider defines the required provider functionality
+type ServiceBindingProvider interface {
+	bindService(r *cf.ServiceBindingRequest, serviceID, bindingID string) (*cf.ServiceBindingResponse, error)
+	unbindService(serviceID, bindingID string) error
 }
 
 // ServiceHandler object
 type ServiceHandler struct {
-	Provider ServiceProvider
+	serviceProvider        ServiceProvider
+	serviceBindingProvider ServiceBindingProvider
 }
 
-// Initialize configures the broker handler
-func (h *ServiceHandler) Initialize() error {
+func (h *ServiceHandler) initialize() error {
 	log.Println("initializing...")
+
 	// TODO: Load the provider, is there a IOC pattern in go?
-	c := &SimpleServiceProvider{}
-	c.Initialize()
-	h.Provider = c
+
+	s := &SimpleServiceProvider{}
+	s.initialize()
+	h.serviceProvider = s
+
+	b := &SimpleServiceBindingProvider{}
+	b.initialize()
+	h.serviceBindingProvider = b
+
 	return nil
 }
 
-// SetServiceInstance returns a list of instances for particular service
-func (h *ServiceHandler) SetServiceInstance(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "id") {
+func (h *ServiceHandler) createService(request *restful.Request, response *restful.Response) {
+	if !hasRequiredParams(request, response, "serviceId") {
 		return
 	}
 
-	id := request.PathParameter("id")
+	id := request.PathParameter("serviceId")
 	log.Printf("getting service instance for id: %s", id)
 
 	// marshal request
-	s := &catalog.CFServiceProvisioningResponse{}
-	err := request.ReadEntity(s)
+	req := &cf.ServiceCreationRequest{}
+	err := request.ReadEntity(req)
 	if err != nil {
-		log.Printf("error on parsing service state %s: %v", id, err)
-		response.WriteHeader(http.StatusInternalServerError)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error resource creation")
+		handleServerError(response, err)
 		return
 	}
 
 	// get service dashboard
-	d, err := h.Provider.GetServiceDashboard(id)
+	d, err := h.serviceProvider.createService(req)
 	if err != nil {
-		log.Printf("error on getting dashboard: %v", err)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error creating catalog")
+		handleServerError(response, err)
 		return
 	}
 
@@ -68,41 +70,33 @@ func (h *ServiceHandler) SetServiceInstance(request *restful.Request, response *
 	   200 nothing changed
 	*/
 
-	log.Printf("service instance has been created: %d", http.StatusCreated)
+	log.Printf("service created: %d", http.StatusCreated)
 	response.WriteHeader(http.StatusCreated)
 	response.WriteEntity(d)
 
 }
 
-// SetServiceInstanceBinding returns a list of instances for particular service
-func (h *ServiceHandler) SetServiceInstanceBinding(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "instId", "bindId") {
+func (h *ServiceHandler) createServiceBinding(request *restful.Request, response *restful.Response) {
+	if !hasRequiredParams(request, response, "serviceID", "bindingID") {
 		return
 	}
 
-	instId := request.PathParameter("instId")
-	bindId := request.PathParameter("bindId")
-	log.Printf("setting service instance [%s] binding [%s]", instId, bindId)
+	serviceID := request.PathParameter("serviceID")
+	bindingID := request.PathParameter("bindingID")
+	log.Printf("creating binding %s/%s", serviceID, bindingID)
 
 	// parse request
-	req := &catalog.CFServiceBindingRequest{}
+	req := &cf.ServiceBindingRequest{}
 	err := request.ReadEntity(req)
 	if err != nil {
-		log.Printf("error on parsing service binding request: %v", err)
-		response.WriteHeader(http.StatusInternalServerError)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error resource creation")
+		handleServerError(response, err)
 		return
 	}
 
 	// build response
-	bind, err := h.Provider.SetServiceBinding(instId, bindId)
+	res, err := h.serviceBindingProvider.bindService(req, serviceID, bindingID)
 	if err != nil {
-		log.Printf("error on getting dashboard: %v", err)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error creating catalog")
+		handleServerError(response, err)
 		return
 	}
 
@@ -112,28 +106,24 @@ func (h *ServiceHandler) SetServiceInstanceBinding(request *restful.Request, res
 	   200 nothing changed
 	*/
 
-	log.Printf("service instance has been created: %d", http.StatusCreated)
+	log.Printf("service binding created: %d", http.StatusCreated)
 	response.WriteHeader(http.StatusCreated)
-	response.WriteEntity(bind)
+	response.WriteEntity(res)
 
 }
 
-// DeleteServiceInstanceBinding deletes instances for particular service
-func (h *ServiceHandler) DeleteServiceInstanceBinding(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "instId", "bindId") {
+func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response *restful.Response) {
+	if !hasRequiredParams(request, response, "serviceID", "bindingID") {
 		return
 	}
 
-	instId := request.PathParameter("instId")
-	bindId := request.PathParameter("bindId")
-	log.Printf("setting service instance [%s] binding [%s]", instId, bindId)
+	serviceID := request.PathParameter("serviceID")
+	bindingID := request.PathParameter("bindingID")
+	log.Printf("deleting binding %s/%s", serviceID, bindingID)
 
-	err := h.Provider.DeleteServiceBinding(instId, bindId)
+	err := h.serviceBindingProvider.unbindService(serviceID, bindingID)
 	if err != nil {
-		log.Printf("error on getting dashboard: %v", err)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error creating catalog")
+		handleServerError(response, err)
 		return
 	}
 
@@ -147,21 +137,17 @@ func (h *ServiceHandler) DeleteServiceInstanceBinding(request *restful.Request, 
 
 }
 
-// DeleteServiceInstance deletes instances of particular service
-func (h *ServiceHandler) DeleteServiceInstance(request *restful.Request, response *restful.Response) {
-	if !hasRequiredParams(request, response, "instId") {
+func (h *ServiceHandler) deleteService(request *restful.Request, response *restful.Response) {
+	if !hasRequiredParams(request, response, "serviceID") {
 		return
 	}
 
-	instId := request.PathParameter("instId")
-	log.Printf("deleting service instance [%s]", instId)
+	serviceID := request.PathParameter("serviceID")
+	log.Printf("deleting service: %s", serviceID)
 
-	err := h.Provider.DeleteService(instId)
+	err := h.serviceProvider.deleteService(serviceID)
 	if err != nil {
-		log.Printf("error deleting service: %v", err)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error creating catalog")
+		handleServerError(response, err)
 		return
 	}
 

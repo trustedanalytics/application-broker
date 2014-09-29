@@ -2,41 +2,35 @@ package main
 
 import (
 	"github.com/emicklei/go-restful"
-	"github.com/intel-data/cf-catalog"
+	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
 )
 
 // CatalogProvider defines the required provider functionality
 type CatalogProvider interface {
-	Initialize() error
-	GetCatalog() (*catalog.CFCatalog, error)
+	getCatalog() (*cf.Catalog, error)
 }
 
 // CatalogHandler object
 type CatalogHandler struct {
-	Provider CatalogProvider
+	provider CatalogProvider
 }
 
-// Initialize configures the broker handler
-func (h *CatalogHandler) Initialize() error {
+func (h *CatalogHandler) initialize() error {
 	log.Println("initializing...")
 	// TODO: Load the provider, is there a IOC pattern in go?
 	c := &MockedCatalogProvider{}
-	c.Initialize()
-	h.Provider = c
+	c.initialize()
+	h.provider = c
 	return nil
 }
 
-// GetCatalog returns a populated catalog for dynamically created services
-func (h *CatalogHandler) GetCatalog(request *restful.Request, response *restful.Response) {
+func (h *CatalogHandler) getCatalog(request *restful.Request, response *restful.Response) {
 	log.Println("getting catalog...")
-	c, err := h.Provider.GetCatalog()
+	c, err := h.provider.getCatalog()
 	if err != nil {
-		log.Printf("error on crating catalog: %v", err)
-		response.WriteErrorString(
-			http.StatusInternalServerError,
-			"Error creating catalog")
+		handleServerError(response, err)
 	} else {
 		response.WriteHeader(http.StatusOK)
 		response.WriteEntity(c)
