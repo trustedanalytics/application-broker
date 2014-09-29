@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/intel-data/generic-cf-service-broker/broker"
+	"github.com/intel-data/generic-cf-service-broker/service"
 	"log"
 )
 
@@ -11,6 +12,15 @@ func init() {
 
 func main() {
 	log.Println("starting broker...")
-	s := broker.New()
-	s.Start()
+
+	s, err := service.New()
+	if err != nil {
+		log.Panicf("failed to initialize service: %v", err)
+	}
+
+	b, err := broker.New(s)
+	if err != nil {
+		log.Panicf("failed to initialize broker: %v", err)
+	}
+	b.Start()
 }

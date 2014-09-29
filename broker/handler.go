@@ -3,35 +3,34 @@ package broker
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/intel-data/generic-cf-service-broker/common"
-	"github.com/intel-data/generic-cf-service-broker/service"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
 )
 
-// ServiceHandler object
-type ServiceHandler struct {
-	serviceProvider        common.ServiceProvider
-	serviceBindingProvider common.ServiceBindingProvider
+// Handler object
+type Handler struct {
+	provider common.ServiceProvider
 }
 
-func (h *ServiceHandler) initialize() error {
+func NewHandler(p common.ServiceProvider) (*Handler, error) {
 	log.Println("initializing...")
-
-	// TODO: Load the provider, is there a IOC pattern in go?
-
-	s := &service.SimpleServiceProvider{}
-	s.Initialize()
-	h.serviceProvider = s
-
-	b := &service.SimpleServiceBindingProvider{}
-	b.Initialize()
-	h.serviceBindingProvider = b
-
-	return nil
+	h := &Handler{provider: p}
+	return h, nil
 }
 
-func (h *ServiceHandler) createService(request *restful.Request, response *restful.Response) {
+func (h *Handler) getCatalog(request *restful.Request, response *restful.Response) {
+	log.Println("getting catalog...")
+	c, err := h.provider.GetCatalog()
+	if err != nil {
+		handleServerError(response, err)
+	} else {
+		response.WriteHeader(http.StatusOK)
+		response.WriteEntity(c)
+	}
+}
+
+func (h *Handler) createService(request *restful.Request, response *restful.Response) {
 	if !hasRequiredParams(request, response, "serviceId") {
 		return
 	}
@@ -48,7 +47,7 @@ func (h *ServiceHandler) createService(request *restful.Request, response *restf
 	}
 
 	// get service dashboard
-	d, err2 := h.serviceProvider.CreateService(req)
+	d, err2 := h.provider.CreateService(req)
 	if err2 != nil {
 		handleServerError(response, err2)
 		return
@@ -66,7 +65,7 @@ func (h *ServiceHandler) createService(request *restful.Request, response *restf
 
 }
 
-func (h *ServiceHandler) createServiceBinding(request *restful.Request, response *restful.Response) {
+func (h *Handler) createServiceBinding(request *restful.Request, response *restful.Response) {
 	if !hasRequiredParams(request, response, "serviceId", "bindingId") {
 		return
 	}
@@ -84,7 +83,7 @@ func (h *ServiceHandler) createServiceBinding(request *restful.Request, response
 	}
 
 	// build response
-	res, err2 := h.serviceBindingProvider.BindService(req, serviceID, bindingID)
+	res, err2 := h.provider.BindService(req, serviceID, bindingID)
 	if err2 != nil {
 		handleServerError(response, err2)
 		return
@@ -102,7 +101,7 @@ func (h *ServiceHandler) createServiceBinding(request *restful.Request, response
 
 }
 
-func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response *restful.Response) {
+func (h *Handler) deleteServiceBinding(request *restful.Request, response *restful.Response) {
 	if !hasRequiredParams(request, response, "serviceId", "bindingId") {
 		return
 	}
@@ -111,7 +110,7 @@ func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response
 	bindingID := request.PathParameter("bindingId")
 	log.Printf("deleting binding %s/%s", serviceID, bindingID)
 
-	err := h.serviceBindingProvider.UnbindService(serviceID, bindingID)
+	err := h.provider.UnbindService(serviceID, bindingID)
 	if err != nil {
 		handleServerError(response, err)
 		return
@@ -127,7 +126,7 @@ func (h *ServiceHandler) deleteServiceBinding(request *restful.Request, response
 
 }
 
-func (h *ServiceHandler) deleteService(request *restful.Request, response *restful.Response) {
+func (h *Handler) deleteService(request *restful.Request, response *restful.Response) {
 	if !hasRequiredParams(request, response, "serviceId") {
 		return
 	}
@@ -135,7 +134,7 @@ func (h *ServiceHandler) deleteService(request *restful.Request, response *restf
 	serviceID := request.PathParameter("serviceId")
 	log.Printf("deleting service: %s", serviceID)
 
-	err := h.serviceProvider.DeleteService(serviceID)
+	err := h.provider.DeleteService(serviceID)
 	if err != nil {
 		handleServerError(response, err)
 		return

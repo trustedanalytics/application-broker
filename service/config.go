@@ -7,15 +7,16 @@ import (
 var ServiceConfig *Config = &Config{}
 
 func init() {
-	ServiceConfig.initialize()
+	ServiceConfig.initialize(flag.CommandLine)
 }
 
 type Config struct {
-	Source string
-	Debug  bool
+	Source           string
+	DashboardRootURL string
+	Debug            bool
 }
 
-func (o *Config) initialize() {
-	flag.StringVar(&o.Source, "src", "spring-music", "Source application")
-	flag.Parse()
+func (o *Config) initialize(f *flag.FlagSet) {
+	f.StringVar(&o.Source, "src", "spring-music", "Source application")
+	f.StringVar(&o.DashboardRootURL, "url", "https://somename.gotapaas.com", "Root of the app dashboard")
 }

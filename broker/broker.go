@@ -11,24 +11,24 @@ import (
 
 // Broker to manage requests
 type Broker struct {
-	config         *Config
-	catalogHandler *CatalogHandler
-	serviceHandler *ServiceHandler
+	config  *Config
+	handler *Handler
 }
 
-func New() *Broker {
+func New(p common.ServiceProvider) (*Broker, error) {
 
-	ch := &CatalogHandler{}
-	ch.initialize()
+	log.Printf("provider version: %s", p.GetVersion())
 
-	sh := &ServiceHandler{}
-	sh.initialize()
+	h, err := NewHandler(p)
+	if err != nil {
+		log.Fatalf("error while creating handler: %v", err)
+		return nil, err
+	}
 
 	return &Broker{
-		config:         BrokerConfig,
-		catalogHandler: ch,
-		serviceHandler: sh,
-	}
+		config:  BrokerConfig,
+		handler: h,
+	}, nil
 }
 
 func (s *Broker) Start() {
@@ -40,30 +40,30 @@ func (s *Broker) Start() {
 
 	// catalog routes
 	ws.Route(ws.GET("/catalog").
-		To(s.catalogHandler.getCatalog).
+		To(s.handler.getCatalog).
 		Writes(cf.Catalog{}))
 
 	// service routes
 	ws.Route(ws.PUT("/service_instances/{serviceId}").
-		To(s.serviceHandler.createService).
+		To(s.handler.createService).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Reads(cf.ServiceCreationRequest{}).
 		Writes(cf.ServiceCreationResponce{}))
 
 	ws.Route(ws.PUT("/service_instances/{serviceId}/service_bindings/{bindingId}").
-		To(s.serviceHandler.createServiceBinding).
+		To(s.handler.createServiceBinding).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")).
 		Reads(cf.ServiceBindingRequest{}).
 		Writes(cf.ServiceBindingResponse{}))
 
 	ws.Route(ws.DELETE("/service_instances/{serviceId}/service_bindings/{bindingId}").
-		To(s.serviceHandler.deleteServiceBinding).
+		To(s.handler.deleteServiceBinding).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")))
 
 	ws.Route(ws.DELETE("/service_instances/{serviceId}").
-		To(s.serviceHandler.deleteService).
+		To(s.handler.deleteService).
 		Param(ws.PathParameter("serviceId", "service id").DataType("string")))
 
 	restful.Add(ws)
