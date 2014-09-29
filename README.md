@@ -1,4 +1,3 @@
-generic-cf-service-broker
-==========================
+# app-launching-service-broker
 
-A generic service broker to provision ATK and other dependencies
+A service broker to provision other applications
