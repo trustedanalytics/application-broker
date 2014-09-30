@@ -58,7 +58,7 @@ func (p *GenericServiceProvider) CreateService(r *cf.ServiceCreationRequest) (*c
 	log.Printf("creating service: %v", r)
 	d := &cf.ServiceCreationResponce{}
 	// TODO: implement
-	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.config.DashboardRootURL)
+	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.config.CFEnv.ApplicationUri)
 	return d, nil
 }
 

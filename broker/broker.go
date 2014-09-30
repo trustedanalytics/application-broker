@@ -16,9 +16,6 @@ type Broker struct {
 }
 
 func New(p common.ServiceProvider) (*Broker, error) {
-
-	log.Printf("provider version: %s", p.GetVersion())
-
 	h, err := NewHandler(p)
 	if err != nil {
 		log.Fatalf("error while creating handler: %v", err)
