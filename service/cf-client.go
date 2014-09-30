@@ -50,6 +50,7 @@ func (c *CFClient) push(org, space string) error {
 	pushId := "-" + strings.ToUpper(strings.Trim(raw, "=="))
 	appName := c.config.AppBaseName + pushId
 
+	// target
 	cmd := newCommand("cf", "target", "-o", org, "-s", space)
 	exeCmd(cmd)
 	if cmd.err != nil {
@@ -58,7 +59,8 @@ func (c *CFClient) push(org, space string) error {
 	}
 	log.Printf("target output: %s", cmd.output)
 
-	cmd = newCommand("cf", "push", appName, "-p", c.config.AppSource)
+	// push
+	cmd = newCommand("cf", "push", appName, "-p", c.config.AppSource, "--no-start")
 	exeCmd(cmd)
 	if cmd.err != nil {
 		log.Printf("err cmd: %v", cmd)
@@ -68,6 +70,7 @@ func (c *CFClient) push(org, space string) error {
 	}
 	log.Printf("push output: %s", cmd.output)
 
+	// dependencies
 	deps, err := c.config.getDependencies()
 	if err != nil {
 		log.Printf("err cmd: %v", err)
@@ -85,7 +88,26 @@ func (c *CFClient) push(org, space string) error {
 			log.Printf("err on dependency[%d]: %s - %v", i, depName, cmd)
 			return cmd.err
 		}
+
+		// bind
+		cmd = newCommand("cf", "bind-service", appName, depName)
+		exeCmd(cmd)
+		if cmd.err != nil {
+			log.Printf("err on dependency bind[%d]: %s > %s - %v", i, appName, depName, cmd)
+			return cmd.err
+		}
 	}
+
+	// restart
+	cmd = newCommand("cf", "restart", appName)
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Printf("err cmd: %v", cmd)
+		// try to delete
+		exeCmd(newCommand("cf", "d", appName))
+		return cmd.err
+	}
+	log.Printf("restart output: %s", cmd.output)
 
 	return nil
 }
