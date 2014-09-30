@@ -20,12 +20,18 @@ type ServiceDependency struct {
 }
 
 type Config struct {
+	ApiEndpoint  string
+	ApiUser      string
+	ApiPassword  string
 	AppSource    string
 	Dependencies string
 	CFEnv        *cfenv.App
 }
 
 func (c *Config) initialize() {
+	flag.StringVar(&c.ApiEndpoint, "api", "", "Full URL to the API endpoint [http://api.54.68.64.168.xip.io]")
+	flag.StringVar(&c.ApiUser, "cfu", "", "CF user [admin]")
+	flag.StringVar(&c.ApiPassword, "cfp", "", "CF Password [*********]")
 	flag.StringVar(&c.AppSource, "src", "", "Source of the app to push [./spring-music]")
 	flag.StringVar(&c.Dependencies, "dep", "", "Service dependencies: [postgresql93|free,consul|free]")
 

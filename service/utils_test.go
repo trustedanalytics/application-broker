@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func TestCommand(t *testing.T) {
+func TestSimpleCommand(t *testing.T) {
 
 	cmd := &simpleCommand{
 		command: "echo",
-		args:    "test",
+		args:    []string{"test"},
 	}
 
 	exeCmd(cmd)

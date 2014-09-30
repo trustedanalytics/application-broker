@@ -5,6 +5,9 @@
                                -u=user \
                                -s=pswd \
                                -d=true \
+                               -api="http://api.54.68.64.168.xip.io" \
+                               -cfu=$CF_USER \
+                               -cfp=$CF_PASS \
                                -src="./spring-music" \
                                -dep="postgresql93|free,consul|free"
 

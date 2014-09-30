@@ -54,9 +54,16 @@ func schedule(what func(), delay time.Duration) chan bool {
 
 // Command
 
+func newCommand(cmd string, args ...string) *simpleCommand {
+	return &simpleCommand{
+		command: cmd,
+		args:    args,
+	}
+}
+
 type simpleCommand struct {
 	command string
-	args    string
+	args    []string
 	output  string
 	err     error
 }
@@ -76,7 +83,7 @@ func exeCmdAsync(c *simpleCommand, wg *sync.WaitGroup) {
 	if c == nil {
 		wg.Done()
 	}
-	cmd := exec.Command(c.command, c.args)
+	cmd := exec.Command(c.command, c.args...)
 	out, err := cmd.CombinedOutput()
 	c.err = err
 	// yep, this is a hack to pass simple tests
