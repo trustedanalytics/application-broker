@@ -8,6 +8,6 @@
                                -api="http://api.54.68.64.168.xip.io" \
                                -cfu=$CF_USER \
                                -cfp=$CF_PASS \
-                               -src="./spring-music" \
+                               -src="/Users/markchma/Code/spring-hello-env" \
                                -dep="postgresql93|free,consul|free"
 

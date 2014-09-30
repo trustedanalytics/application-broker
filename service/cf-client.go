@@ -2,6 +2,7 @@ package service
 
 import (
 	"log"
+	"strings"
 )
 
 // CFClient object
@@ -9,10 +10,12 @@ type CFClient struct {
 	config *Config
 }
 
-func NewCFClient(c *Config) *CFClient {
-	return &CFClient{
+func NewCFClient(c *Config) (*CFClient, error) {
+	client := &CFClient{
 		config: c,
 	}
+	err := client.initialize()
+	return client, err
 }
 
 func (c *CFClient) initialize() error {
@@ -20,29 +23,54 @@ func (c *CFClient) initialize() error {
 
 	// target API
 	// TODO: remove the skip API validation part once real cert deployed
-	cmd1 := newCommand("cf", "api", c.config.ApiEndpoint, "--skip-ssl-validation")
-	exeCmd(cmd1)
-	if cmd1.err != nil {
-		log.Fatalf("err cmd: %v", cmd1)
-		return cmd1.err
+	cmd := newCommand("cf", "api", c.config.ApiEndpoint, "--skip-ssl-validation")
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
 	}
-	log.Printf("api output: %s", cmd1.output)
+	log.Printf("api output: %s", cmd.output)
 
-	cmd2 := newCommand("cf", "auth", c.config.ApiUser, c.config.ApiPassword)
-	exeCmd(cmd2)
-	if cmd2.err != nil {
-		log.Fatalf("err cmd: %v", cmd2)
-		return cmd2.err
+	cmd = newCommand("cf", "auth", c.config.ApiUser, c.config.ApiPassword)
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
 	}
-	log.Printf("auth output: %s", cmd2.output)
+	log.Printf("auth output: %s", cmd.output)
 
-	cmd3 := newCommand("cf", "target", "-o", c.config.ApiOrg, "-s", c.config.ApiSpace)
-	exeCmd(cmd3)
-	if cmd3.err != nil {
-		log.Fatalf("err cmd: %v", cmd3)
-		return cmd3.err
+	return nil
+}
+
+func (c *CFClient) push(org, space string) error {
+	log.Println("pushing app...")
+
+	cmd := newCommand("cf", "target", "-o", org, "-s", space)
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
 	}
-	log.Printf("target output: %s", cmd3.output)
+	log.Printf("target output: %s", cmd.output)
+
+	cmd = newCommand("cd", c.config.AppSource)
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
+	}
+	log.Printf("cd output: %s", cmd.output)
+
+	// yep, this is a royal hack, should get this from the env somehow
+	raw := genRandomString(4)
+	sufix := strings.ToUpper(strings.Trim(raw, "=="))
+	cmd = newCommand("cf", "push", c.config.AppBaseName+sufix)
+	exeCmd(cmd)
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
+	}
+	log.Printf("push output: %s", cmd.output)
 
 	return nil
 }

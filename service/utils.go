@@ -14,13 +14,13 @@ import (
 
 // Password
 
-func genPassword(key string, length int) string {
-	var bytes = make([]byte, length)
-	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = key[b%byte(len(key))]
-	}
-	return base64.URLEncoding.EncodeToString(bytes)
+func genRandomString(length int) string {
+	b := make([]byte, length)
+	rand.Read(b)
+	en := base64.StdEncoding // or URLEncoding
+	d := make([]byte, en.EncodedLen(len(b)))
+	en.Encode(d, b)
+	return string(d)
 }
 
 // JSON
@@ -90,4 +90,15 @@ func exeCmdAsync(c *simpleCommand, wg *sync.WaitGroup) {
 	// expecting users to encode results
 	c.output = strings.Trim(string(out), "\n")
 	wg.Done()
+}
+
+func getNowInUtc() time.Time {
+	return time.Now().UTC()
+}
+
+func getTime(f string) string {
+	if len(f) < 1 {
+		f = time.RFC850
+	}
+	return fmt.Sprintln(getNowInUtc().Format(f))
 }

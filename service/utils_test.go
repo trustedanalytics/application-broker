@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+func TestRandomPassword(t *testing.T) {
+
+	pas := genRandomString(4)
+
+	assert.Nil(t, pas, "nil password")
+	assert.Equal(t, len(pas), 4, "wrong password length")
+}
+
 func TestSimpleCommand(t *testing.T) {
 
 	cmd := &simpleCommand{
