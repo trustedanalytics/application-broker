@@ -12,6 +12,8 @@ func TestCFClient(t *testing.T) {
 	flag.Set("api", "http://api.54.68.64.168.xip.io")
 	flag.Set("cfu", os.Getenv("CF_USER"))
 	flag.Set("cfp", os.Getenv("CF_PASS"))
+	flag.Set("cfo", "demo")
+	flag.Set("cfs", "dev")
 	flag.Set("src", "./spring-music")
 	flag.Set("dep", "postgresql93|free,consul|free")
 
