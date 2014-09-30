@@ -2,8 +2,7 @@ package broker
 
 import (
 	"fmt"
-	"github.com/emicklei/go-restful"
-	"github.com/intel-data/app-launching-service-broker/common"
+	sr "github.com/emicklei/go-restful"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
@@ -15,7 +14,7 @@ type Broker struct {
 	handler *Handler
 }
 
-func New(p common.ServiceProvider) (*Broker, error) {
+func New(p cf.ServiceProvider) (*Broker, error) {
 	h, err := NewHandler(p)
 	if err != nil {
 		log.Fatalf("error while creating handler: %v", err)
@@ -30,10 +29,10 @@ func New(p common.ServiceProvider) (*Broker, error) {
 
 func (s *Broker) Start() {
 
-	ws := &restful.WebService{}
+	ws := &sr.WebService{}
 	ws.Path("/v2").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON)
+		Consumes(sr.MIME_JSON).
+		Produces(sr.MIME_JSON)
 
 	// catalog routes
 	ws.Route(ws.GET("/catalog").
@@ -41,29 +40,29 @@ func (s *Broker) Start() {
 		Writes(cf.Catalog{}))
 
 	// service routes
-	ws.Route(ws.PUT("/service_instances/{serviceId}").
+	ws.Route(ws.PUT("/service_instances/{instanceId}").
 		To(s.handler.createService).
-		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
+		Param(ws.PathParameter("instanceId", "instance id").DataType("string")).
 		Reads(cf.ServiceCreationRequest{}).
 		Writes(cf.ServiceCreationResponce{}))
 
-	ws.Route(ws.PUT("/service_instances/{serviceId}/service_bindings/{bindingId}").
+	ws.Route(ws.PUT("/service_instances/{instanceId}/service_bindings/{bindingId}").
 		To(s.handler.createServiceBinding).
-		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
+		Param(ws.PathParameter("instanceId", "instance id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")).
 		Reads(cf.ServiceBindingRequest{}).
 		Writes(cf.ServiceBindingResponse{}))
 
-	ws.Route(ws.DELETE("/service_instances/{serviceId}/service_bindings/{bindingId}").
+	ws.Route(ws.DELETE("/service_instances/{instanceId}/service_bindings/{bindingId}").
 		To(s.handler.deleteServiceBinding).
-		Param(ws.PathParameter("serviceId", "service id").DataType("string")).
+		Param(ws.PathParameter("instanceId", "instance id").DataType("string")).
 		Param(ws.PathParameter("bindingId", "binding id").DataType("string")))
 
-	ws.Route(ws.DELETE("/service_instances/{serviceId}").
+	ws.Route(ws.DELETE("/service_instances/{instanceId}").
 		To(s.handler.deleteService).
-		Param(ws.PathParameter("serviceId", "service id").DataType("string")))
+		Param(ws.PathParameter("instanceId", "instance id").DataType("string")))
 
-	restful.Add(ws)
+	sr.Add(ws)
 
 	u := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	log.Printf("server: %s", u)
@@ -71,14 +70,14 @@ func (s *Broker) Start() {
 
 }
 
-func handleSimpleServerError(response *restful.Response, err error) {
+func handleSimpleServerError(response *sr.Response, err error) {
 	if err == nil {
 		return
 	}
-	handleServerError(response, common.NewServiceProviderError(common.ErrorException, err))
+	handleServerError(response, cf.NewServiceProviderError(cf.ErrorServerException, err))
 }
 
-func handleServerError(response *restful.Response, err *common.ServiceProviderError) {
+func handleServerError(response *sr.Response, err *cf.ServiceProviderError) {
 	if err == nil {
 		return
 	}
@@ -86,9 +85,9 @@ func handleServerError(response *restful.Response, err *common.ServiceProviderEr
 	log.Fatalf("internal server error: %s", err.String())
 
 	switch err.Code {
-	case common.ErrorInstanceExists:
+	case cf.ErrorInstanceExists:
 		response.WriteHeader(http.StatusConflict)
-	case common.ErrorInstanceNotFound:
+	case cf.ErrorInstanceNotFound:
 		response.WriteHeader(http.StatusNotFound)
 	default:
 		response.WriteHeader(http.StatusInternalServerError)
@@ -98,7 +97,7 @@ func handleServerError(response *restful.Response, err *common.ServiceProviderEr
 
 }
 
-func hasRequiredParams(req *restful.Request, res *restful.Response, args ...string) bool {
+func hasRequiredParams(req *sr.Request, res *sr.Response, args ...string) bool {
 	for i, arg := range args {
 		log.Printf("validating:%d - %v", i, arg)
 		val := req.PathParameter(arg)

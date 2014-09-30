@@ -5,6 +5,6 @@
                                -u=user \
                                -s=pswd \
                                -d=true \
-                               -src=appname \
-                               -url=http://domain.com
+                               -src="./spring-music" \
+                               -dep="postgresql93|free,consul|free"
 

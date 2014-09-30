@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/intel-data/app-launching-service-broker/common"
 	"github.com/intel-data/types-cf"
 	"log"
 )
@@ -14,25 +13,25 @@ const (
 	AppDescription = "Dynamically configurable service broker"
 )
 
-// GenericServiceProvider object
-type GenericServiceProvider struct {
+// LaunchingService object
+type LaunchingService struct {
 	config *Config
 }
 
-func New() (*GenericServiceProvider, error) {
-	s := &GenericServiceProvider{
+func New() (*LaunchingService, error) {
+	s := &LaunchingService{
 		config: ServiceConfig,
 	}
 	return s, nil
 }
 
 // GetVersion returns the service version
-func (p *GenericServiceProvider) GetVersion() string {
+func (p *LaunchingService) GetVersion() string {
 	return AppVersion
 }
 
 // GetCatalog parses catalog response
-func (p *GenericServiceProvider) GetCatalog() (*cf.Catalog, *common.ServiceProviderError) {
+func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) {
 	log.Println("getting catalog...")
 	c := &cf.Catalog{}
 	// TODO: implement the service creation logic here
@@ -42,7 +41,7 @@ func (p *GenericServiceProvider) GetCatalog() (*cf.Catalog, *common.ServiceProvi
 	s, err := p.newSerivce(AppID)
 	if err != nil {
 		log.Printf("Error while making service: %v", err)
-		return nil, common.NewServiceProviderError(common.ErrorException, err)
+		return nil, cf.NewServiceProviderError(cf.ErrorServerException, err)
 	}
 	s.Dashboard = &cf.Dashboard{
 		ID:     s.ID + "-9",
@@ -54,24 +53,24 @@ func (p *GenericServiceProvider) GetCatalog() (*cf.Catalog, *common.ServiceProvi
 }
 
 // CreateService create a service instance
-func (p *GenericServiceProvider) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *common.ServiceProviderError) {
+func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
 	d := &cf.ServiceCreationResponce{}
 	// TODO: implement
-	d.DashboardURL = fmt.Sprintf("%s/dashboard", p.config.CFEnv.ApplicationUri)
+	d.DashboardURL = fmt.Sprintf("http://%s:%d/dashboard", p.config.CFEnv.Host, p.config.CFEnv.Port)
 	return d, nil
 }
 
 // DeleteService deletes a service instance
-func (p *GenericServiceProvider) DeleteService(id string) *common.ServiceProviderError {
-	log.Printf("deleting service: %s", id)
+func (p *LaunchingService) DeleteService(instanceID string) *cf.ServiceProviderError {
+	log.Printf("deleting service: %s", instanceID)
 	// TODO: implement
 	return nil
 }
 
 // BindService creates a service instance binding
-func (p *GenericServiceProvider) BindService(r *cf.ServiceBindingRequest, serviceID, bindingID string) (*cf.ServiceBindingResponse, *common.ServiceProviderError) {
-	log.Printf("creating service binding: %v - %s/%s", r, serviceID, bindingID)
+func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.ServiceBindingResponse, *cf.ServiceProviderError) {
+	log.Printf("creating service binding: %v", r)
 
 	b := &cf.ServiceBindingResponse{}
 
@@ -89,14 +88,14 @@ func (p *GenericServiceProvider) BindService(r *cf.ServiceBindingRequest, servic
 }
 
 // UnbindService deletes service instance binding
-func (p *GenericServiceProvider) UnbindService(serviceID, bindingID string) *common.ServiceProviderError {
-	log.Printf("deleting service binding: %s/%s", serviceID, bindingID)
+func (p *LaunchingService) UnbindService(instanceID, bindingID string) *cf.ServiceProviderError {
+	log.Printf("deleting service binding: %s/%s", instanceID, bindingID)
 	// TODO: implement
 	return nil
 }
 
 // TODO: fix the return types to standard object, error when implemented
-func (p *GenericServiceProvider) newSerivcePlan(id, name, desc string) *cf.Plan {
+func (p *LaunchingService) newSerivcePlan(id, name, desc string) *cf.Plan {
 	log.Printf("creating service plan: %s", id)
 	pl := &cf.Plan{}
 	pl.ID = id
@@ -106,7 +105,7 @@ func (p *GenericServiceProvider) newSerivcePlan(id, name, desc string) *cf.Plan 
 	return pl
 }
 
-func (p *GenericServiceProvider) newSerivce(id string) (*cf.Service, error) {
+func (p *LaunchingService) newSerivce(id string) (*cf.Service, error) {
 	log.Printf("creating service: %s", id)
 	s := &cf.Service{}
 	// TODO: everything will have to be derived from the source of services

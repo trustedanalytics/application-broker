@@ -34,4 +34,6 @@ func TestConfig(t *testing.T) {
 		assert.NotNil(t, dep.Plan, "nil plan")
 	}
 
+	assert.NotNil(t, c.CFEnv, "nil CFEnv")
+
 }

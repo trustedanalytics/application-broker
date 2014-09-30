@@ -23,5 +23,11 @@ _testmain.go
 *.test
 *.prof
 
+# dep
 Godeps
+
+# bin
 app-launching-service-broker
+
+# Sublime
+broker.sublime-project

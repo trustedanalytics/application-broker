@@ -29,7 +29,13 @@ func (c *Config) initialize() {
 	flag.StringVar(&c.AppSource, "src", "", "Source of the app to push [./spring-music]")
 	flag.StringVar(&c.Dependencies, "dep", "", "Service dependencies: [postgresql93|free,consul|free]")
 
-	env, _ := cfenv.Current()
+	env, err := cfenv.Current()
+	if err == nil || env == nil {
+		log.Printf("failed to get CF env vars: %v", err)
+		env = &cfenv.App{}
+		env.Host = "127.0.0.1"
+		env.Port = 9999
+	}
 	c.CFEnv = env
 }
 
