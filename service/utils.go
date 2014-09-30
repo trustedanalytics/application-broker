@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -17,10 +18,11 @@ import (
 func genRandomString(length int) string {
 	b := make([]byte, length)
 	rand.Read(b)
-	en := base64.StdEncoding // or URLEncoding
+	en := base64.URLEncoding
 	d := make([]byte, en.EncodedLen(len(b)))
 	en.Encode(d, b)
-	return string(d)
+	raw := string(d)
+	return raw[0:length]
 }
 
 // JSON
@@ -62,6 +64,7 @@ func newCommand(cmd string, args ...string) *simpleCommand {
 }
 
 type simpleCommand struct {
+	dir     string
 	command string
 	args    []string
 	output  string
@@ -83,8 +86,13 @@ func exeCmdAsync(c *simpleCommand, wg *sync.WaitGroup) {
 	if c == nil {
 		wg.Done()
 	}
+
+	if len(c.dir) > 1 {
+		os.Chdir(c.dir)
+	}
+
 	cmd := exec.Command(c.command, c.args...)
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	c.err = err
 	// yep, this is a hack to pass simple tests
 	// expecting users to encode results

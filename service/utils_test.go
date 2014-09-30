@@ -8,10 +8,11 @@ import (
 
 func TestRandomPassword(t *testing.T) {
 
-	pas := genRandomString(4)
+	passLen := 4
+	pas := genRandomString(passLen)
 
-	assert.Nil(t, pas, "nil password")
-	assert.Equal(t, len(pas), 4, "wrong password length")
+	assert.NotNil(t, pas, "nil password")
+	assert.Equal(t, len(pas), passLen, "wrong password length")
 }
 
 func TestSimpleCommand(t *testing.T) {

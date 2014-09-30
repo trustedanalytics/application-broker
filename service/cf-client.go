@@ -45,6 +45,11 @@ func (c *CFClient) initialize() error {
 func (c *CFClient) push(org, space string) error {
 	log.Println("pushing app...")
 
+	// yep, this is a royal hack, should get this from the env somehow
+	raw := genRandomString(4)
+	pushId := "-" + strings.ToUpper(strings.Trim(raw, "=="))
+	appName := c.config.AppBaseName + pushId
+
 	cmd := newCommand("cf", "target", "-o", org, "-s", space)
 	exeCmd(cmd)
 	if cmd.err != nil {
@@ -53,24 +58,34 @@ func (c *CFClient) push(org, space string) error {
 	}
 	log.Printf("target output: %s", cmd.output)
 
-	cmd = newCommand("cd", c.config.AppSource)
+	cmd = newCommand("cf", "push", appName, "-p", c.config.AppSource)
 	exeCmd(cmd)
 	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
-	}
-	log.Printf("cd output: %s", cmd.output)
-
-	// yep, this is a royal hack, should get this from the env somehow
-	raw := genRandomString(4)
-	sufix := strings.ToUpper(strings.Trim(raw, "=="))
-	cmd = newCommand("cf", "push", c.config.AppBaseName+sufix)
-	exeCmd(cmd)
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
+		log.Printf("err cmd: %v", cmd)
+		// try to delete
+		exeCmd(newCommand("cf", "d", appName))
 		return cmd.err
 	}
 	log.Printf("push output: %s", cmd.output)
+
+	deps, err := c.config.getDependencies()
+	if err != nil {
+		log.Printf("err cmd: %v", err)
+		// try to delete the app
+		exeCmd(newCommand("cf", "d", appName))
+		return cmd.err
+	}
+
+	// TODO: Add cleanup of dependencies
+	for i, dep := range deps {
+		depName := dep.Name + pushId
+		cmd = newCommand("cf", "create-service", dep.Name, dep.Plan, depName)
+		exeCmd(cmd)
+		if cmd.err != nil {
+			log.Printf("err on dependency[%d]: %s - %v", i, depName, cmd)
+			return cmd.err
+		}
+	}
 
 	return nil
 }

@@ -17,9 +17,9 @@ func TestCFClient(t *testing.T) {
 	flag.Set("api", "http://api.54.68.64.168.xip.io")
 	flag.Set("cfu", os.Getenv("CF_USER"))
 	flag.Set("cfp", os.Getenv("CF_PASS"))
-	flag.Set("src", "/Users/markchma/Code/spring-hello-env")
-	flag.Set("app", "spring-hello-env-")
-	flag.Set("dep", "postgresql93|free,consul|free")
+	flag.Set("src", "/Users/markchma/Code/rabbitmq-cloudfoundry-samples/nodejs")
+	flag.Set("app", "sinatra-cf-twitter")
+	flag.Set("dep", "rabbitmq33|free,redis28|free")
 
 	client, err := NewCFClient(ServiceConfig)
 	assert.NotNil(t, client, "nil client")
