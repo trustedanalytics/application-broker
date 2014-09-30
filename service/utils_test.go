@@ -15,20 +15,6 @@ func TestRandomPassword(t *testing.T) {
 	assert.Equal(t, len(pas), passLen, "wrong password length")
 }
 
-func TestSimpleCommand(t *testing.T) {
-
-	cmd := &simpleCommand{
-		command: "echo",
-		args:    []string{"test"},
-	}
-
-	exeCmd(cmd)
-
-	assert.Nil(t, cmd.err, "command failed")
-	assert.NotNil(t, cmd.output, "nil output")
-	assert.Equal(t, cmd.output, "test", "wrong output")
-}
-
 type MarshalingTestObj struct {
 	S string
 	N int

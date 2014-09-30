@@ -7,11 +7,20 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"strings"
-	"sync"
 	"time"
 )
+
+// Env
+
+func setEnv(key, val string) bool {
+	err := os.Setenv(key, val)
+	if err != nil {
+		// don't print val as it may include secretes
+		log.Printf("error setting env var: %s", key)
+		return false
+	}
+	return true
+}
 
 // Password
 
@@ -52,52 +61,6 @@ func schedule(what func(), delay time.Duration) chan bool {
 		}
 	}()
 	return stop
-}
-
-// Command
-
-func newCommand(cmd string, args ...string) *simpleCommand {
-	return &simpleCommand{
-		command: cmd,
-		args:    args,
-	}
-}
-
-type simpleCommand struct {
-	dir     string
-	command string
-	args    []string
-	output  string
-	err     error
-}
-
-func exeCmd(c *simpleCommand) {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go exeCmdAsync(c, &wg)
-	wg.Wait()
-}
-
-func exeCmdAsync(c *simpleCommand, wg *sync.WaitGroup) {
-	// don't log the command, could include passwords
-	if wg == nil {
-		return
-	}
-	if c == nil {
-		wg.Done()
-	}
-
-	if len(c.dir) > 1 {
-		os.Chdir(c.dir)
-	}
-
-	cmd := exec.Command(c.command, c.args...)
-	out, err := cmd.Output()
-	c.err = err
-	// yep, this is a hack to pass simple tests
-	// expecting users to encode results
-	c.output = strings.Trim(string(out), "\n")
-	wg.Done()
 }
 
 func getNowInUtc() time.Time {

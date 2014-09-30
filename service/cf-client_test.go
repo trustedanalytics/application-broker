@@ -21,11 +21,10 @@ func TestCFClient(t *testing.T) {
 	flag.Set("app", "sinatra-cf-twitter")
 	flag.Set("dep", "rabbitmq33|free,redis28|free")
 
-	client, err := NewCFClient(ServiceConfig)
+	client := NewCFClient(ServiceConfig)
 	assert.NotNil(t, client, "nil client")
-	assert.Nil(t, err, "client failed to initialize")
 
-	err2 := client.push(TestOrg, TestSpace)
-	assert.Nil(t, err2, "push failed")
+	err := client.push(TestOrg, TestSpace)
+	assert.Nil(t, err, "push failed")
 
 }
