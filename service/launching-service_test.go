@@ -12,9 +12,6 @@ const (
 
 func TestGetCatalog(t *testing.T) {
 
-	c := getTestServiceConfig()
-	assert.NotNil(t, c, "nil config")
-
 	p, err := New()
 	assert.Nil(t, err, "error on create")
 	assert.NotNil(t, p, "nil provider")

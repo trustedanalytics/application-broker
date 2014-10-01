@@ -2,11 +2,11 @@ package service
 
 import (
 	"encoding/json"
-	"flag"
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/intel-data/types-cf"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"strings"
 )
@@ -18,7 +18,7 @@ const (
 var Config *ServiceConfig = &ServiceConfig{}
 
 func init() {
-	Config.initialize(flag.CommandLine)
+	Config.initialize()
 }
 
 type ServiceDependency struct {
@@ -31,28 +31,26 @@ type ServiceConfig struct {
 	ApiUser      string
 	ApiPassword  string
 	AppSource    string
-	DepFlag      string
+	DepString    string
 	CFEnv        *cfenv.App
 	CatalogPath  string
 	Catalog      *cf.Catalog
 	Dependencies []*ServiceDependency
 }
 
-func (c *ServiceConfig) initialize(fs *flag.FlagSet) {
+func (c *ServiceConfig) initialize() {
 	log.Println("initializing service config...")
 
-	fs.StringVar(&c.ApiEndpoint, "api", "", "Full URL to the API endpoint")
-	fs.StringVar(&c.ApiUser, "cfu", "", "CF user (should be admin)")
-	fs.StringVar(&c.ApiPassword, "cfp", "", "CF Password")
-	fs.StringVar(&c.AppSource, "src", "", "Path to source of the app to provision")
-	fs.StringVar(&c.DepFlag, "dep", "", "Service dependencies: (postgresql93|free,consul|free)")
-	fs.StringVar(&c.CatalogPath, "cat", "", "Path to catalog file [./catalog.json]")
-}
+	c.ApiEndpoint = os.Getenv("CF_API")
+	c.ApiUser = os.Getenv("CF_USER")
+	c.ApiPassword = os.Getenv("CF_PASS")
+	c.AppSource = os.Getenv("CF_SRC")
+	c.DepString = os.Getenv("CF_DEP")
+	c.CatalogPath = os.Getenv("CF_CAT")
 
-func (c *ServiceConfig) parse() {
 	cfEnv, err := cfenv.Current()
 	if err == nil || cfEnv == nil {
-		log.Printf("failed to get CF env vars, probably running locally: %v", err)
+		log.Printf("CF env vars: %v", err)
 		cfEnv = &cfenv.App{}
 	}
 	c.CFEnv = cfEnv
@@ -62,11 +60,11 @@ func (c *ServiceConfig) parse() {
 
 func (c *ServiceConfig) parseServiceDependencies() error {
 	log.Println("getting service dependences")
-	if len(c.DepFlag) < 1 {
+	if len(c.DepString) < 1 {
 		log.Println("nil dependencies")
 		return nil
 	}
-	parts := strings.Split(c.DepFlag, ",")
+	parts := strings.Split(c.DepString, ",")
 	deps := make([]*ServiceDependency, len(parts))
 	for i, part := range parts {
 		log.Printf("part[%d] %s", i, part)

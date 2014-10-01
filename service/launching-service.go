@@ -9,12 +9,13 @@ import (
 // LaunchingService object
 type LaunchingService struct {
 	config *ServiceConfig
+	client *CFClient
 }
 
 func New() (*LaunchingService, error) {
-	Config.parse()
 	s := &LaunchingService{
 		config: Config,
+		client: NewCFClient(Config),
 	}
 	return s, nil
 }
@@ -29,6 +30,13 @@ func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) 
 func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
 	d := &cf.ServiceCreationResponce{}
+
+	// TODO: Get plan/org - r.SpaceGUID
+
+	// TODO: Get service name - r.ServiceID
+
+	//p.client.provision(app, org, space)
+
 	// TODO: implement
 	d.DashboardURL = fmt.Sprintf("http://%s:%d/dashboard", p.config.CFEnv.Host, p.config.CFEnv.Port)
 	return d, nil

@@ -17,9 +17,7 @@ func TestCFClient(t *testing.T) {
 		return
 	}
 
-	c := getTestServiceConfig()
-
-	client := NewCFClient(c)
+	client := NewCFClient(Config)
 	assert.NotNil(t, client, "nil client")
 
 	assert.NotNil(t, client.config.Catalog.Services, "nil services")

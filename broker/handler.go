@@ -124,6 +124,7 @@ func (h *Handler) deleteServiceBinding(request *sr.Request, response *sr.Respons
 
 	log.Printf("service instance binding has been deleted: %d", http.StatusGone)
 	response.WriteHeader(http.StatusGone)
+	response.WriteAsJson("{}")
 
 	/*
 	   201 created
@@ -148,6 +149,7 @@ func (h *Handler) deleteService(request *sr.Request, response *sr.Response) {
 
 	log.Printf("service instance has been deleted: %d", http.StatusGone)
 	response.WriteHeader(http.StatusGone)
+	response.WriteAsJson("{}")
 
 	/*
 	   201 created

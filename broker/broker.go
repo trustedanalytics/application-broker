@@ -1,11 +1,19 @@
 package broker
 
 import (
+	"encoding/base64"
+	"errors"
 	"fmt"
 	sr "github.com/emicklei/go-restful"
 	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
+)
+
+const (
+	ApiVersion = "/v2"
 )
 
 // Broker to manage requests
@@ -21,9 +29,6 @@ func New(p cf.ServiceProvider) (*Broker, error) {
 		return nil, err
 	}
 
-	// parse config values to object state
-	Config.parse()
-
 	return &Broker{
 		config:  Config,
 		handler: h,
@@ -33,7 +38,7 @@ func New(p cf.ServiceProvider) (*Broker, error) {
 func (s *Broker) Start() {
 
 	ws := &sr.WebService{}
-	ws.Path("/v2").
+	ws.Path(ApiVersion).
 		Consumes(sr.MIME_JSON).
 		Produces(sr.MIME_JSON)
 
@@ -67,8 +72,8 @@ func (s *Broker) Start() {
 
 	sr.Add(ws)
 
-	u := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
-	log.Printf("server: %s", u)
+	u := fmt.Sprintf(":%d", s.config.CFEnv.Port)
+	log.Printf("server starts on port %d", s.config.CFEnv.Port)
 	log.Fatal(http.ListenAndServe(u, nil))
 
 }
@@ -112,4 +117,42 @@ func hasRequiredParams(req *sr.Request, res *sr.Response, args ...string) bool {
 		}
 	}
 	return true
+}
+
+// Thanks to michaljemala for this
+func getVersion(req *sr.Request) (int, int, error) {
+	v := req.HeaderParameter("X-Broker-Api-Version")
+	if len(v) < 1 {
+		return 0, 0, errors.New("Missing Broker API version")
+	}
+	tokens := strings.Split(v, ".")
+	if len(tokens) != 2 {
+		return 0, 0, errors.New("Invalid Broker API version")
+	}
+	major, err1 := strconv.Atoi(tokens[0])
+	minor, err2 := strconv.Atoi(tokens[1])
+	if err1 != nil || err2 != nil {
+		return 0, 0, errors.New("Invalid Broker API version")
+	}
+	return major, minor, nil
+}
+
+func extractCredentials(req *sr.Request) (string, string, error) {
+	auths := req.HeaderParameter("Authorization")
+	if len(auths) < 1 {
+		return "", "", errors.New("Unauthorized access")
+	}
+	tokens := strings.Split(auths, " ")
+	if len(tokens) != 2 || tokens[0] != "Basic" {
+		return "", "", errors.New("Unsupported authentication method")
+	}
+	raw, err := base64.StdEncoding.DecodeString(tokens[1])
+	if err != nil {
+		return "", "", errors.New("Unable to decode 'Authorization' header")
+	}
+	credentials := strings.Split(string(raw), ":")
+	if len(credentials) != 2 {
+		return "", "", errors.New("Missing credentials")
+	}
+	return credentials[0], credentials[1], nil
 }

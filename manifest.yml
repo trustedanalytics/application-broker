@@ -1,0 +1,13 @@
+---
+applications:
+- name: app-launching-service-broker
+  memory: 1G
+  instances: 1
+  path: .
+  buildpack: go_buildpack
+  command: ./app-launching-service-broker
+  env:
+    CF_API: http://api.54.68.64.168.xip.io
+    CF_SRC: ./apps/spring-hello-env
+    CF_DEP: postgresql93|free,consul|free
+    CF_CAT: ../catalog.json

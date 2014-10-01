@@ -16,8 +16,29 @@ func NewCFClient(c *ServiceConfig) *CFClient {
 	}
 }
 
-func (c *CFClient) initialize(org, space string) (*consoleCommand, error) {
-	log.Printf("initializing: %s/%s", org, space)
+func (c *CFClient) getSertviceInfo() error {
+	log.Println("getting service info")
+
+	// initialize
+	cmd, err := c.initialize()
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return err
+	}
+
+	// get app first
+	cmd.setArgs("curl", "/v2/apps/:guid/summary").exec()
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
+	}
+
+	return nil
+
+}
+
+func (c *CFClient) initialize() (*consoleCommand, error) {
+	log.Println("initializing...")
 
 	// yep, this is a royal hack, should get this from the env somehow
 	pushId := genRandomString(8)
@@ -45,13 +66,6 @@ func (c *CFClient) initialize(org, space string) (*consoleCommand, error) {
 		return cmd, cmd.err
 	}
 
-	// target
-	cmd.setArgs("target", "-o", org, "-s", space).exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd, cmd.err
-	}
-
 	return cmd, nil
 }
 
@@ -59,10 +73,17 @@ func (c *CFClient) deprovision(app, org, space string) error {
 	log.Printf("deprovision app: %s/%s/%s", org, space, app)
 
 	// initialize
-	cmd, err := c.initialize(org, space)
+	cmd, err := c.initialize()
 	if err != nil {
 		log.Fatalf("err initializing command: %v", err)
 		return err
+	}
+
+	// target
+	cmd.setArgs("target", "-o", org, "-s", space).exec()
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
 	}
 
 	// delete
@@ -87,10 +108,17 @@ func (c *CFClient) provision(app, org, space string) error {
 	log.Printf("provisioning app: %s/%s/%s", org, space, app)
 
 	// initialize
-	cmd, err := c.initialize(org, space)
+	cmd, err := c.initialize()
 	if err != nil {
 		log.Fatalf("err initializing command: %v", err)
 		return err
+	}
+
+	// target
+	cmd.setArgs("target", "-o", org, "-s", space).exec()
+	if cmd.err != nil {
+		log.Fatalf("err cmd: %v", cmd)
+		return cmd.err
 	}
 
 	// push
