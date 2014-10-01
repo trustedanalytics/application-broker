@@ -16,16 +16,15 @@ func NewCFClient(c *Config) *CFClient {
 	}
 }
 
-func (c *CFClient) push(org, space string) error {
-	log.Println("pushing app...")
+func (c *CFClient) initialize(org, space string) (*consoleCommand, error) {
+	log.Printf("initializing: %s/%s", org, space)
 
 	// yep, this is a royal hack, should get this from the env somehow
-	pushId := genRandomString(6)
-	appName := c.config.AppBaseName + pushId
-	appDir, err := ioutil.TempDir(c.config.CFEnv.TempDir, appName)
+	pushId := genRandomString(8)
+	appDir, err := ioutil.TempDir(c.config.CFEnv.TempDir, pushId)
 	if err != nil {
 		log.Fatalf("err creating a temp dir: %v", err)
-		return err
+		return nil, err
 	}
 
 	// api
@@ -36,29 +35,40 @@ func (c *CFClient) push(org, space string) error {
 		addEnv("CF_HOME", appDir).exec()
 	if cmd.err != nil {
 		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
+		return cmd, cmd.err
 	}
 
 	// auth
 	cmd.setArgs("auth", c.config.ApiUser, c.config.ApiPassword).exec()
 	if cmd.err != nil {
 		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
+		return cmd, cmd.err
 	}
 
 	// target
 	cmd.setArgs("target", "-o", org, "-s", space).exec()
 	if cmd.err != nil {
 		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
+		return cmd, cmd.err
 	}
 
-	// push
-	cmd.setArgs("push", appName, "-p", c.config.AppSource, "--no-start").exec()
+	return cmd, nil
+}
+
+func (c *CFClient) deprovision(app, org, space string) error {
+	log.Printf("deprovision app: %s/%s/%s", org, space, app)
+
+	// initialize
+	cmd, err := c.initialize(org, space)
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return err
+	}
+
+	// delete
+	cmd.setArgs("d", app, "-f").exec()
 	if cmd.err != nil {
 		log.Printf("err cmd: %v", cmd)
-		// try to delete
-		cmd.setArgs("d", appName).exec()
 		return cmd.err
 	}
 
@@ -66,14 +76,49 @@ func (c *CFClient) push(org, space string) error {
 	deps, err := c.config.getDependencies()
 	if err != nil {
 		log.Printf("err cmd: %v", err)
-		// try to delete the app
-		cmd.setArgs("d", appName).exec()
+		return cmd.err
+	}
+
+	for i, dep := range deps {
+		depName := dep.Name + "-" + app
+		cmd.setArgs("delete-service", dep.Name, "-f").exec()
+		if cmd.err != nil {
+			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cmd)
+		}
+	}
+
+	return nil
+}
+
+func (c *CFClient) provision(app, org, space string) error {
+	log.Printf("provisioning app: %s/%s/%s", org, space, app)
+
+	// initialize
+	cmd, err := c.initialize(org, space)
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return err
+	}
+
+	// push
+	cmd.setArgs("push", app, "-p", c.config.AppSource, "--no-start").exec()
+	if cmd.err != nil {
+		log.Printf("err cmd: %v", cmd)
+		c.deprovision(app, org, space)
+		return cmd.err
+	}
+
+	// dependencies
+	deps, err := c.config.getDependencies()
+	if err != nil {
+		log.Printf("err cmd: %v", err)
+		c.deprovision(app, org, space)
 		return cmd.err
 	}
 
 	// TODO: Add cleanup of dependencies
 	for i, dep := range deps {
-		depName := dep.Name + pushId
+		depName := dep.Name + "-" + app
 		cmd.setArgs("create-service", dep.Name, dep.Plan, depName).exec()
 		if cmd.err != nil {
 			log.Printf("err on dependency[%d]: %s - %v", i, depName, cmd)
@@ -81,19 +126,20 @@ func (c *CFClient) push(org, space string) error {
 		}
 
 		// bind
-		cmd.setArgs("bind-service", appName, depName).exec()
+		cmd.setArgs("bind-service", app, depName).exec()
 		if cmd.err != nil {
-			log.Printf("err on bind[%d]: %s > %s - %v", i, appName, depName, cmd)
+			log.Printf("err on bind[%d]: %s > %s - %v", i, app, depName, cmd)
 			return cmd.err
 		}
+
+		//TODO: check if we need to restage the app after binding
 	}
 
 	// start
-	cmd.setArgs("start", appName).exec()
+	cmd.setArgs("start", app).exec()
 	if cmd.err != nil {
 		log.Printf("err cmd: %v", cmd)
-		// try to delete
-		cmd.setArgs("d", appName).exec()
+		c.deprovision(app, org, space)
 		return cmd.err
 	}
 

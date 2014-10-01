@@ -24,7 +24,13 @@ func TestCFClient(t *testing.T) {
 	client := NewCFClient(ServiceConfig)
 	assert.NotNil(t, client, "nil client")
 
-	err := client.push(TestOrg, TestSpace)
-	assert.Nil(t, err, "push failed")
+	name := client.config.AppBaseName
+
+	err := client.provision(name, TestOrg, TestSpace)
+	assert.Nil(t, err, "provision failed")
+
+	// regardless if the previous failed, cleanup
+	err = client.deprovision(name, TestOrg, TestSpace)
+	assert.Nil(t, err, "deprovision failed")
 
 }
