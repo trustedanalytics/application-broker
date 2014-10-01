@@ -3,31 +3,36 @@ package broker
 import (
 	"flag"
 	"github.com/cloudfoundry-community/go-cfenv"
+	"log"
 )
 
-var BrokerConfig *Config = &Config{}
+var Config *BrokerConfig = &BrokerConfig{}
 
 func init() {
-	BrokerConfig.initialize()
+	Config.initialize(flag.CommandLine)
 }
 
-type Config struct {
+type BrokerConfig struct {
 	Host     string
 	Port     int
 	Username string
 	Password string
-	Debug    bool
-	Env      *cfenv.App
+	CFEnv    *cfenv.App
 }
 
-func (c *Config) initialize() {
-	flag.StringVar(&c.Host, "h", "127.0.0.1", "Host")
-	flag.IntVar(&c.Port, "p", 8888, "Port")
-	flag.StringVar(&c.Username, "u", "operator", "User")
-	flag.StringVar(&c.Password, "s", "secret", "Secret")
-	flag.BoolVar(&c.Debug, "d", false, "Debug")
+func (c *BrokerConfig) initialize(fs *flag.FlagSet) {
+	log.Println("initializing broker config...")
+	fs.StringVar(&c.Host, "h", "127.0.0.1", "Host")
+	fs.IntVar(&c.Port, "p", 8888, "Port")
+	fs.StringVar(&c.Username, "u", "operator", "User")
+	fs.StringVar(&c.Password, "s", "secret", "Secret")
+}
 
-	env, _ := cfenv.Current()
-	c.Env = env
-
+func (c *BrokerConfig) parse() {
+	cfEnv, err := cfenv.Current()
+	if err == nil || cfEnv == nil {
+		log.Printf("failed to get CF env vars, probably running locally: %v", err)
+		cfEnv = &cfenv.App{}
+	}
+	c.CFEnv = cfEnv
 }

@@ -12,6 +12,15 @@ import (
 
 // Env
 
+func getServiceDir() string {
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Printf("error getting dir: %v", err)
+		return "./"
+	}
+	return pwd
+}
+
 func setEnv(key, val string) bool {
 	err := os.Setenv(key, val)
 	if err != nil {
@@ -19,6 +28,24 @@ func setEnv(key, val string) bool {
 		log.Printf("error setting env var: %s", key)
 		return false
 	}
+	return true
+}
+
+func pathExists(path string) bool {
+	if len(path) < 1 {
+		log.Printf("null path: %s", path)
+		return false
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("path not found: %v", path)
+		} else {
+			log.Printf("error on path: %s -> %v", path, err)
+		}
+		return false
+	}
+
 	return true
 }
 

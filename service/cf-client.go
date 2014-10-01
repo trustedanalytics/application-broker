@@ -7,10 +7,10 @@ import (
 
 // CFClient object
 type CFClient struct {
-	config *Config
+	config *ServiceConfig
 }
 
-func NewCFClient(c *Config) *CFClient {
+func NewCFClient(c *ServiceConfig) *CFClient {
 	return &CFClient{
 		config: c,
 	}
@@ -72,14 +72,7 @@ func (c *CFClient) deprovision(app, org, space string) error {
 		return cmd.err
 	}
 
-	// dependencies
-	deps, err := c.config.getDependencies()
-	if err != nil {
-		log.Printf("err cmd: %v", err)
-		return cmd.err
-	}
-
-	for i, dep := range deps {
+	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + app
 		cmd.setArgs("delete-service", dep.Name, "-f").exec()
 		if cmd.err != nil {
@@ -108,16 +101,8 @@ func (c *CFClient) provision(app, org, space string) error {
 		return cmd.err
 	}
 
-	// dependencies
-	deps, err := c.config.getDependencies()
-	if err != nil {
-		log.Printf("err cmd: %v", err)
-		c.deprovision(app, org, space)
-		return cmd.err
-	}
-
 	// TODO: Add cleanup of dependencies
-	for i, dep := range deps {
+	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + app
 		cmd.setArgs("create-service", dep.Name, dep.Plan, depName).exec()
 		if cmd.err != nil {

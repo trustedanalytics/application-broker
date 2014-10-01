@@ -1,9 +1,7 @@
 package service
 
 import (
-	"flag"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -14,17 +12,19 @@ const (
 
 func TestCFClient(t *testing.T) {
 
-	flag.Set("api", "http://api.54.68.64.168.xip.io")
-	flag.Set("cfu", os.Getenv("CF_USER"))
-	flag.Set("cfp", os.Getenv("CF_PASS"))
-	flag.Set("src", "/Users/markchma/Code/rabbitmq-cloudfoundry-samples/nodejs")
-	flag.Set("app", "sinatra-cf-twitter")
-	flag.Set("dep", "rabbitmq33|free,redis28|free")
+	if testing.Short() {
+		t.Skip("skipping CF tests in short mode")
+		return
+	}
 
-	client := NewCFClient(ServiceConfig)
+	c := getTestServiceConfig()
+
+	client := NewCFClient(c)
 	assert.NotNil(t, client, "nil client")
 
-	name := client.config.AppBaseName
+	assert.NotNil(t, client.config.Catalog.Services, "nil services")
+	assert.True(t, len(client.config.Catalog.Services) > 0, "services number")
+	name := client.config.Catalog.Services[0].Name
 
 	err := client.provision(name, TestOrg, TestSpace)
 	assert.Nil(t, err, "provision failed")

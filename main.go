@@ -9,11 +9,12 @@ import (
 
 func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
-	flag.Parse()
 }
 
 func main() {
 	log.Println("starting broker...")
+
+	flag.Parse()
 
 	s, err := service.New()
 	if err != nil {

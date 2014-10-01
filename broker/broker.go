@@ -10,7 +10,7 @@ import (
 
 // Broker to manage requests
 type Broker struct {
-	config  *Config
+	config  *BrokerConfig
 	handler *Handler
 }
 
@@ -21,8 +21,11 @@ func New(p cf.ServiceProvider) (*Broker, error) {
 		return nil, err
 	}
 
+	// parse config values to object state
+	Config.parse()
+
 	return &Broker{
-		config:  BrokerConfig,
+		config:  Config,
 		handler: h,
 	}, nil
 }

@@ -3,30 +3,34 @@ package broker
 import (
 	"flag"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"strconv"
 	"testing"
 )
 
-const (
-	TestHostName = "bigserver"
-	TestPort     = 7777
-	TestUsername = "test-username"
-	TestPassword = "test-password"
-)
+func getTestBrokerConfig() *BrokerConfig {
+	c := &BrokerConfig{}
+	c.Host = "127.0.0.1"
+	c.Port = "9999"
+	c.Username = os.Getenv("CF_USER")
+	c.Password = os.Getenv("CF_PASS")
+
+	c.parse()
+
+	// this is a total cudgel for testing
+	Config = c
+
+	return c
+}
 
 func TestConfig(t *testing.T) {
 
-	flag.Set("h", TestHostName)
-	flag.Set("p", strconv.Itoa(TestPort))
-	flag.Set("u", TestUsername)
-	flag.Set("s", TestPassword)
-
-	c := BrokerConfig
+	c := getTestBrokerConfig()
 
 	assert.NotEmpty(t, c, "nil config")
-	assert.Equal(t, c.Host, TestHostName, "Invalid hostname")
-	assert.Equal(t, c.Port, TestPort, "invalid port")
-	assert.Equal(t, c.Username, TestUsername, "invalid username")
-	assert.Equal(t, c.Password, TestPassword, "invalid password")
+	assert.NotEmpty(t, c.Host, "nil hostname")
+	assert.NotEmpty(t, c.Port, "nil port")
+	assert.NotEmpty(t, c.Username, "nil username")
+	assert.NotEmpty(t, c.Password, "nil password")
 
 }

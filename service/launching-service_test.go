@@ -12,6 +12,9 @@ const (
 
 func TestGetCatalog(t *testing.T) {
 
+	c := getTestServiceConfig()
+	assert.NotNil(t, c, "nil config")
+
 	p, err := New()
 	assert.Nil(t, err, "error on create")
 	assert.NotNil(t, p, "nil provider")
@@ -30,12 +33,13 @@ func TestGetCatalog(t *testing.T) {
 		assert.NotEmpty(t, srv.Name, "nil service name")
 		assert.NotEmpty(t, srv.Description, "nil service description")
 		assert.NotNil(t, srv.Plans, "nil service plans")
-		assert.NotNil(t, srv.Dashboard, "nil services dashboard")
 
-		log.Printf("dashboard: %d", i)
-		assert.NotNil(t, srv.Dashboard.ID, "nil services dashboard id")
-		assert.NotNil(t, srv.Dashboard.Secret, "nil services dashboard secret")
-		assert.NotNil(t, srv.Dashboard.URI, "nil services dashboard URL")
+		if srv.Dashboard != nil {
+			log.Printf("dashboard: %d", i)
+			assert.NotNil(t, srv.Dashboard.ID, "nil services dashboard id")
+			assert.NotNil(t, srv.Dashboard.Secret, "nil services dashboard secret")
+			assert.NotNil(t, srv.Dashboard.URI, "nil services dashboard URL")
+		}
 
 		for j, pln := range srv.Plans {
 			log.Printf("service plan:%d[%d]", i, j)
