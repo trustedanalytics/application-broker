@@ -12,6 +12,7 @@ type LaunchingService struct {
 	client *CFClient
 }
 
+// New creates an isntance of the LaunchingService
 func New() (*LaunchingService, error) {
 	s := &LaunchingService{
 		config: Config,

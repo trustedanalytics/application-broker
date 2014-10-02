@@ -12,38 +12,42 @@ import (
 )
 
 const (
+	// DefaultCatalogFilePath represents path to the default catalog file
 	DefaultCatalogFilePath = "./catalog.json"
 )
 
-var Config *ServiceConfig = &ServiceConfig{}
+//
+var Config = &ServiceConfig{}
 
 func init() {
 	Config.initialize()
 }
 
-type ServiceDependency struct {
+// Dependency represents a dependancy
+type Dependency struct {
 	Name string
 	Plan string
 }
 
+// ServiceConfig holds the service config
 type ServiceConfig struct {
-	ApiEndpoint  string
-	ApiUser      string
-	ApiPassword  string
+	APIEndpoint  string
+	APIUser      string
+	APIPassword  string
 	AppSource    string
 	DepString    string
 	CFEnv        *cfenv.App
 	CatalogPath  string
 	Catalog      *cf.Catalog
-	Dependencies []*ServiceDependency
+	Dependencies []*Dependency
 }
 
 func (c *ServiceConfig) initialize() {
 	log.Println("initializing service config...")
 
-	c.ApiEndpoint = os.Getenv("CF_API")
-	c.ApiUser = os.Getenv("CF_USER")
-	c.ApiPassword = os.Getenv("CF_PASS")
+	c.APIEndpoint = os.Getenv("CF_API")
+	c.APIUser = os.Getenv("CF_USER")
+	c.APIPassword = os.Getenv("CF_PASS")
 	c.AppSource = os.Getenv("CF_SRC")
 	c.DepString = os.Getenv("CF_DEP")
 	c.CatalogPath = os.Getenv("CF_CAT")
@@ -65,12 +69,12 @@ func (c *ServiceConfig) parseServiceDependencies() error {
 		return nil
 	}
 	parts := strings.Split(c.DepString, ",")
-	deps := make([]*ServiceDependency, len(parts))
+	deps := make([]*Dependency, len(parts))
 	for i, part := range parts {
 		log.Printf("part[%d] %s", i, part)
 		dep := strings.Split(part, "|")
 		log.Printf("dep:%s plan:%s", dep[0], dep[1])
-		deps[i] = &ServiceDependency{Name: dep[0], Plan: dep[1]}
+		deps[i] = &Dependency{Name: dep[0], Plan: dep[1]}
 	}
 	c.Dependencies = deps
 	return nil

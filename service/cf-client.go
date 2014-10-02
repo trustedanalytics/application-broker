@@ -10,6 +10,7 @@ type CFClient struct {
 	config *ServiceConfig
 }
 
+// NewCFClient creates a new isntance of CFClient
 func NewCFClient(c *ServiceConfig) *CFClient {
 	return &CFClient{
 		config: c,
@@ -41,8 +42,8 @@ func (c *CFClient) initialize() (*consoleCommand, error) {
 	log.Println("initializing...")
 
 	// yep, this is a royal hack, should get this from the env somehow
-	pushId := genRandomString(8)
-	appDir, err := ioutil.TempDir(c.config.CFEnv.TempDir, pushId)
+	pushID := genRandomString(8)
+	appDir, err := ioutil.TempDir(c.config.CFEnv.TempDir, pushID)
 	if err != nil {
 		log.Fatalf("err creating a temp dir: %v", err)
 		return nil, err
@@ -52,7 +53,7 @@ func (c *CFClient) initialize() (*consoleCommand, error) {
 	cmd := newConsoleCommand("cf")
 
 	// TODO: remove the skip API validation part once real cert deployed
-	cmd.setArgs("api", c.config.ApiEndpoint, "--skip-ssl-validation").
+	cmd.setArgs("api", c.config.APIEndpoint, "--skip-ssl-validation").
 		addEnv("CF_HOME", appDir).exec()
 	if cmd.err != nil {
 		log.Fatalf("err cmd: %v", cmd)
@@ -60,7 +61,7 @@ func (c *CFClient) initialize() (*consoleCommand, error) {
 	}
 
 	// auth
-	cmd.setArgs("auth", c.config.ApiUser, c.config.ApiPassword).exec()
+	cmd.setArgs("auth", c.config.APIUser, c.config.APIPassword).exec()
 	if cmd.err != nil {
 		log.Fatalf("err cmd: %v", cmd)
 		return cmd, cmd.err

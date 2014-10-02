@@ -6,4 +6,3 @@ source ./env.sh
 export CF_CAT="./catalog.json"
 
 ./app-launching-service-broker
-

@@ -6,10 +6,6 @@ import (
 	"testing"
 )
 
-const (
-	TestServiceId = "291E642F-E786-49EF-B6FC-F8AF96A36A37"
-)
-
 func TestGetCatalog(t *testing.T) {
 
 	p, err := New()

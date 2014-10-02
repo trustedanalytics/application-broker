@@ -7,4 +7,3 @@ export CF_CAT="../catalog.json"
 
 # for runtime you have to set this to
 # export CF_CAT="./catalog.json"
-

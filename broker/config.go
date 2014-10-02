@@ -6,12 +6,14 @@ import (
 	"os"
 )
 
-var Config *BrokerConfig = &BrokerConfig{}
+// Config hold a global BrokerConfig isntance
+var Config = &BrokerConfig{}
 
 func init() {
 	Config.initialize()
 }
 
+// BrokerConfig hold the broker configuration
 type BrokerConfig struct {
 	Username string
 	Password string
@@ -27,7 +29,7 @@ func (c *BrokerConfig) initialize() {
 	if err == nil || cfEnv == nil {
 		log.Printf("failed to get CF env vars, probably running locally: %v", err)
 		cfEnv = &cfenv.App{}
-		cfEnv.Port = 8888
+		cfEnv.Port = 9999
 	}
 	c.CFEnv = cfEnv
 
