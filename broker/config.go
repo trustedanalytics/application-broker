@@ -26,7 +26,7 @@ func (c *BrokerConfig) initialize() {
 	c.Password = os.Getenv("CF_PASS")
 
 	cfEnv, err := cfenv.Current()
-	if err == nil || cfEnv == nil {
+	if err != nil || cfEnv == nil {
 		log.Printf("failed to get CF env vars, probably running locally: %v", err)
 		cfEnv = &cfenv.App{}
 		cfEnv.Port = 9999

@@ -32,6 +32,7 @@ type Dependency struct {
 // ServiceConfig holds the service config
 type ServiceConfig struct {
 	APIEndpoint  string
+	SkipSSLValid bool
 	APIUser      string
 	APIPassword  string
 	AppSource    string
@@ -46,6 +47,7 @@ func (c *ServiceConfig) initialize() {
 	log.Println("initializing service config...")
 
 	c.APIEndpoint = os.Getenv("CF_API")
+	//c.SkipSSLValid = len(os.Getenv("CF_API_SKIP_SSL_VALID")) > 2
 	c.APIUser = os.Getenv("CF_USER")
 	c.APIPassword = os.Getenv("CF_PASS")
 	c.AppSource = os.Getenv("CF_SRC")
