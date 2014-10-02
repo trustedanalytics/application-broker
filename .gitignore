@@ -32,3 +32,6 @@ app-launching-service-broker
 # Sublime
 broker.sublime-project
 broker.sublime-workspace
+
+# src
+apps
