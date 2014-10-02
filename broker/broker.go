@@ -15,11 +15,16 @@ type broker struct {
 
 // New creates a loaded instance o the broker
 func New(p cf.ServiceProvider) (*broker, error) {
-	return &broker{newRouter(newHandler(p))}, nil
+	return &broker{
+		router: newRouter(newHandler(p)),
+	}, nil
 }
 
 // Start the broker
 func (b *broker) Start() {
+
+	addr := fmt.Sprintf("%s:%d", Config.CFEnv.Host, Config.CFEnv.Port)
+	log.Printf("starting: %s", addr)
 
 	sigCh := make(chan os.Signal, 1)
 
@@ -29,8 +34,6 @@ func (b *broker) Start() {
 	errCh := make(chan error, 1)
 
 	go func() {
-		addr := fmt.Sprintf(":%v", Config.CFEnv.Port)
-		log.Printf("broker started on%v", addr)
 		errCh <- http.ListenAndServe(addr, b.router)
 	}()
 

@@ -58,6 +58,7 @@ func (c *ServiceConfig) initialize() {
 	if err == nil || cfEnv == nil {
 		log.Printf("CF env vars: %v", err)
 		cfEnv = &cfenv.App{}
+		cfEnv.TempDir = os.TempDir()
 	}
 	c.CFEnv = cfEnv
 	c.loadCatalogFromFile()
