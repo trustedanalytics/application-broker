@@ -116,7 +116,7 @@ func parseCredentials(req *http.Request) (*credentials, error) {
 		return nil, errors.New("Unauthorized access")
 	}
 	tokens := strings.Split(auths[0], " ")
-	if len(tokens) != 2 || tokens[0] != "Basic" {
+	if len(tokens) != 2 || tokens[0] != "bearer" {
 		return nil, errors.New("Unsupported authentication method")
 	}
 	raw, err := base64.StdEncoding.DecodeString(tokens[1])
