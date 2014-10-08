@@ -4,8 +4,8 @@ applications:
   memory: 1G
   instances: 1
   path: .
-  buildpack: go_buildpack
-  host: app-launching-service-broker-${random-word}
+  buildpack: https://github.com/cloudfoundry/buildpack-go.git
+  host: app-launching-service-broker
   env:
     CF_API: http://api.54.68.64.168.xip.io
     CF_SRC: ./apps/spring-hello-env

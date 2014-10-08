@@ -32,18 +32,17 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	log.Printf("creating service: %v", r)
 	d := &cf.ServiceCreationResponce{}
 
-	// TODO: Get plan/org - r.SpaceGUID
-
 	// TODO: Get service name - r.ServiceID
+	app := "test-app"
 
-	//p.client.provision(app, org, space)
+	p.client.provision(app, r.OrganizationGUID, r.SpaceGUID)
 
 	// TODO: implement
 	d.DashboardURL = fmt.Sprintf("http://%s:%d/dashboard", p.config.CFEnv.Host, p.config.CFEnv.Port)
 	return d, nil
 }
 
-// DeleteService deletes a service instance
+// DeleteService deletes itself and its dependencies
 func (p *LaunchingService) DeleteService(instanceID string) *cf.ServiceProviderError {
 	log.Printf("deleting service: %s", instanceID)
 	// TODO: implement
@@ -66,6 +65,7 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 	b.Credentials.Username = "user"
 	b.Credentials.Password = "pass"
 	b.SyslogDrainURL = "syslog://logs.example.com"
+
 	return b, nil
 }
 

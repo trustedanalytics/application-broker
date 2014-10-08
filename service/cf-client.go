@@ -1,6 +1,10 @@
 package service
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/mchmarny/go-cmd"
 	"io/ioutil"
 	"log"
 )
@@ -17,28 +21,7 @@ func NewCFClient(c *ServiceConfig) *CFClient {
 	}
 }
 
-func (c *CFClient) getSertviceInfo() error {
-	log.Println("getting service info")
-
-	// initialize
-	cmd, err := c.initialize()
-	if err != nil {
-		log.Fatalf("err initializing command: %v", err)
-		return err
-	}
-
-	// get app first
-	cmd.setArgs("curl", "/v2/apps/:guid/summary").exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
-	}
-
-	return nil
-
-}
-
-func (c *CFClient) initialize() (*consoleCommand, error) {
+func (c *CFClient) initialize() (*cmd.Command, error) {
 	log.Println("initializing...")
 
 	// yep, this is a royal hack, should get this from the env somehow
@@ -50,55 +33,55 @@ func (c *CFClient) initialize() (*consoleCommand, error) {
 	}
 
 	// api
-	cmd := newConsoleCommand("cf")
+	cf := cmd.New("cf")
 
 	// TODO: remove the skip API validation part once real cert deployed
-	cmd.setArgs("api", c.config.APIEndpoint, "--skip-ssl-validation").
-		addEnv("CF_HOME", appDir).exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd, cmd.err
+	cf.WithArgs("api", c.config.APIEndpoint, "--skip-ssl-validation").
+		WithEnv("CF_HOME", appDir).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf, cf.Err
 	}
 
 	// auth
-	cmd.setArgs("auth", c.config.APIUser, c.config.APIPassword).exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd, cmd.err
+	cf.WithArgs("auth", c.config.APIUser, c.config.APIPassword).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf, cf.Err
 	}
 
-	return cmd, nil
+	return cf, nil
 }
 
 func (c *CFClient) deprovision(app, org, space string) error {
 	log.Printf("deprovision app: %s/%s/%s", org, space, app)
 
 	// initialize
-	cmd, err := c.initialize()
+	cf, err := c.initialize()
 	if err != nil {
 		log.Fatalf("err initializing command: %v", err)
 		return err
 	}
 
 	// target
-	cmd.setArgs("target", "-o", org, "-s", space).exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
+	cf.WithArgs("target", "-o", org, "-s", space).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf.Err
 	}
 
 	// delete
-	cmd.setArgs("d", app, "-f").exec()
-	if cmd.err != nil {
-		log.Printf("err cmd: %v", cmd)
-		return cmd.err
+	cf.WithArgs("d", app, "-f").Exec()
+	if cf.Err != nil {
+		log.Printf("err cmd: %v", cf)
+		return cf.Err
 	}
 
 	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + app
-		cmd.setArgs("delete-service", dep.Name, "-f").exec()
-		if cmd.err != nil {
-			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cmd)
+		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
+		if cf.Err != nil {
+			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
 		}
 	}
 
@@ -109,53 +92,153 @@ func (c *CFClient) provision(app, org, space string) error {
 	log.Printf("provisioning app: %s/%s/%s", org, space, app)
 
 	// initialize
-	cmd, err := c.initialize()
+	cf, err := c.initialize()
 	if err != nil {
 		log.Fatalf("err initializing command: %v", err)
 		return err
 	}
 
 	// target
-	cmd.setArgs("target", "-o", org, "-s", space).exec()
-	if cmd.err != nil {
-		log.Fatalf("err cmd: %v", cmd)
-		return cmd.err
+	cf.WithArgs("target", "-o", org, "-s", space).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf.Err
 	}
 
 	// push
-	cmd.setArgs("push", app, "-p", c.config.AppSource, "--no-start").exec()
-	if cmd.err != nil {
-		log.Printf("err cmd: %v", cmd)
+	cf.WithArgs("push", app, "-p", c.config.AppSource, "--no-start").Exec()
+	if cf.Err != nil {
+		log.Printf("err cmd: %v", cf)
 		c.deprovision(app, org, space)
-		return cmd.err
+		return cf.Err
 	}
 
 	// TODO: Add cleanup of dependencies
 	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + app
-		cmd.setArgs("create-service", dep.Name, dep.Plan, depName).exec()
-		if cmd.err != nil {
-			log.Printf("err on dependency[%d]: %s - %v", i, depName, cmd)
-			return cmd.err
+		cf.WithArgs("create-service", dep.Name, dep.Plan, depName).Exec()
+		if cf.Err != nil {
+			log.Printf("err on dependency[%d]: %s - %v", i, depName, cf)
+			return cf.Err
 		}
 
 		// bind
-		cmd.setArgs("bind-service", app, depName).exec()
-		if cmd.err != nil {
-			log.Printf("err on bind[%d]: %s > %s - %v", i, app, depName, cmd)
-			return cmd.err
+		cf.WithArgs("bind-service", app, depName).Exec()
+		if cf.Err != nil {
+			log.Printf("err on bind[%d]: %s > %s - %v", i, app, depName, cf)
+			return cf.Err
 		}
 
 		//TODO: check if we need to restage the app after binding
 	}
 
 	// start
-	cmd.setArgs("start", app).exec()
-	if cmd.err != nil {
-		log.Printf("err cmd: %v", cmd)
+	cf.WithArgs("start", app).Exec()
+	if cf.Err != nil {
+		log.Printf("err cmd: %v", cf)
 		c.deprovision(app, org, space)
-		return cmd.err
+		return cf.Err
 	}
 
 	return nil
+}
+
+func (c *CFClient) runQuery(query string) (string, error) {
+	log.Printf("running query: %s", query)
+	cf, err := c.initialize()
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return "", err
+	}
+	cf.WithArgs("curl", query).Exec()
+	return cf.Out, cf.Err
+}
+
+func (c *CFClient) getService(serviceID string) (*CFApp, error) {
+	log.Printf("getting service info for: %s", serviceID)
+	query := fmt.Sprintf("/v2/service_instances/%s", serviceID)
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFAppResource{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("service output: %v", t)
+	t.Entity.GUID = t.Meta.GUID
+	return &t.Entity, nil
+}
+
+func (c *CFClient) getOrg(orgID string) (*CFApp, error) {
+	log.Printf("getting org info for: %s", orgID)
+	query := fmt.Sprintf("/v2/organizations/%s", orgID)
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFAppResource{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("org output: %v", t)
+	t.Entity.GUID = t.Meta.GUID
+	return &t.Entity, nil
+}
+
+func (c *CFClient) getSpace(spaceID string) (*CFSpace, error) {
+	log.Printf("getting space info for: %s", spaceID)
+	query := fmt.Sprintf("/v2/spaces/%s", spaceID)
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFSpaceResource{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("space output: %v", t)
+	t.Entity.GUID = t.Meta.GUID
+	return &t.Entity, nil
+}
+
+func (c *CFClient) getApp(appID string) (*CFApp, error) {
+	log.Printf("getting app info for: %s", appID)
+	query := fmt.Sprintf("/v2/apps/%s", appID)
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFAppResource{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("app output: %v", t)
+	t.Entity.GUID = t.Meta.GUID
+	return &t.Entity, nil
+}
+
+func (c *CFClient) getApps() (*CFAppsResponce, error) {
+	log.Println("getting apps...")
+	query := "/v2/apps?results-per-page=100"
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFAppsResponce{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("apps output: %v", t)
+	return t, nil
 }

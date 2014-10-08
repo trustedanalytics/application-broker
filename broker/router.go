@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
-	"strconv"
 	"strings"
 )
 
@@ -43,29 +42,25 @@ func newRouter(h *handler) *router {
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// logging
-	if dump, err := httputil.DumpRequest(req, true); err != nil {
-		log.Printf("Cannot log incoming request: %v", err)
-	} else {
-		log.Print(string(dump))
+
+	if Config.Debug {
+		if dump, err := httputil.DumpRequest(req, true); err != nil {
+			log.Printf("Cannot log incoming request: %v", err)
+		} else {
+			log.Print(string(dump))
+		}
 	}
 
-	major, minor, err := parseApiVersion(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if Config.Debug {
+		creds, err := parseCredentials(req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		//TODO: should not print here, but until implemented
+		log.Printf("Router: Authentication: [%v]", creds)
 	}
-
-	//TODO: Verify compatibility
-	log.Printf("Router: Version check: [%v.%v]", major, minor)
-
-	creds, err := parseCredentials(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	//TODO: should not print here, but until implemented
-	log.Printf("Router: Authentication: [%v]", creds)
 
 	r.mux.ServeHTTP(w, req)
 }
@@ -86,23 +81,6 @@ func (fn reponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewEncoder(w).Encode(re.value); err != nil {
 		log.Printf("Error on marshalling response: %v", err)
 	}
-}
-
-func parseApiVersion(req *http.Request) (int, int, error) {
-	versions, _ := req.Header["X-Broker-Api-Version"]
-	if len(versions) != 1 {
-		return 0, 0, errors.New("Missing Broker API version")
-	}
-	tokens := strings.Split(versions[0], ".")
-	if len(tokens) != 2 {
-		return 0, 0, errors.New("Invalid Broker API version")
-	}
-	major, err1 := strconv.Atoi(tokens[0])
-	minor, err2 := strconv.Atoi(tokens[1])
-	if err1 != nil || err2 != nil {
-		return 0, 0, errors.New("Invalid Broker API version")
-	}
-	return major, minor, nil
 }
 
 type credentials struct {
