@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"github.com/intel-data/types-cf"
 	"log"
 )
@@ -32,13 +31,17 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	log.Printf("creating service: %v", r)
 	d := &cf.ServiceCreationResponce{}
 
-	// TODO: Get service name - r.ServiceID
-	app := "test-app"
+	ctx, err := p.client.getContext(r.InstanceID)
+	if err != nil {
+		log.Printf("error getting app: %v", err)
+		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
 
-	p.client.provision(app, r.OrganizationGUID, r.SpaceGUID)
+	p.client.provision(ctx)
 
-	// TODO: implement
-	d.DashboardURL = fmt.Sprintf("http://%s:%d/dashboard", p.config.CFEnv.Host, p.config.CFEnv.Port)
+	// TODO: What should the return dashboard for services like ATK be?
+	//       Endpoint for the REST server?
+	//       d.DashboardURL
 	return d, nil
 }
 
