@@ -42,6 +42,7 @@ type CFApp struct {
 	GUID      string `json:"guid"`
 	Name      string `json:"name"`
 	SpaceGUID string `json:"space_guid"`
+	URI       string `json:"dashboard_url"`
 }
 
 type CFSpace struct {
@@ -54,4 +55,5 @@ type CFServiceContext struct {
 	OrgName     string
 	SpaceName   string
 	ServiceName string
+	ServiceURI  string
 }

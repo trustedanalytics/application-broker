@@ -46,13 +46,13 @@ type ServiceConfig struct {
 func (c *ServiceConfig) initialize() {
 	log.Println("initializing service config...")
 
-	c.APIEndpoint = os.Getenv("CF_API")
-	//c.SkipSSLValid = len(os.Getenv("CF_API_SKIP_SSL_VALID")) > 2
-	c.APIUser = os.Getenv("CF_USER")
-	c.APIPassword = os.Getenv("CF_PASS")
-	c.AppSource = os.Getenv("CF_SRC")
-	c.DepString = os.Getenv("CF_DEP")
-	c.CatalogPath = os.Getenv("CF_CAT")
+	c.APIEndpoint = GetEnvVarAsString("CF_API", "")
+	c.SkipSSLValid = GetEnvVarAsBool("CF_API_SKIP_SSL_VALID", false)
+	c.APIUser = GetEnvVarAsString("CF_USER", "")
+	c.APIPassword = GetEnvVarAsString("CF_PASS", "")
+	c.AppSource = GetEnvVarAsString("CF_SRC", "")
+	c.DepString = GetEnvVarAsString("CF_DEP", "")
+	c.CatalogPath = GetEnvVarAsString("CF_CAT", "./catalog.json")
 
 	cfEnv, err := cfenv.Current()
 	if err == nil || cfEnv == nil {

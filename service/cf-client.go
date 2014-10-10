@@ -155,7 +155,7 @@ func (c *CFClient) runQuery(query string) (string, error) {
 }
 
 func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
-	log.Printf("getting service context for: %s", instanceID)
+	log.Printf("---getting service context for: %s", instanceID)
 
 	t := &CFServiceContext{}
 
@@ -165,6 +165,7 @@ func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
 		return nil, err
 	}
 	t.ServiceName = srv.Name
+	t.ServiceURI = srv.URI
 
 	space, err := c.getSpace(srv.SpaceGUID)
 	if err != nil {
@@ -173,7 +174,7 @@ func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
 	}
 	t.SpaceName = space.Name
 
-	org, err := c.getSpace(space.OrgGUID)
+	org, err := c.getOrg(space.OrgGUID)
 	if err != nil {
 		log.Printf("error getting org: %v", err)
 		return nil, err

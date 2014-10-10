@@ -7,10 +7,61 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
 // Env
+
+func ParseInt(s string, d int) int {
+	if len(s) < 1 {
+		return d
+	}
+	//strconv.Btoi64
+	v, err := strconv.ParseUint(s, 0, 16)
+	if err != nil {
+		log.Fatalf("unable to parse int from %s: %v", s, err)
+		return d
+	}
+	return int(v)
+}
+
+func GetEnvVarAsString(k, d string) string {
+	if len(k) < 1 {
+		return d
+	}
+	s := os.Getenv(k)
+	if len(s) < 1 {
+		return d
+	}
+	return s
+}
+
+func GetEnvVarAsInt(k string, d int) int {
+	s := GetEnvVarAsString(k, "")
+	if len(s) < 1 {
+		return d
+	}
+	v, err := strconv.ParseInt(s, d, 8)
+	if err != nil {
+		log.Fatalf("unable to parse int from %s: %v", k, err)
+		return d
+	}
+	return int(v)
+}
+
+func GetEnvVarAsBool(k string, d bool) bool {
+	s := GetEnvVarAsString(k, "")
+	if len(s) < 1 {
+		return d
+	}
+	v, err := strconv.ParseBool(k)
+	if err != nil {
+		log.Fatalf("unable to parse bool from %s: %v", k, err)
+		return d
+	}
+	return v
+}
 
 func getServiceDir() string {
 	pwd, err := os.Getwd()
