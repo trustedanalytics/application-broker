@@ -78,10 +78,14 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
-	p.client.binding(ctx, app, true)
+	// TODO: See if the above is even needed for this generic kind of an app
+	log.Printf("binding - ctx[%v] app[%v]", ctx, app)
 
-	b.Credentials = &cf.Credential{}
-	b.Credentials.URI = "mysql://user:pass@localhost:9999/" + ctx.ServiceName
+	// TODO: Return app URL from the context in API
+	b.Credentials = make(map[string]string)
+
+	// TODO: Set this to the app URI
+	b.Credentials["URI"] = "mysql://user:pass@localhost:9999/" + ctx.ServiceName
 
 	return b, nil
 }
@@ -108,7 +112,8 @@ func (p *LaunchingService) UnbindService(instanceID, bindingID string) *cf.Servi
 		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
-	p.client.binding(ctx, app, false)
+	// TODO: See if the above is even needed for this generic kind of an app
+	log.Printf("binding - bind[%v] ctx[%v] app[%v]", bind, ctx, app)
 
 	return nil
 }

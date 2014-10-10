@@ -145,38 +145,6 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	return nil
 }
 
-func (c *CFClient) binding(ctx *CFServiceContext, app *CFApp, on bool) error {
-	log.Printf("binding service: %v to %v", ctx, app)
-
-	// initialize
-	cf, err := c.initialize()
-	if err != nil {
-		log.Fatalf("err initializing command: %v", err)
-		return err
-	}
-
-	// target
-	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
-	if cf.Err != nil {
-		log.Fatalf("err cmd: %v", cf)
-		return cf.Err
-	}
-
-	bindCmd := "unbind-service"
-	if on {
-		bindCmd = "bind-service"
-	}
-
-	// bind
-	cf.WithArgs(bindCmd, app.Name, ctx.ServiceName).Exec()
-	if cf.Err != nil {
-		log.Printf("err cmd: %v", cf)
-		return cf.Err
-	}
-
-	return nil
-}
-
 func (c *CFClient) runQuery(query string) (string, error) {
 	log.Printf("running query: %s", query)
 	cf, err := c.initialize()
