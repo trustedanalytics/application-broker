@@ -11,6 +11,8 @@ const (
 
 func TestCFContextQuery(t *testing.T) {
 
+	max := GetEnvVarAsInt("TEST_LOOP", NumberOfTestLoops)
+
 	client := NewCFClient(Config)
 	assert.NotNil(t, client, "nil client")
 
@@ -27,7 +29,7 @@ func TestCFContextQuery(t *testing.T) {
 		assert.NotEmpty(t, ctx.SpaceName, "nil context space name")
 		assert.NotEmpty(t, ctx.SpaceName, "nil context service name")
 
-		if i >= NumberOfTestLoops {
+		if i >= max {
 			break
 		}
 
@@ -41,6 +43,8 @@ func TestCFServiceQuery(t *testing.T) {
 		t.Skip("skipping CF tests in short mode")
 		return
 	}
+
+	max := GetEnvVarAsInt("TEST_LOOP", NumberOfTestLoops)
 
 	client := NewCFClient(Config)
 	assert.NotNil(t, client, "nil client")
@@ -80,7 +84,7 @@ func TestCFServiceQuery(t *testing.T) {
 		assert.Equal(t, ctx.SpaceName, sp.Name, "context and space names should be the same")
 		assert.Equal(t, ctx.OrgName, org.Name, "context and org names should be the same")
 
-		if i >= NumberOfTestLoops {
+		if i >= max {
 			break
 		}
 
@@ -94,6 +98,8 @@ func TestCFAppQuery(t *testing.T) {
 		t.Skip("skipping CF tests in short mode")
 		return
 	}
+
+	max := GetEnvVarAsInt("TEST_LOOP", NumberOfTestLoops)
 
 	client := NewCFClient(Config)
 	assert.NotNil(t, client, "nil client")
@@ -123,7 +129,7 @@ func TestCFAppQuery(t *testing.T) {
 		assert.NotNil(t, org, "nil space")
 		assert.NotEmpty(t, org.Name, "nil space name")
 
-		if i >= NumberOfTestLoops {
+		if i >= max {
 			break
 		}
 

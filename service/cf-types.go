@@ -22,6 +22,11 @@ type CFSpaceResource struct {
 	Entity CFSpace `json:"entity"`
 }
 
+type CFBindingResource struct {
+	Meta   CFMeta    `json:"metadata"`
+	Entity CFBinding `json:"entity"`
+}
+
 type CFServiceResource struct {
 	Meta   CFMeta    `json:"metadata"`
 	Entity CFService `json:"entity"`
@@ -52,8 +57,15 @@ type CFSpace struct {
 }
 
 type CFServiceContext struct {
+	InstanceID  string
 	OrgName     string
 	SpaceName   string
 	ServiceName string
 	ServiceURI  string
+}
+
+type CFBinding struct {
+	GUID                string `json:"guid"`
+	AppGUID             string `json:"app_guid"`
+	ServiceInstanceGUID string `json:"service_instance_guid"`
 }

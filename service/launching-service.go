@@ -39,16 +39,24 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 
 	p.client.provision(ctx)
 
-	// TODO: What should the return dashboard for services like ATK be?
-	//       Endpoint for the REST server?
-	//       d.DashboardURL
+	// TODO: Validate this is the correct URI to return
+	d.DashboardURL = ctx.ServiceURI
+
 	return d, nil
 }
 
 // DeleteService deletes itself and its dependencies
 func (p *LaunchingService) DeleteService(instanceID string) *cf.ServiceProviderError {
 	log.Printf("deleting service: %s", instanceID)
-	// TODO: implement
+
+	ctx, err := p.client.getContext(instanceID)
+	if err != nil {
+		log.Printf("error getting app: %v", err)
+		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	p.client.deprovision(ctx)
+
 	return nil
 }
 
@@ -58,16 +66,22 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 
 	b := &cf.ServiceBindingResponse{}
 
-	// TODO: implement the service binding logic here
+	ctx, err := p.client.getContext(r.InstanceID)
+	if err != nil {
+		log.Printf("error getting service: %v", err)
+		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	app, err := p.client.getApp(r.AppGUID)
+	if err != nil {
+		log.Printf("error getting app: %v", err)
+		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	p.client.binding(ctx, app, true)
+
 	b.Credentials = &cf.Credential{}
-	b.Credentials.URI = "mysql://user:pass@localhost:3306/dbname"
-	b.Credentials.Hostname = "localhost"
-	b.Credentials.Port = "3306"
-	b.Credentials.Name = "dbname"
-	b.Credentials.Vhost = "amqp://yser:pass@host/queue"
-	b.Credentials.Username = "user"
-	b.Credentials.Password = "pass"
-	b.SyslogDrainURL = "syslog://logs.example.com"
+	b.Credentials.URI = "mysql://user:pass@localhost:9999/" + ctx.ServiceName
 
 	return b, nil
 }
@@ -75,6 +89,26 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 // UnbindService deletes service instance binding
 func (p *LaunchingService) UnbindService(instanceID, bindingID string) *cf.ServiceProviderError {
 	log.Printf("deleting service binding: %s/%s", instanceID, bindingID)
-	// TODO: implement
+
+	ctx, err := p.client.getContext(instanceID)
+	if err != nil {
+		log.Printf("error getting service: %v", err)
+		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	bind, err := p.client.getBinding(bindingID)
+	if err != nil {
+		log.Printf("error getting binding: %v", err)
+		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	app, err := p.client.getApp(bind.AppGUID)
+	if err != nil {
+		log.Printf("error getting app: %v", err)
+		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+
+	p.client.binding(ctx, app, false)
+
 	return nil
 }

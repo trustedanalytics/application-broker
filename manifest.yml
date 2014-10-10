@@ -7,7 +7,7 @@ applications:
   buildpack: https://github.com/cloudfoundry/buildpack-go.git
   host: app-launching-service-broker
   env:
-    CF_API: http://api.54.68.64.168.xip.io
+    CF_API: https://api.gotapaas.com
     CF_SRC: ./apps/spring-hello-env
     CF_DEP: postgresql93|free,consul|free
     CF_CAT: ./catalog.json

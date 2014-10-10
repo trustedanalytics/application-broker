@@ -53,41 +53,6 @@ func (c *CFClient) initialize() (*cmd.Command, error) {
 	return cf, nil
 }
 
-func (c *CFClient) deprovision(ctx *CFServiceContext) error {
-	log.Printf("deprovision service: %v", ctx)
-
-	// initialize
-	cf, err := c.initialize()
-	if err != nil {
-		log.Fatalf("err initializing command: %v", err)
-		return err
-	}
-
-	// target
-	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
-	if cf.Err != nil {
-		log.Fatalf("err cmd: %v", cf)
-		return cf.Err
-	}
-
-	// delete
-	cf.WithArgs("d", ctx.ServiceName, "-f").Exec()
-	if cf.Err != nil {
-		log.Printf("err cmd: %v", cf)
-		return cf.Err
-	}
-
-	for i, dep := range c.config.Dependencies {
-		depName := dep.Name + "-" + ctx.ServiceName
-		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
-		if cf.Err != nil {
-			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
-		}
-	}
-
-	return nil
-}
-
 func (c *CFClient) provision(ctx *CFServiceContext) error {
 	log.Printf("provisioning service: %v", ctx)
 
@@ -143,6 +108,75 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	return nil
 }
 
+func (c *CFClient) deprovision(ctx *CFServiceContext) error {
+	log.Printf("deprovision service: %v", ctx)
+
+	// initialize
+	cf, err := c.initialize()
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return err
+	}
+
+	// target
+	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf.Err
+	}
+
+	// delete
+	cf.WithArgs("delete", ctx.ServiceName, "-f").Exec()
+	if cf.Err != nil {
+		log.Printf("err cmd: %v", cf)
+		return cf.Err
+	}
+
+	// TODO: Does the service have to unbined first
+	//       or deleting app will take care of it
+	for i, dep := range c.config.Dependencies {
+		depName := dep.Name + "-" + ctx.ServiceName
+		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
+		if cf.Err != nil {
+			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
+		}
+	}
+
+	return nil
+}
+
+func (c *CFClient) binding(ctx *CFServiceContext, app *CFApp, on bool) error {
+	log.Printf("binding service: %v to %v", ctx, app)
+
+	// initialize
+	cf, err := c.initialize()
+	if err != nil {
+		log.Fatalf("err initializing command: %v", err)
+		return err
+	}
+
+	// target
+	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
+	if cf.Err != nil {
+		log.Fatalf("err cmd: %v", cf)
+		return cf.Err
+	}
+
+	bindCmd := "unbind-service"
+	if on {
+		bindCmd = "bind-service"
+	}
+
+	// bind
+	cf.WithArgs(bindCmd, app.Name, ctx.ServiceName).Exec()
+	if cf.Err != nil {
+		log.Printf("err cmd: %v", cf)
+		return cf.Err
+	}
+
+	return nil
+}
+
 func (c *CFClient) runQuery(query string) (string, error) {
 	log.Printf("running query: %s", query)
 	cf, err := c.initialize()
@@ -155,9 +189,10 @@ func (c *CFClient) runQuery(query string) (string, error) {
 }
 
 func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
-	log.Printf("---getting service context for: %s", instanceID)
+	log.Printf("getting service context for: %s", instanceID)
 
 	t := &CFServiceContext{}
+	t.InstanceID = instanceID
 
 	srv, err := c.getService(instanceID)
 	if err != nil {
@@ -253,6 +288,24 @@ func (c *CFClient) getApp(appID string) (*CFApp, error) {
 		return nil, errors.New("invalid JSON")
 	}
 	log.Printf("app output: %v", t)
+	t.Entity.GUID = t.Meta.GUID
+	return &t.Entity, nil
+}
+
+func (c *CFClient) getBinding(bindingID string) (*CFBinding, error) {
+	log.Printf("getting service binding for: %s", bindingID)
+	query := fmt.Sprintf("/v2/service_bindings/%s", bindingID)
+	resp, err := c.runQuery(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	t := &CFBindingResource{}
+	err2 := json.Unmarshal([]byte(resp), &t)
+	if err2 != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("service binding output: %v", t)
 	t.Entity.GUID = t.Meta.GUID
 	return &t.Entity, nil
 }

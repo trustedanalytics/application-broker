@@ -1,12 +1,12 @@
 {
   "services": [{
-    "id": "5AEF920E-CFBC-427B-970B-58F1EA8CD4E3",
-    "name": "atk",
+    "id": "B6D73C9E-302D-4B78-BC46-56E92C6C000D",
+    "name": "analytics-tools",
     "description": "Extensible API for ETL, Feature Engineering, Graph Building and Query, ML Analytics",
     "bindable": true,
     "tags": ["atk", "etl", "graph", "ml", "analytics"],
     "plans": [{
-      "id": "26984327-2CC9-413E-BFC3-C36EED0841D6",
+      "id": "4672FA24-4330-404B-AFC0-235AB6EA0F8C",
       "name": "free",
       "description": "Instance of ATK on shared platform",
       "free": true
