@@ -1,14 +1,14 @@
-  {
+{
   "services": [{
     "id": "B6D73C9E-302D-4B78-BC46-56E92C6C000D",
-    "name": "analytics-tools",
-    "description": "Extensible API for ETL, Feature Engineering, Graph Building and Query, ML Analytics",
+    "name": "cf-env",
+    "description": "View environment variables",
     "bindable": true,
-    "tags": ["atk", "etl", "graph", "ml", "analytics"],
+    "tags": ["demo", "backend"],
     "plans": [{
       "id": "4672FA24-4330-404B-AFC0-235AB6EA0F8C",
-      "name": "free",
-      "description": "Instance of ATK on shared platform",
+      "name": "simple",
+      "description": "Simple",
       "free": true
     }]
   }]

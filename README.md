@@ -21,3 +21,47 @@ Behind the scenes, when `cf create-service` was invoked the CLI asked the Cloud 
 If the backend application requires any services for itself, then those too are created and bound to the new backend application.
 
 The backend application and its own dependency services are created into the same organization and space being used by the end user.
+
+Development
+-----------
+
+To locally develop this service broker, you need to clone down an example application that will be deployed. Something small/fast to deploy will make your life better.
+
+As an example, use the [spring-music](https://github.com/cloudfoundry-samples/spring-music) application. It is interesting as it supports a range of backend services.
+
+Alternately, try the [cf-env](https://github.com/cloudfoundry-community/cf-env) application which has the sole purpose to display its environment variables.
+
+```
+cd path/to/apps
+git clone https://github.com/cloudfoundry-community/cf-env
+cd cf-env
+bundle
+export CF_SRC=$(pwd)
+cd back/to/app-launching-service-broker
+source bin/env.sh
+```
+
+This will create a set of environment variables used to configure the service broker:
+
+```
+$ env | grep CF
+CF_API=https://api.gotapaas.com
+CF_SRC=/Users/drnic/Projects/cloudfoundry/apps/cf-env
+CF_DEP=postgresql93|free,consul|free
+CF_CAT=./catalog.json
+```
+
+You can now run the service broker locally:
+
+```
+go run main.go
+```
+
+The broker will be running on port 9999 by default.
+
+```
+$ curl http://localhost:9999/v2/catalog
+{"services":[{"id":"B6D73C9E-302D-4B78-BC46-56E92C6C000D","name":"cf-env","description":"View environment variables","bindable":true,"tags":["demo","backend"],"plans":[{"id":"4672FA24-4330-404B-AFC0-235AB6EA0F8C","name":"simple","description":"Simple","free":true}]}]}
+```
+
+The output here matches the contents of the `./catalog.json` example file.
