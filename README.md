@@ -79,7 +79,7 @@ $ curl http://localhost:9999/v2/catalog
 
 The output here matches the contents of the `./catalog.json` example file.
 
-You can now even register your local app with a remote Cloud Foundry using ngrok. Run the following in another terminal:
+You can now even register your local app with a remote Cloud Foundry using [ngrok](https://ngrok.com/). Run the following in another terminal:
 
 ```
 $ ngrok 9999
