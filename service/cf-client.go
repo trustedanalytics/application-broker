@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mchmarny/go-cmd"
 	"io/ioutil"
 	"log"
+
+	"github.com/mchmarny/go-cmd"
 )
 
 // CFClient object
@@ -195,7 +196,21 @@ func (c *CFClient) getService(instanceID string) (*CFApp, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+
+	// cf-client.go:150: running query: /v2/service_instances/26576e51...
+	// cf-client.go:26: initializing...
+	// {
+	//    "code": 60004,
+	//    "description": "The service instance could not be found: 26576e51-8a47-46e3-bd6e-5908287e9935",
+	//    "error_code": "CF-ServiceInstanceNotFound"
+	// }
+	//
+	// TODO: map results to a CFError struct to see if an error was returned.
+	// FIXME: looks like service instance object doesn't exist when "cf create-service" called
+	// TODO: perhaps a background worker to rename service instances later?
+
 	t := &CFAppResource{}
+	log.Println(string(resp))
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -213,6 +228,7 @@ func (c *CFClient) getOrg(orgID string) (*CFApp, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFAppResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -231,6 +247,7 @@ func (c *CFClient) getSpace(spaceID string) (*CFSpace, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFSpaceResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -249,6 +266,7 @@ func (c *CFClient) getApp(appID string) (*CFApp, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFAppResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -267,6 +285,7 @@ func (c *CFClient) getBinding(bindingID string) (*CFBinding, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFBindingResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -285,6 +304,7 @@ func (c *CFClient) getApps() (*CFAppsResponce, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFAppsResponce{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -302,6 +322,7 @@ func (c *CFClient) getServices() (*CFAppsResponce, error) {
 	if err != nil {
 		return nil, errors.New("query error")
 	}
+	log.Println(string(resp))
 	t := &CFAppsResponce{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
