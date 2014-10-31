@@ -55,7 +55,7 @@ func GetEnvVarAsBool(k string, d bool) bool {
 	if len(s) < 1 {
 		return d
 	}
-	v, err := strconv.ParseBool(k)
+	v, err := strconv.ParseBool(s)
 	if err != nil {
 		log.Fatalf("unable to parse bool from %s: %v", k, err)
 		return d
