@@ -51,6 +51,19 @@ CF_DEP=postgresql93|free,consul|free
 CF_CAT=./catalog.json
 ```
 
+You now need to configure which admin user credentials the broker will use to communicate with Cloud Foundry:
+
+```
+export CF_USER=admin
+export CF_PASS=c1oudc0w
+```
+
+If you are using self-signed certificates, you may need to ignore SSL verification:
+
+```
+export CF_API_SKIP_SSL_VALID=true
+```
+
 You can now run the service broker locally:
 
 ```
@@ -65,3 +78,25 @@ $ curl http://localhost:9999/v2/catalog
 ```
 
 The output here matches the contents of the `./catalog.json` example file.
+
+You can now even register your local app with a remote Cloud Foundry using ngrok. Run the following in another terminal:
+
+```
+$ ngrok 9999
+```
+
+It will display a public URL for your local broker app.
+
+Register your broker app URL:
+
+```
+$ cf create-service-broker cf-env admin admin http://3f1c1555.ngrok.com
+$ cf enable-service-access cf-env
+```
+
+You can now create service instances, which will deploy the local example app `cf-env`:
+
+```
+$ cf m
+$ cf create-service cf-env simple cf-env-example
+```
