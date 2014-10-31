@@ -90,8 +90,8 @@ It will display a public URL for your local broker app.
 Register your broker app URL:
 
 ```
-$ cf create-service-broker cf-env admin admin http://3f1c1555.ngrok.com
-$ cf enable-service-access cf-env
+$ cf create-service-broker cf-env-broker admin admin http://3f1c1555.ngrok.com
+$ cf enable-service-access cf-env-broker
 ```
 
 You can now create service instances, which will deploy the local example app `cf-env`:
@@ -99,4 +99,11 @@ You can now create service instances, which will deploy the local example app `c
 ```
 $ cf m
 $ cf create-service cf-env simple cf-env-example
+```
+
+To clean up, delete services, then delete the service broker:
+
+```
+$ cf delete-service cf-env-example
+$ cf delete-service-broker cf-env-broker
 ```
