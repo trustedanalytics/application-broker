@@ -28,9 +28,9 @@ func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) 
 }
 
 // CreateService create a service instance
-func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponce, *cf.ServiceProviderError) {
+func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
-	d := &cf.ServiceCreationResponce{}
+	d := &cf.ServiceCreationResponse{}
 
 	ctx, err := p.client.getContext(r.InstanceID)
 	if err != nil {
