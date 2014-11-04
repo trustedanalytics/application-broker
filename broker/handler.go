@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/cloudfoundry-community/types-cf"
 	"github.com/gorilla/mux"
-	"github.com/intel-data/types-cf"
 )
 
 // will hold the empty repose "{}"

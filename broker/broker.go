@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/intel-data/types-cf"
+	"github.com/cloudfoundry-community/types-cf"
 )
 
 // Broker represents a running CF Service Broker API

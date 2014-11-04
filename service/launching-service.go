@@ -3,7 +3,7 @@ package service
 import (
 	"log"
 
-	"github.com/intel-data/types-cf"
+	"github.com/cloudfoundry-community/types-cf"
 )
 
 // LaunchingService object

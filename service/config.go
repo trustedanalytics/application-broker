@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/intel-data/types-cf"
+	"github.com/cloudfoundry-community/types-cf"
 )
 
 const (
