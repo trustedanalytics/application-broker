@@ -107,3 +107,42 @@ To clean up, delete services, then delete the service broker:
 $ cf delete-service cf-env-example
 $ cf delete-service-broker cf-env-broker
 ```
+
+Deploy to Cloud Foundry
+-----------------------
+
+The App Launching Service Broker is both *for* Cloud Foundry and can *run* on Cloud Foundry. This section shows how to deploy/run it on Cloud Foundry.
+
+In this example, the broker will be deployed to launch the [cf-env](https://github.com/cloudfoundry-community/cf-env) sample app (which matches the sample `./catalog.json`):
+
+```
+git clone https://github.com/intel-data/app-launching-service-broker.git cf-env-launching-service-broker
+cd cf-env-launching-service-broker
+```
+
+Next, you would modify the `catalog.json` to document the application to be offered as a service. In this example, the included `catalog.json` corresponds to `cf-env`.
+
+For the service ID and plan ID, you need unique UUIDs. Run the `uuid` command to generate different UUIDs and replace them into the `catalog.json`. Cloud Foundry will complain later if you try to register a service broker that uses the same UUIDs as existing brokers.
+
+```
+$ uuid
+7d6f6d2a-6440-11e4-a6b5-6c4008a663f0
+$ uuid
+7dd52d9a-6440-11e4-b30c-6c4008a663f0
+```
+
+You need to embed the target application-as-a-service into the source code tree (in future the target application source will be fetched at runtime from remote blobs).
+
+```
+git clone https://github.com/cloudfoundry-community/cf-env apps/cf-env
+cd apps/cf-env
+bundle
+cd -
+```
+
+The `apps/` folder is ignored by `.gitignore` but will be uploaded to Cloud Foundry as part of the deployment in a moment.
+
+```
+godep save
+cf push cf-env-launching-service-broker --no-start
+```
