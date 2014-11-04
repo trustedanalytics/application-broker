@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCatalog(t *testing.T) {

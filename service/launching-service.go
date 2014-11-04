@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/intel-data/types-cf"
 	"log"
+
+	"github.com/intel-data/types-cf"
 )
 
 // LaunchingService object
