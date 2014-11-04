@@ -1,9 +1,10 @@
 package broker
 
 import (
-	"github.com/cloudfoundry-community/go-cfenv"
 	"log"
 	"os"
+
+	"github.com/cloudfoundry-community/go-cfenv"
 )
 
 // Config hold a global BrokerConfig isntance

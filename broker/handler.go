@@ -2,14 +2,15 @@ package broker
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/intel-data/types-cf"
 )
 
 // will hold the empty repose "{}"
-var empty struct{} = struct{}{}
+var empty = struct{}{}
 
 type handler struct {
 	provider cf.ServiceProvider
@@ -92,7 +93,7 @@ func handleDecodingError(err error) responseEntity {
 	log.Printf("decoding error: %v", err)
 	return responseEntity{
 		http.StatusBadRequest,
-		cf.BrokerError{err.Error()},
+		cf.BrokerError{Description: err.Error()},
 	}
 }
 
@@ -110,7 +111,7 @@ func handleServiceError(err *cf.ServiceProviderError) responseEntity {
 	default:
 		return responseEntity{
 			http.StatusInternalServerError,
-			cf.BrokerError{err.String()},
+			cf.BrokerError{Description: err.String()},
 		}
 	}
 }
