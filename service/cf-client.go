@@ -189,7 +189,7 @@ func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
 
 }
 
-func (c *CFClient) getService(instanceID string) (*CFApp, error) {
+func (c *CFClient) getService(instanceID string) (*cfApp, error) {
 	log.Printf("getting service info for: %s", instanceID)
 	query := fmt.Sprintf("/v2/service_instances/%s", instanceID)
 	resp, err := c.runQuery(query)
@@ -209,7 +209,7 @@ func (c *CFClient) getService(instanceID string) (*CFApp, error) {
 	// FIXME: looks like service instance object doesn't exist when "cf create-service" called
 	// TODO: perhaps a background worker to rename service instances later?
 
-	t := &CFAppResource{}
+	t := &cfAppResource{}
 	log.Println(string(resp))
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
@@ -221,7 +221,7 @@ func (c *CFClient) getService(instanceID string) (*CFApp, error) {
 	return &t.Entity, nil
 }
 
-func (c *CFClient) getOrg(orgID string) (*CFApp, error) {
+func (c *CFClient) getOrg(orgID string) (*cfApp, error) {
 	log.Printf("getting org info for: %s", orgID)
 	query := fmt.Sprintf("/v2/organizations/%s", orgID)
 	resp, err := c.runQuery(query)
@@ -229,7 +229,7 @@ func (c *CFClient) getOrg(orgID string) (*CFApp, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFAppResource{}
+	t := &cfAppResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -240,7 +240,7 @@ func (c *CFClient) getOrg(orgID string) (*CFApp, error) {
 	return &t.Entity, nil
 }
 
-func (c *CFClient) getSpace(spaceID string) (*CFSpace, error) {
+func (c *CFClient) getSpace(spaceID string) (*cfSpace, error) {
 	log.Printf("getting space info for: %s", spaceID)
 	query := fmt.Sprintf("/v2/spaces/%s", spaceID)
 	resp, err := c.runQuery(query)
@@ -248,7 +248,7 @@ func (c *CFClient) getSpace(spaceID string) (*CFSpace, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFSpaceResource{}
+	t := &cfSpaceResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -259,7 +259,7 @@ func (c *CFClient) getSpace(spaceID string) (*CFSpace, error) {
 	return &t.Entity, nil
 }
 
-func (c *CFClient) getApp(appID string) (*CFApp, error) {
+func (c *CFClient) getApp(appID string) (*cfApp, error) {
 	log.Printf("getting app info for: %s", appID)
 	query := fmt.Sprintf("/v2/apps/%s", appID)
 	resp, err := c.runQuery(query)
@@ -267,7 +267,7 @@ func (c *CFClient) getApp(appID string) (*CFApp, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFAppResource{}
+	t := &cfAppResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -278,7 +278,7 @@ func (c *CFClient) getApp(appID string) (*CFApp, error) {
 	return &t.Entity, nil
 }
 
-func (c *CFClient) getBinding(bindingID string) (*CFBinding, error) {
+func (c *CFClient) getBinding(bindingID string) (*CFBindingResponse, error) {
 	log.Printf("getting service binding for: %s", bindingID)
 	query := fmt.Sprintf("/v2/service_bindings/%s", bindingID)
 	resp, err := c.runQuery(query)
@@ -286,7 +286,7 @@ func (c *CFClient) getBinding(bindingID string) (*CFBinding, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFBindingResource{}
+	t := &cfBindingResource{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -297,7 +297,7 @@ func (c *CFClient) getBinding(bindingID string) (*CFBinding, error) {
 	return &t.Entity, nil
 }
 
-func (c *CFClient) getApps() (*CFAppsResponce, error) {
+func (c *CFClient) getApps() (*cfAppsResponse, error) {
 	log.Println("getting apps...")
 	query := "/v2/apps?results-per-page=100"
 	resp, err := c.runQuery(query)
@@ -305,7 +305,7 @@ func (c *CFClient) getApps() (*CFAppsResponce, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFAppsResponce{}
+	t := &cfAppsResponse{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
@@ -315,7 +315,7 @@ func (c *CFClient) getApps() (*CFAppsResponce, error) {
 	return t, nil
 }
 
-func (c *CFClient) getServices() (*CFAppsResponce, error) {
+func (c *CFClient) getServices() (*cfAppsResponse, error) {
 	log.Println("getting services...")
 	query := "/v2/service_instances?results-per-page=100"
 	resp, err := c.runQuery(query)
@@ -323,7 +323,7 @@ func (c *CFClient) getServices() (*CFAppsResponce, error) {
 		return nil, errors.New("query error")
 	}
 	log.Println(string(resp))
-	t := &CFAppsResponce{}
+	t := &cfAppsResponse{}
 	err2 := json.Unmarshal([]byte(resp), &t)
 	if err2 != nil {
 		log.Fatalf("err unmarshaling: %v - %v", err2, resp)

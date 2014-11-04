@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -92,7 +93,7 @@ func TestCFServiceQuery(t *testing.T) {
 
 }
 
-func TestCFAppQuery(t *testing.T) {
+func TestcfAppQuery(t *testing.T) {
 
 	if testing.Short() {
 		t.Skip("skipping CF tests in short mode")
