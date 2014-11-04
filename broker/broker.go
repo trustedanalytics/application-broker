@@ -2,26 +2,28 @@ package broker
 
 import (
 	"fmt"
-	"github.com/intel-data/types-cf"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+
+	"github.com/intel-data/types-cf"
 )
 
-type broker struct {
+// Broker represents a running CF Service Broker API
+type Broker struct {
 	router *router
 }
 
 // New creates a loaded instance o the broker
-func New(p cf.ServiceProvider) (*broker, error) {
-	return &broker{
+func New(p cf.ServiceProvider) (*Broker, error) {
+	return &Broker{
 		router: newRouter(newHandler(p)),
 	}, nil
 }
 
 // Start the broker
-func (b *broker) Start() {
+func (b *Broker) Start() {
 
 	addr := fmt.Sprintf("%s:%d", Config.CFEnv.Host, Config.CFEnv.Port)
 	log.Printf("starting: %s", addr)
