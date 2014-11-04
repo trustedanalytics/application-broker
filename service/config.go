@@ -2,13 +2,14 @@ package service
 
 import (
 	"encoding/json"
-	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/intel-data/types-cf"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/intel-data/types-cf"
 )
 
 const (
@@ -52,7 +53,7 @@ func (c *ServiceConfig) initialize() {
 	c.APIPassword = GetEnvVarAsString("CF_PASS", "")
 	c.AppSource = GetEnvVarAsString("CF_SRC", "")
 	c.DepString = GetEnvVarAsString("CF_DEP", "")
-	c.CatalogPath = GetEnvVarAsString("CF_CAT", "./catalog.json")
+	c.CatalogPath = GetEnvVarAsString("CF_CATALOG_PATH", "./catalog.json")
 
 	cfEnv, err := cfenv.Current()
 	if err == nil || cfEnv == nil {

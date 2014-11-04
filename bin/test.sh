@@ -2,6 +2,6 @@
 
 source ./bin/env.sh
 
-export CF_CAT="./catalog.json"
+export CF_CATALOG_PATH="./catalog.json"
 
 go test ./... --short

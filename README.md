@@ -48,7 +48,7 @@ $ env | grep CF
 CF_API=https://api.gotapaas.com
 CF_SRC=/Users/drnic/Projects/cloudfoundry/apps/cf-env
 CF_DEP=postgresql93|free,consul|free
-CF_CAT=./catalog.json
+CF_CATALOG_PATH=./catalog.json
 ```
 
 You now need to configure which admin user credentials the broker will use to communicate with Cloud Foundry:

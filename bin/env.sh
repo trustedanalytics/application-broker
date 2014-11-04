@@ -3,7 +3,7 @@
 export CF_API=${CF_API:-"https://api.gotapaas.com"}
 export CF_SRC=${CF_SRC:-"/Users/drnic/Projects/cloudfoundry/apps/spring-music"}
 export CF_DEP=${CF_DEP:-"postgresql93|free,consul|free"}
-export CF_CAT=${CF_CAT:-"./catalog.json"}
+export CF_CATALOG_PATH=${CF_CATALOG_PATH:-"./catalog.json"}
 export CF_USER=${CF_USER:-"admin"}
 
 if [[ "${CF_PASS}X" == "X" ]]; then
@@ -15,4 +15,4 @@ if [[ "${CF_API_SKIP_SSL_VALID}X" == "X" ]]; then
 fi
 
 # for runtime you have to set this to
-# export CF_CAT="./catalog.json"
+# export CF_CATALOG_PATH="./catalog.json"
