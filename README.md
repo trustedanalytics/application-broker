@@ -116,8 +116,10 @@ The App Launching Service Broker is both *for* Cloud Foundry and can *run* on Cl
 In this example, the broker will be deployed to launch the [cf-env](https://github.com/cloudfoundry-community/cf-env) sample app (which matches the sample `./catalog.json`):
 
 ```
-git clone https://github.com/intel-data/app-launching-service-broker.git cf-env-launching-service-broker
-cd cf-env-launching-service-broker
+export SERVICE=cf-env-launching
+export APPNAME=$SERVICE-service-broker
+git clone https://github.com/intel-data/app-launching-service-broker.git $APPNAME
+cd $APPNAME
 ```
 
 Next, you would modify the `catalog.json` to document the application to be offered as a service. In this example, the included `catalog.json` corresponds to `cf-env`.
@@ -140,9 +142,36 @@ bundle
 cd -
 ```
 
-The `apps/` folder is ignored by `.gitignore` but will be uploaded to Cloud Foundry as part of the deployment in a moment.
+Although the newly created `apps/` folder is ignored by `.gitignore` it will be correctly uploaded to Cloud Foundry as part of the deployment below.
 
 ```
 godep save
-cf push cf-env-launching-service-broker --no-start
+cf push $APPNAME --no-start
+```
+
+You now need to configure the broker with credentials for your target Cloud Foundry as an admin-level user. Most likely this will be the same Cloud Foundry you are deploying too.
+
+```
+cf set-env $APPNAME CF_API https://api.gotapaas.com
+cf set-env $APPNAME CF_USER admin
+cf set-env $APPNAME CF_PASS admin-password
+```
+
+Now configure how to deploy the app-as-a-service. Paths are relative to this application folder.
+
+```
+cf set-env $APPNAME CF_CATALOG_PATH ./catalog.json
+cf set-env $APPNAME CF_SRC ./apps/cf-env
+cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
+```
+
+Optional configuration:
+
+-	Skip SSL validation with CF API: `cf set-env $APPNAME CF_API_SKIP_SSL_VALID true`
+-	Enable debugging: `cf set-env $APPNAME CF_DEBUG true`
+
+To start or restart the application after any configuration changes:
+
+```
+cf restart $APPNAME
 ```
