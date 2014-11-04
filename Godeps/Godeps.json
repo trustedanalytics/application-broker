@@ -1,0 +1,33 @@
+{
+	"ImportPath": "github.com/intel-data/app-launching-service-broker",
+	"GoVersion": "go1.3.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
+			"Comment": "v1.3-15-gdb26cf7",
+			"Rev": "db26cf7b4a1a562641392e8455975dda9f0f90d0"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry-community/types-cf",
+			"Comment": "v.1.4-1-g3434c7d",
+			"Rev": "3434c7da6d73a0930eff321f7477795e0cd2a615"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
+		},
+		{
+			"ImportPath": "github.com/mchmarny/go-cmd",
+			"Comment": "v0.1.0",
+			"Rev": "bbf1a726c6f70af2443a100a9b9ee9a849cc0a66"
+		},
+		{
+			"ImportPath": "github.com/mitchellh/mapstructure",
+			"Rev": "740c764bc6149d3f1806231418adb9f52c11bcbf"
+		}
+	]
+}

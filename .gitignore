@@ -24,7 +24,7 @@ _testmain.go
 *.prof
 
 # dep
-Godeps
+Godeps/_workspace
 
 # bin
 app-launching-service-broker
