@@ -175,3 +175,13 @@ To start or restart the application after any configuration changes:
 ```
 cf restart $APPNAME
 ```
+
+To register the broker:
+
+```
+export SERVICE_URL=$(cf app $APPNAME | grep urls: | awk '{print $2}')
+cf create-service-broker $SERVICE admin admin https://$SERVICE_URL
+cf enable-service-access cf-env
+```
+
+The latter command will make the service available to all organizations. You might want to restrict it to a subset of organizations with the `-o` flag.
