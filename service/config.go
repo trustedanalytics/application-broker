@@ -41,6 +41,7 @@ type ServiceConfig struct {
 	CFEnv        *cfenv.App
 	CatalogPath  string
 	Catalog      *cf.Catalog
+	ServiceName  string
 	Dependencies []*Dependency
 }
 
@@ -63,6 +64,7 @@ func (c *ServiceConfig) initialize() {
 	}
 	c.CFEnv = cfEnv
 	c.loadCatalogFromFile()
+	c.ServiceName = c.Catalog.Services[0].Name
 	c.parseServiceDependencies()
 }
 

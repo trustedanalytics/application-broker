@@ -72,7 +72,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// push
-	cf.WithArgs("push", ctx.ServiceName, "-p", c.config.AppSource, "--no-start").Exec()
+	cf.WithArgs("push", ctx.InstanceName, "-p", c.config.AppSource, "--no-start").Exec()
 	if cf.Err != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)
@@ -81,7 +81,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 
 	// TODO: Add cleanup of dependencies
 	for i, dep := range c.config.Dependencies {
-		depName := dep.Name + "-" + ctx.ServiceName
+		depName := dep.Name + "-" + ctx.InstanceName
 		cf.WithArgs("create-service", dep.Name, dep.Plan, depName).Exec()
 		if cf.Err != nil {
 			log.Printf("err on dependency[%d]: %s - %v", i, depName, cf)
@@ -89,9 +89,9 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 		}
 
 		// bind
-		cf.WithArgs("bind-service", ctx.ServiceName, depName).Exec()
+		cf.WithArgs("bind-service", ctx.InstanceName, depName).Exec()
 		if cf.Err != nil {
-			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.ServiceName, depName, cf)
+			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.InstanceName, depName, cf)
 			return cf.Err
 		}
 
@@ -99,7 +99,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// start
-	cf.WithArgs("start", ctx.ServiceName).Exec()
+	cf.WithArgs("start", ctx.InstanceName).Exec()
 	if cf.Err != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)
@@ -127,7 +127,7 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	}
 
 	// delete
-	cf.WithArgs("delete", ctx.ServiceName, "-f").Exec()
+	cf.WithArgs("delete", ctx.InstanceName, "-f").Exec()
 	if cf.Err != nil {
 		log.Printf("err cmd: %v", cf)
 		return cf.Err
@@ -136,7 +136,7 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	// TODO: Does the service have to unbined first
 	//       or deleting app will take care of it
 	for i, dep := range c.config.Dependencies {
-		depName := dep.Name + "-" + ctx.ServiceName
+		depName := dep.Name + "-" + ctx.InstanceName
 		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
 		if cf.Err != nil {
 			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
@@ -157,7 +157,30 @@ func (c *CFClient) queryAPI(query string) (string, error) {
 	return cf.Out, cf.Err
 }
 
-func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
+func (c *CFClient) getContextFromSpaceOrg(instanceID, spaceGUID, orgGUID string) (*CFServiceContext, error) {
+	log.Printf("getting service context for ID %s in org %s space %s", instanceID, orgGUID, spaceGUID)
+
+	t := NewCFServiceContext(instanceID)
+
+	space, err := c.getSpace(spaceGUID)
+	if err != nil {
+		log.Printf("error getting space: %v", err)
+		return nil, err
+	}
+	t.SpaceName = space.Name
+
+	org, err := c.getOrg(orgGUID)
+	if err != nil {
+		log.Printf("error getting org: %v", err)
+		return nil, err
+	}
+	t.OrgName = org.Name
+
+	return t, nil
+
+}
+
+func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServiceContext, error) {
 	log.Printf("getting service context for: %s", instanceID)
 
 	t := &CFServiceContext{}
@@ -168,8 +191,7 @@ func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
 		log.Printf("error getting service: %v", err)
 		return nil, err
 	}
-	t.ServiceName = srv.Name
-	t.ServiceURI = srv.URI
+	t.InstanceName = srv.Name
 
 	space, err := c.getSpace(srv.SpaceGUID)
 	if err != nil {

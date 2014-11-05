@@ -1,5 +1,7 @@
 package service
 
+import "fmt"
+
 // cfAppsResponse describes the Cloud Controller API result for a list of apps
 type cfAppsResponse struct {
 	Count     int             `json:"total_results"`
@@ -53,11 +55,10 @@ type cfSpace struct {
 
 // CFServiceContext describes a CF Service Instance within the Cloud Controller
 type CFServiceContext struct {
-	InstanceID  string
-	OrgName     string
-	SpaceName   string
-	ServiceName string
-	ServiceURI  string
+	InstanceID   string
+	OrgName      string
+	SpaceName    string
+	InstanceName string
 }
 
 // CFBindingResponse describes a CF Service Binding within the Cloud Controller
@@ -65,4 +66,11 @@ type CFBindingResponse struct {
 	GUID                string `json:"guid"`
 	AppGUID             string `json:"app_guid"`
 	ServiceInstanceGUID string `json:"service_instance_guid"`
+}
+
+// NewCFServiceContext creates a new CFServiceContext including generated ServiceName
+func NewCFServiceContext(instanceID string) (ctx *CFServiceContext) {
+	ctx = &CFServiceContext{InstanceID: instanceID}
+	ctx.InstanceName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
+	return
 }

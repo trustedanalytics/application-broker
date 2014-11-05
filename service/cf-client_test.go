@@ -80,7 +80,7 @@ func TestCFServiceQuery(t *testing.T) {
 		assert.NotEmpty(t, ctx.SpaceName, "nil context space name")
 		assert.NotEmpty(t, ctx.SpaceName, "nil context service name")
 
-		assert.Equal(t, ctx.ServiceName, srv.Name, "context and service names should be the same")
+		assert.Equal(t, ctx.InstanceName, srv.Name, "context and service names should be the same")
 		assert.Equal(t, ctx.ServiceURI, srv.URI, "context and service urls should be the same")
 		assert.Equal(t, ctx.SpaceName, sp.Name, "context and space names should be the same")
 		assert.Equal(t, ctx.OrgName, org.Name, "context and org names should be the same")
