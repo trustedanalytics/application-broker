@@ -122,7 +122,13 @@ git clone https://github.com/intel-data/app-launching-service-broker.git $APPNAM
 cd $APPNAME
 ```
 
-Next, you would modify the `catalog.json` to document the application to be offered as a service. In this example, the included `catalog.json` corresponds to `cf-env`.
+The broker will need access to the Cloud Foundry CLI within the Linux container it runs within. For this we need to download a version of the CLI that works with the target Cloud Foundry API:
+
+```
+./bin/fetch_cf_cli.sh
+```
+
+You would modify the `catalog.json` to document the application to be offered as a service. In this example, the included `catalog.json` corresponds to `cf-env`.
 
 For the service ID and plan ID, you need unique UUIDs. Run the `uuid` command to generate different UUIDs and replace them into the `catalog.json`. Cloud Foundry will complain later if you try to register a service broker that uses the same UUIDs as existing brokers.
 

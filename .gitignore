@@ -35,3 +35,6 @@ broker.sublime-workspace
 
 # apps-as-a-service clone
 apps
+
+# cf cli
+bin/cf
