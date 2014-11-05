@@ -146,7 +146,7 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	return nil
 }
 
-func (c *CFClient) runQuery(query string) (string, error) {
+func (c *CFClient) queryAPI(query string) (string, error) {
 	log.Printf("running query: %s", query)
 	cf, err := c.initialize()
 	if err != nil {
@@ -192,7 +192,7 @@ func (c *CFClient) getContext(instanceID string) (*CFServiceContext, error) {
 func (c *CFClient) getService(instanceID string) (*cfApp, error) {
 	log.Printf("getting service info for: %s", instanceID)
 	query := fmt.Sprintf("/v2/service_instances/%s", instanceID)
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -224,7 +224,7 @@ func (c *CFClient) getService(instanceID string) (*cfApp, error) {
 func (c *CFClient) getOrg(orgID string) (*cfApp, error) {
 	log.Printf("getting org info for: %s", orgID)
 	query := fmt.Sprintf("/v2/organizations/%s", orgID)
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -243,7 +243,7 @@ func (c *CFClient) getOrg(orgID string) (*cfApp, error) {
 func (c *CFClient) getSpace(spaceID string) (*cfSpace, error) {
 	log.Printf("getting space info for: %s", spaceID)
 	query := fmt.Sprintf("/v2/spaces/%s", spaceID)
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -262,7 +262,7 @@ func (c *CFClient) getSpace(spaceID string) (*cfSpace, error) {
 func (c *CFClient) getApp(appID string) (*cfApp, error) {
 	log.Printf("getting app info for: %s", appID)
 	query := fmt.Sprintf("/v2/apps/%s", appID)
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -281,7 +281,7 @@ func (c *CFClient) getApp(appID string) (*cfApp, error) {
 func (c *CFClient) getBinding(bindingID string) (*CFBindingResponse, error) {
 	log.Printf("getting service binding for: %s", bindingID)
 	query := fmt.Sprintf("/v2/service_bindings/%s", bindingID)
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -300,7 +300,7 @@ func (c *CFClient) getBinding(bindingID string) (*CFBindingResponse, error) {
 func (c *CFClient) getApps() (*cfAppsResponse, error) {
 	log.Println("getting apps...")
 	query := "/v2/apps?results-per-page=100"
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
@@ -318,7 +318,7 @@ func (c *CFClient) getApps() (*cfAppsResponse, error) {
 func (c *CFClient) getServices() (*cfAppsResponse, error) {
 	log.Println("getting services...")
 	query := "/v2/service_instances?results-per-page=100"
-	resp, err := c.runQuery(query)
+	resp, err := c.queryAPI(query)
 	if err != nil {
 		return nil, errors.New("query error")
 	}
