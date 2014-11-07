@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/mchmarny/go-cmd"
+	"github.com/intel-data/app-launching-service-broker/utils"
 )
 
 // CFClient object
@@ -22,7 +22,7 @@ func NewCFClient(c *ServiceConfig) *CFClient {
 	}
 }
 
-func (c *CFClient) initialize() (*cmd.Command, error) {
+func (c *CFClient) initialize() (*utils.CommandLogger, error) {
 	log.Println("initializing...")
 
 	// yep, this is a royal hack, should get this from the env somehow
@@ -34,21 +34,21 @@ func (c *CFClient) initialize() (*cmd.Command, error) {
 	}
 
 	// api
-	cf := cmd.New("cf")
+	cf := utils.NewCommandLogger("cf")
 
 	// TODO: remove the skip API validation part once real cert deployed
 	cf.WithArgs("api", c.config.APIEndpoint, "--skip-ssl-validation").
 		WithEnv("CF_HOME", appDir).Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Fatalf("err cmd: %v", cf)
-		return cf, cf.Err
+		return cf, cf.Err()
 	}
 
 	// auth
 	cf.WithArgs("auth", c.config.APIUser, c.config.APIPassword).Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Fatalf("err cmd: %v", cf)
-		return cf, cf.Err
+		return cf, cf.Err()
 	}
 
 	return cf, nil
@@ -66,33 +66,33 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 
 	// target
 	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Fatalf("err cmd: %v", cf)
-		return cf.Err
+		return cf.Err()
 	}
 
 	// push
 	cf.WithArgs("push", ctx.InstanceName, "-p", c.config.AppSource, "--no-start").Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)
-		return cf.Err
+		return cf.Err()
 	}
 
 	// TODO: Add cleanup of dependencies
 	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + ctx.InstanceName
 		cf.WithArgs("create-service", dep.Name, dep.Plan, depName).Exec()
-		if cf.Err != nil {
+		if cf.Err() != nil {
 			log.Printf("err on dependency[%d]: %s - %v", i, depName, cf)
-			return cf.Err
+			return cf.Err()
 		}
 
 		// bind
 		cf.WithArgs("bind-service", ctx.InstanceName, depName).Exec()
-		if cf.Err != nil {
+		if cf.Err() != nil {
 			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.InstanceName, depName, cf)
-			return cf.Err
+			return cf.Err()
 		}
 
 		//TODO: check if we need to restage the app after binding
@@ -100,10 +100,10 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 
 	// start
 	cf.WithArgs("start", ctx.InstanceName).Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)
-		return cf.Err
+		return cf.Err()
 	}
 
 	return nil
@@ -121,16 +121,16 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 
 	// target
 	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Fatalf("err cmd: %v", cf)
-		return cf.Err
+		return cf.Err()
 	}
 
 	// delete
 	cf.WithArgs("delete", ctx.InstanceName, "-f").Exec()
-	if cf.Err != nil {
+	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
-		return cf.Err
+		return cf.Err()
 	}
 
 	// TODO: Does the service have to unbined first
@@ -138,7 +138,7 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + ctx.InstanceName
 		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
-		if cf.Err != nil {
+		if cf.Err() != nil {
 			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
 		}
 	}
@@ -154,7 +154,7 @@ func (c *CFClient) queryAPI(query string) (string, error) {
 		return "", err
 	}
 	cf.WithArgs("curl", query).Exec()
-	return cf.Out, cf.Err
+	return cf.Out(), cf.Err()
 }
 
 func (c *CFClient) getContextFromSpaceOrg(instanceID, spaceGUID, orgGUID string) (*CFServiceContext, error) {

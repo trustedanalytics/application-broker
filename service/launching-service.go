@@ -53,7 +53,10 @@ func (p *LaunchingService) DeleteService(instanceID string) *cf.ServiceProviderE
 		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
-	p.client.deprovision(ctx)
+	err = p.client.deprovision(ctx)
+	if err != nil {
+		cf.NewServiceProviderError(cf.ErrorServerException, err)
+	}
 
 	return nil
 }
