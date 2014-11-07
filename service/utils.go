@@ -44,7 +44,7 @@ func GetEnvVarAsInt(k string, defaultInt int) int {
 	if len(s) < 1 {
 		return defaultInt
 	}
-	v, err := strconv.ParseInt(s, defaultInt, 8)
+	v, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		log.Fatalf("unable to parse int from %s: %v", k, err)
 		return defaultInt

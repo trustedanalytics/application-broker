@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/intel-data/app-launching-service-broker/service"
 )
 
 // Config hold a global BrokerConfig isntance
@@ -32,7 +33,7 @@ func (c *BrokerConfig) initialize() {
 	if err != nil || cfEnv == nil {
 		log.Printf("failed to get CF env vars, probably running locally: %v", err)
 		cfEnv = &cfenv.App{}
-		cfEnv.Port = 9999
+		cfEnv.Port = service.GetEnvVarAsInt("PORT", 9999)
 		cfEnv.Host = "0.0.0.0"
 		cfEnv.TempDir = os.TempDir()
 	}

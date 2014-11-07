@@ -38,3 +38,7 @@ apps
 
 # cf cli
 bin/cf
+
+# gin
+gin-bin
+
