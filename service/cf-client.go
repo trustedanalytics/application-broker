@@ -94,8 +94,6 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.AppName, depName, cf)
 			return cf.Err()
 		}
-
-		//TODO: check if we need to restage the app after binding
 	}
 
 	// start
