@@ -37,8 +37,8 @@ git clone https://github.com/cloudfoundry-community/cf-env
 cd cf-env
 bundle
 export CF_SRC=$(pwd)
-cd back/to/app-launching-service-broker
-source bin/env.sh
+cd -
+./bin/env.sh
 ```
 
 This will create a set of environment variables used to configure the service broker:
@@ -64,16 +64,23 @@ If you are using self-signed certificates, you may need to ignore SSL verificati
 export CF_API_SKIP_SSL_VALID=true
 ```
 
-You can now run the service broker locally:
+Finally, load other default environment variables:
 
 ```
-go run main.go
+source bin/env.sh
 ```
 
-The broker will be running on port 9999 by default.
+You can now run the service broker locally via [gin](https://github.com/codegangsta/gin), which will automatically reload any file changes during development:
 
 ```
-$ curl http://localhost:9999/v2/catalog
+go get github.com/codegangsta/gin
+gin
+```
+
+The broker, via `gin`, will be running on port 3000 by default.
+
+```
+$ curl http://localhost:3000/v2/catalog
 {"services":[{"id":"B6D73C9E-302D-4B78-BC46-56E92C6C000D","name":"cf-env","description":"View environment variables","bindable":true,"tags":["demo","backend"],"plans":[{"id":"4672FA24-4330-404B-AFC0-235AB6EA0F8C","name":"simple","description":"Simple","free":true}]}]}
 ```
 
@@ -82,7 +89,7 @@ The output here matches the contents of the `./catalog.json` example file.
 You can now even register your local app with a remote Cloud Foundry using [ngrok](https://ngrok.com/). Run the following in another terminal:
 
 ```
-$ ngrok 9999
+$ ngrok 3000
 ```
 
 It will display a public URL for your local broker app.
@@ -91,7 +98,7 @@ Register your broker app URL:
 
 ```
 $ cf create-service-broker cf-env-broker admin admin http://3f1c1555.ngrok.com
-$ cf enable-service-access cf-env-broker
+$ cf enable-service-access cf-env
 ```
 
 You can now create service instances, which will deploy the local example app `cf-env`:
