@@ -61,7 +61,6 @@ func TestCFServiceQuery(t *testing.T) {
 		assert.NotNil(t, srv, "nil service")
 		assert.NotEmpty(t, srv.Name, "nil service name")
 		assert.NotEmpty(t, srv.SpaceGUID, "nil service space quid")
-		assert.NotEmpty(t, srv.URI, "nil service dashbaord")
 
 		sp, err3 := client.getSpace(srv.SpaceGUID)
 		assert.Nil(t, err3, "query space failed")
