@@ -108,6 +108,20 @@ $ cf delete-service cf-env-example
 $ cf delete-service-broker cf-env-broker
 ```
 
+Testing
+-------
+
+```
+git clone https://github.com/cloudfoundry-community/cf-env apps/cf-env
+cd apps/cf-env
+bundle
+cd -
+
+export CF_API=https://api.MYCLOUDFOUNDRY
+export CF_PASS=<admin-password>
+./bin/test.sh
+```
+
 Deploy to Cloud Foundry
 -----------------------
 
