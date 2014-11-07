@@ -2,7 +2,7 @@
 
 export CF_API=${CF_API:-"https://api.gotapaas.com"}
 export CF_SRC=${CF_SRC:-"$PWD/apps/cf-env"}
-export CF_DEP=${CF_DEP:-"consul|free"}
+export CF_DEP=${CF_DEP:-"consul|free,nats|free"}
 export CF_CATALOG_PATH=${CF_CATALOG_PATH:-"$PWD/catalog.json"}
 export CF_USER=${CF_USER:-"admin"}
 
