@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -64,8 +65,11 @@ func (c *ServiceConfig) initialize() {
 	}
 	c.CFEnv = cfEnv
 	c.loadCatalogFromFile()
-	c.ServiceName = c.Catalog.Services[0].Name
 	c.parseServiceDependencies()
+	fmt.Printf("Catalog: %#v\n", c.Catalog)
+	if c.Catalog != nil {
+		c.ServiceName = c.Catalog.Services[0].Name
+	}
 }
 
 func (c *ServiceConfig) parseServiceDependencies() error {

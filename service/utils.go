@@ -92,9 +92,16 @@ func pathExists(path string) bool {
 		return false
 	}
 
+	currDir, err := os.Getwd()
+	if err != nil {
+		log.Printf("%v", err)
+		return false
+	}
+	log.Printf("current dir: %s", currDir)
+
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			log.Printf("path not found: %v", path)
+			log.Printf("path not found: %s", path)
 		} else {
 			log.Printf("error on path: %s -> %v", path, err)
 		}

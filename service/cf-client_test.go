@@ -23,7 +23,7 @@ func TestCFContextQuery(t *testing.T) {
 
 	for i, r := range resp.Resources {
 
-		ctx, err5 := client.getContext(r.Meta.GUID)
+		ctx, err5 := client.getContextFromServiceInstanceID(r.Meta.GUID)
 		assert.Nil(t, err5, "context query failed")
 		assert.NotNil(t, ctx, "nil context")
 		assert.NotEmpty(t, ctx.OrgName, "nil context org name")
@@ -73,7 +73,7 @@ func TestCFServiceQuery(t *testing.T) {
 		assert.NotNil(t, org, "nil space")
 		assert.NotEmpty(t, org.Name, "nil space name")
 
-		ctx, err5 := client.getContext(r.Meta.GUID)
+		ctx, err5 := client.getContextFromServiceInstanceID(r.Meta.GUID)
 		assert.Nil(t, err5, "context query failed")
 		assert.NotNil(t, ctx, "nil context")
 		assert.NotEmpty(t, ctx.OrgName, "nil context org name")
@@ -81,7 +81,6 @@ func TestCFServiceQuery(t *testing.T) {
 		assert.NotEmpty(t, ctx.SpaceName, "nil context service name")
 
 		assert.Equal(t, ctx.InstanceName, srv.Name, "context and service names should be the same")
-		assert.Equal(t, ctx.ServiceURI, srv.URI, "context and service urls should be the same")
 		assert.Equal(t, ctx.SpaceName, sp.Name, "context and space names should be the same")
 		assert.Equal(t, ctx.OrgName, org.Name, "context and org names should be the same")
 
