@@ -72,16 +72,16 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// push
-	cf.WithArgs("push", ctx.InstanceName, "-p", c.config.AppSource, "--no-start").Exec()
+	cf.WithArgs("push", ctx.AppName, "-p", c.config.AppSource, "--no-start").Exec()
 	if cf.Err() != nil {
-		log.Printf("err cmd: %v", cf)
+		log.Printf("push error: %s", cf.Err())
 		c.deprovision(ctx)
 		return cf.Err()
 	}
 
 	// TODO: Add cleanup of dependencies
 	for i, dep := range c.config.Dependencies {
-		depName := dep.Name + "-" + ctx.InstanceName
+		depName := dep.Name + "-" + ctx.AppName
 		cf.WithArgs("create-service", dep.Name, dep.Plan, depName).Exec()
 		if cf.Err() != nil {
 			log.Printf("err on dependency[%d]: %s - %v", i, depName, cf)
@@ -89,9 +89,9 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 		}
 
 		// bind
-		cf.WithArgs("bind-service", ctx.InstanceName, depName).Exec()
+		cf.WithArgs("bind-service", ctx.AppName, depName).Exec()
 		if cf.Err() != nil {
-			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.InstanceName, depName, cf)
+			log.Printf("err on bind[%d]: %s > %s - %v", i, ctx.AppName, depName, cf)
 			return cf.Err()
 		}
 
@@ -99,7 +99,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// start
-	cf.WithArgs("start", ctx.InstanceName).Exec()
+	cf.WithArgs("start", ctx.AppName).Exec()
 	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)

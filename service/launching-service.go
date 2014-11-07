@@ -86,7 +86,7 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 	b.Credentials = make(map[string]string)
 
 	// TODO: Set this to the app URI
-	b.Credentials["URI"] = "mysql://user:pass@localhost:9999/" + ctx.InstanceName
+	b.Credentials["URI"] = "mysql://user:pass@localhost:9999/" + ctx.AppName
 
 	return b, nil
 }
