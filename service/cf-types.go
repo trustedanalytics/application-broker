@@ -59,6 +59,7 @@ type CFServiceContext struct {
 	OrgName      string
 	SpaceName    string
 	InstanceName string
+	AppName      string
 }
 
 // CFBindingResponse describes a CF Service Binding within the Cloud Controller
@@ -71,6 +72,6 @@ type CFBindingResponse struct {
 // NewCFServiceContext creates a new CFServiceContext including generated ServiceName
 func NewCFServiceContext(instanceID string) (ctx *CFServiceContext) {
 	ctx = &CFServiceContext{InstanceID: instanceID}
-	ctx.InstanceName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
+	ctx.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
 	return
 }

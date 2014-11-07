@@ -126,8 +126,8 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 		return cf.Err()
 	}
 
-	// delete
-	cf.WithArgs("delete", ctx.InstanceName, "-f").Exec()
+	// delete app
+	cf.WithArgs("delete", ctx.AppName, "-f").Exec()
 	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
 		return cf.Err()
@@ -136,8 +136,8 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	// TODO: Does the service have to unbined first
 	//       or deleting app will take care of it
 	for i, dep := range c.config.Dependencies {
-		depName := dep.Name + "-" + ctx.InstanceName
-		cf.WithArgs("delete-service", dep.Name, "-f").Exec()
+		depName := dep.Name + "-" + ctx.AppName
+		cf.WithArgs("delete-service", depName, "-f").Exec()
 		if cf.Err() != nil {
 			log.Printf("err on dependency delete[%d]: %s - %v", i, depName, cf)
 		}
@@ -191,7 +191,7 @@ func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServic
 		log.Printf("error getting service: %v", err)
 		return nil, err
 	}
-	t.InstanceName = srv.Name
+	t.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
 
 	space, err := c.getSpace(srv.SpaceGUID)
 	if err != nil {
