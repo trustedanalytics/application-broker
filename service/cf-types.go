@@ -84,6 +84,7 @@ type CFServiceContext struct {
 	InstanceID   string
 	OrgName      string
 	SpaceName    string
+	SpaceGUID    string
 	InstanceName string
 	AppName      string
 }

@@ -167,6 +167,7 @@ func (c *CFClient) getContextFromSpaceOrg(instanceID, spaceGUID, orgGUID string)
 		return nil, err
 	}
 	t.SpaceName = space.Name
+	t.SpaceGUID = spaceGUID
 
 	org, err := c.getOrg(orgGUID)
 	if err != nil {
@@ -198,6 +199,7 @@ func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServic
 		return nil, err
 	}
 	t.SpaceName = space.Name
+	t.SpaceGUID = srv.SpaceGUID
 
 	org, err := c.getOrg(space.OrgGUID)
 	if err != nil {
@@ -297,6 +299,26 @@ func (c *CFClient) getApp(appID string) (*cfApp, error) {
 	log.Printf("app output: %v", t)
 	t.Entity.GUID = t.Meta.GUID
 	return &t.Entity, nil
+}
+
+func (c *CFClient) getAppByName(spaceGUID, appName string) (*cfApp, error) {
+	log.Printf("getting app info for: %s", appName)
+	query := fmt.Sprintf("/v2/spaces/%s/apps?q=name:%s", spaceGUID, appName)
+	resp, err := c.queryAPI(query)
+	if err != nil {
+		return nil, errors.New("query error")
+	}
+	log.Println(string(resp))
+	t := &cfAppsResponse{}
+	err = json.Unmarshal([]byte(resp), &t)
+	if err != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err, resp)
+		return nil, errors.New("invalid JSON")
+	}
+	log.Printf("app output: %v", t)
+	app := t.Resources[0]
+	app.Entity.GUID = app.Meta.GUID
+	return &app.Entity, nil
 }
 
 func (c *CFClient) getBinding(bindingID string) (*CFBindingResponse, error) {

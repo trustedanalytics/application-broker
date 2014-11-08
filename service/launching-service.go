@@ -73,9 +73,9 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
-	app, err := p.client.getApp(r.AppGUID)
+	app, err := p.client.getAppByName(ctx.SpaceGUID, ctx.AppName)
 	if err != nil {
-		log.Printf("error getting app: %v", err)
+		log.Printf("error getting app by name: %v", err)
 		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
