@@ -105,26 +105,28 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 func (p *LaunchingService) UnbindService(instanceID, bindingID string) *cf.ServiceProviderError {
 	log.Printf("deleting service binding: %s/%s", instanceID, bindingID)
 
-	ctx, err := p.client.getContextFromServiceInstanceID(instanceID)
-	if err != nil {
-		log.Printf("error getting service: %v", err)
-		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	}
+	// NOTE: Currently no action required for unbinding; return Ok
 
-	bind, err := p.client.getBinding(bindingID)
-	if err != nil {
-		log.Printf("error getting binding: %v", err)
-		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	}
-
-	app, err := p.client.getApp(bind.AppGUID)
-	if err != nil {
-		log.Printf("error getting app: %v", err)
-		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	}
-
-	// TODO: See if the above is even needed for this generic kind of an app
-	log.Printf("binding - bind[%v] ctx[%v] app[%v]", bind, ctx, app)
+	// ctx, err := p.client.getContextFromServiceInstanceID(instanceID)
+	// if err != nil {
+	// 	log.Printf("error getting service: %v", err)
+	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	// }
+	//
+	// bind, err := p.client.getBinding(bindingID)
+	// if err != nil {
+	// 	log.Printf("error getting binding: %v", err)
+	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	// }
+	//
+	// app, err := p.client.getApp(bind.AppGUID)
+	// if err != nil {
+	// 	log.Printf("error getting app: %v", err)
+	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	// }
+	//
+	// // TODO: See if the above is even needed for this generic kind of an app
+	// log.Printf("binding - bind[%v] ctx[%v] app[%v]", bind, ctx, app)
 
 	return nil
 }
