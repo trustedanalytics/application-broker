@@ -14,6 +14,22 @@ type cfAppResource struct {
 	Entity cfApp  `json:"entity"`
 }
 
+type cfRoutesResponse struct {
+	Count     int               `json:"total_results"`
+	Pages     int               `json:"total_pages"`
+	Resources []cfRouteResource `json:"resources"`
+}
+
+type cfRouteResource struct {
+	Meta   cfMeta  `json:"metadata"`
+	Entity cfRoute `json:"entity"`
+}
+
+type cfDomainResponse struct {
+	Meta   cfMeta   `json:"metadata"`
+	Entity cfDomain `json:"entity"`
+}
+
 type cfSpaceResource struct {
 	Meta   cfMeta  `json:"metadata"`
 	Entity cfSpace `json:"entity"`
@@ -44,7 +60,17 @@ type cfApp struct {
 	GUID      string `json:"guid"`
 	Name      string `json:"name"`
 	SpaceGUID string `json:"space_guid"`
-	URI       string `json:"dashboard_url"`
+	RoutesURL string `json:"routes_url"`
+	// URI       string `json:"dashboard_url"`
+}
+
+type cfRoute struct {
+	Host      string `json:"host"`
+	DomainURL string `json:"domain_url"`
+}
+
+type cfDomain struct {
+	Name string `json:"name"`
 }
 
 type cfSpace struct {

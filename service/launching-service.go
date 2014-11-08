@@ -86,7 +86,17 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 	b.Credentials = make(map[string]string)
 
 	// TODO: Set this to the app URI
-	b.Credentials["URI"] = "mysql://user:pass@localhost:9999/" + ctx.AppName
+	// func to get first route for AppName
+	route, err := p.client.getFirstFullRouteURL(app)
+	if err != nil {
+		log.Printf("error getting app route: %v", err)
+		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+	}
+	log.Printf("app route - %s", route)
+
+	b.Credentials["name"] = ctx.AppName
+	b.Credentials["route"] = route
+	b.Credentials["url"] = "https://" + route // TODO determine protocol
 
 	return b, nil
 }

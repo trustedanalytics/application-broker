@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strings"
 
 	"github.com/intel-data/app-launching-service-broker/utils"
 )
@@ -344,11 +345,51 @@ func (c *CFClient) getServices() (*cfAppsResponse, error) {
 	}
 	log.Println(string(resp))
 	t := &cfAppsResponse{}
-	err2 := json.Unmarshal([]byte(resp), &t)
-	if err2 != nil {
-		log.Fatalf("err unmarshaling: %v - %v", err2, resp)
+	err = json.Unmarshal([]byte(resp), &t)
+	if err != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err, resp)
 		return nil, errors.New("invalid JSON")
 	}
 	log.Printf("services output: %v", t)
 	return t, nil
+}
+
+func (c *CFClient) getFirstFullRouteURL(app *cfApp) (string, error) {
+	log.Printf("getting routes for: %s", app.GUID)
+	resp, err := c.queryAPI(app.RoutesURL)
+	if err != nil {
+		return "", errors.New("query error")
+	}
+	log.Println(string(resp))
+	routeResp := cfRoutesResponse{}
+	err = json.Unmarshal([]byte(resp), &routeResp)
+	if err != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err, routeResp)
+		return "", errors.New("invalid JSON")
+	}
+	host := routeResp.Resources[0].Entity.Host
+	domainURL := routeResp.Resources[0].Entity.DomainURL
+	log.Printf("host: %s", host)
+	log.Printf("domainURL: %s", domainURL)
+
+	resp, err = c.queryAPI(domainURL)
+	if err != nil {
+		return "", errors.New("query error")
+	}
+	log.Println(string(resp))
+	resp = cleanDeprecationWarning(resp)
+	domainResp := cfDomainResponse{}
+	err = json.Unmarshal([]byte(resp), &domainResp)
+	if err != nil {
+		log.Fatalf("err unmarshaling: %v - %v", err, resp)
+		return "", errors.New("invalid JSON")
+	}
+
+	domain := domainResp.Entity.Name
+
+	return fmt.Sprintf("%s.%s", host, domain), nil
+}
+
+func cleanDeprecationWarning(jsonResp string) string {
+	return strings.Replace(jsonResp, "Endpoint deprecated", "", -1)
 }
