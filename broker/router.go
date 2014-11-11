@@ -77,11 +77,6 @@ type reponseHandler func(*http.Request, martini.Params) (int, string)
 func (fn reponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, params martini.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	fn(req, params)
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//w.WriteHeader(re.status)
-	//if err := json.NewEncoder(w).Encode(re.value); err != nil {
-	//	log.Printf("Error on marshalling response: %v", err)
-	//}
 }
 
 type credentials struct {
