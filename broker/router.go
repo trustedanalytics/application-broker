@@ -2,7 +2,6 @@ package broker
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -10,7 +9,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/go-martini/martini"
 )
 
 const (
@@ -21,22 +20,23 @@ const (
 
 var (
 	catalogURLPattern      = fmt.Sprintf("/%v/catalog", apiVersion)
-	provisioningURLPattern = fmt.Sprintf("/%v/service_instances/{%v}", apiVersion, instanceID)
-	bindingURLPattern      = fmt.Sprintf("/%v/service_instances/{%v}/service_bindings/{%v}", apiVersion, instanceID, bindingID)
+	provisioningURLPattern = fmt.Sprintf("/%v/service_instances/:instance_id", apiVersion)
+	bindingURLPattern      = fmt.Sprintf("/%v/service_instances/:instance_id/service_bindings/:binding_id", apiVersion)
 )
 
 type router struct {
-	mux *mux.Router
+	m *martini.ClassicMartini
 }
 
 func newRouter(h *handler) *router {
-	mux := mux.NewRouter()
-	mux.Handle(catalogURLPattern, reponseHandler(h.catalog)).Methods("GET")
-	mux.Handle(provisioningURLPattern, reponseHandler(h.provision)).Methods("PUT")
-	mux.Handle(provisioningURLPattern, reponseHandler(h.deprovision)).Methods("DELETE")
-	mux.Handle(bindingURLPattern, reponseHandler(h.bind)).Methods("PUT")
-	mux.Handle(bindingURLPattern, reponseHandler(h.unbind)).Methods("DELETE")
-	return &router{mux}
+
+	m := martini.Classic()
+	m.Get(catalogURLPattern, reponseHandler(h.catalog))
+	m.Put(provisioningURLPattern, reponseHandler(h.provision))
+	m.Delete(provisioningURLPattern, reponseHandler(h.deprovision))
+	m.Put(bindingURLPattern, reponseHandler(h.bind))
+	m.Delete(bindingURLPattern, reponseHandler(h.unbind))
+	return &router{m}
 }
 
 // ServeHTTP logs all requests and dispatches to the appropriate handler
@@ -63,7 +63,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		log.Printf("Router: Authentication: [%v]", creds)
 	}
 
-	r.mux.ServeHTTP(w, req)
+	r.m.ServeHTTP(w, req)
 }
 
 type responseEntity struct {
@@ -71,17 +71,17 @@ type responseEntity struct {
 	value  interface{}
 }
 
-type reponseHandler func(*http.Request) responseEntity
+type reponseHandler func(*http.Request, martini.Params) (int, string)
 
 // ServeHTTP marshalls response as JSON, return the proper HTTP status code
-func (fn reponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-
-	re := fn(req)
+func (fn reponseHandler) ServeHTTP(w http.ResponseWriter, req *http.Request, params martini.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(re.status)
-	if err := json.NewEncoder(w).Encode(re.value); err != nil {
-		log.Printf("Error on marshalling response: %v", err)
-	}
+	fn(req, params)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//w.WriteHeader(re.status)
+	//if err := json.NewEncoder(w).Encode(re.value); err != nil {
+	//	log.Printf("Error on marshalling response: %v", err)
+	//}
 }
 
 type credentials struct {
