@@ -50,4 +50,38 @@ func (c *BrokerConfig) initialize() {
 	}
 	c.CFEnv = cfEnv
 
+	c.validate()
+}
+
+func (c *BrokerConfig) validate() {
+	missingEnvVars := []string{}
+
+	if c.Username == "" {
+		missingEnvVars = append(missingEnvVars, "CF_USER")
+	}
+	if c.Password == "" {
+		missingEnvVars = append(missingEnvVars, "CF_PASS")
+	}
+	if c.ClientID == "" {
+		missingEnvVars = append(missingEnvVars, "CLIENT_ID")
+	}
+	if c.ClientSecret == "" {
+		missingEnvVars = append(missingEnvVars, "CLIENT_SECRET")
+	}
+	if c.RedirectURL == "" {
+		missingEnvVars = append(missingEnvVars, "REDIRECT_URL")
+	}
+	if c.AuthURL == "" {
+		missingEnvVars = append(missingEnvVars, "AUTH_URL")
+	}
+	if c.TokenURL == "" {
+		missingEnvVars = append(missingEnvVars, "TOKEN_URL")
+	}
+	if len(missingEnvVars) > 0 {
+		log.Println("Missing environment variable configuration:")
+		for _, envVar := range missingEnvVars {
+			log.Printf("* %s", envVar)
+		}
+		os.Exit(1)
+	}
 }
