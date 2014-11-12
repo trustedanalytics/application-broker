@@ -7,9 +7,10 @@ export CF_CATALOG_PATH=${CF_CATALOG_PATH:-"$PWD/catalog.json"}
 export CF_USER=${CF_USER:-"admin"}
 export CLIENT_ID=${CLIENT_ID:-"admin"}
 export CLIENT_SECRET=${CLIENT_SECRET:-"admin"}
-export REDIRECT_URL=${REDIRECT_URL:-"https://my-client.gotapaas.com"}
-export AUTH_URL=${AUTH_URL:-"https://login.gotapaas.com/oauth/authorize"}
-export TOKEN_URL=${TOKEN_URL:-"https://uaa.gotapaas.com/oauth/token"}
+export ROOT_DOMAIN=${ROOT_DOMAIN:-gotapaas.com}
+export REDIRECT_URL=${REDIRECT_URL:-"https://my-client.$ROOT_DOMAIN"}
+export AUTH_URL=${AUTH_URL:-"https://login.$ROOT_DOMAIN/oauth/authorize"}
+export TOKEN_URL=${TOKEN_URL:-"https://uaa.$ROOT_DOMAIN/oauth/token"}
 
 
 if [[ "${CF_PASS}X" == "X" ]]; then
