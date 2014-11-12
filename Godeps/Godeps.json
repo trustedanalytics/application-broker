@@ -3,6 +3,11 @@
 	"GoVersion": "go1.3.3",
 	"Deps": [
 		{
+			"ImportPath": "github.com/boj/redistore",
+			"Comment": "v1",
+			"Rev": "9d1554b400d726c7aa54b6e4a836f273b72b97f7"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
 			"Comment": "v1.3-15-gdb26cf7",
 			"Rev": "db26cf7b4a1a562641392e8455975dda9f0f90d0"
@@ -18,9 +23,37 @@
 			"Rev": "4b8172520a03fa190f427bbd284db01b459bfce7"
 		},
 		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "8f6bca66c46849e514ac5abfc71ac9b063c01409"
+		},
+		{
 			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-39-g42b0b68",
-			"Rev": "42b0b68fb383aac4f72331d0bd0948001b9be080"
+			"Comment": "v1.0-58-gbd8578f",
+			"Rev": "bd8578f41c9b53278c4ada731fe5beac03f80d77"
+		},
+		{
+			"ImportPath": "github.com/golang/oauth2",
+			"Rev": "49f48241375b4eb4af286b35b80a6d1372ff05c3"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1be7a086a5fd6440ef16fe96baeda0c78282b980"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "972f32923fd3555b7f0ea39acdc4e3d4d5412ee8"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "c5bbe9d3d3c906d01de60189e5bfbba1d8164a80"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/oauth2",
+			"Rev": "3eced323e6a648c9f968f497c4711719984477ef"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/sessions",
+			"Rev": "fa13114fbcf036dff8185d728651d85fcef772db"
 		},
 		{
 			"ImportPath": "github.com/mchmarny/go-cmd",

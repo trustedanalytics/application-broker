@@ -17,10 +17,15 @@ func init() {
 
 // BrokerConfig hold the broker configuration
 type BrokerConfig struct {
-	Username string
-	Password string
-	Debug    bool
-	CFEnv    *cfenv.App
+	Username     string
+	Password     string
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+	AuthURL      string
+	TokenURL     string
+	Debug        bool
+	CFEnv        *cfenv.App
 }
 
 func (c *BrokerConfig) initialize() {
@@ -28,6 +33,12 @@ func (c *BrokerConfig) initialize() {
 	c.Username = os.Getenv("CF_USER")
 	c.Password = os.Getenv("CF_PASS")
 	c.Debug = os.Getenv("CF_DEBUG") == "true"
+
+	c.ClientID = os.Getenv("CLIENT_ID")
+	c.ClientSecret = os.Getenv("CLIENT_SECRET")
+	c.RedirectURL = os.Getenv("REDIRECT_URL")
+	c.AuthURL = os.Getenv("AUTH_URL")
+	c.TokenURL = os.Getenv("TOKEN_URL")
 
 	cfEnv, err := cfenv.Current()
 	if err != nil || cfEnv == nil {

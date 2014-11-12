@@ -5,6 +5,12 @@ export CF_SRC=${CF_SRC:-"$PWD/apps/cf-env"}
 export CF_DEP=${CF_DEP:-"consul|free,nats|free"}
 export CF_CATALOG_PATH=${CF_CATALOG_PATH:-"$PWD/catalog.json"}
 export CF_USER=${CF_USER:-"admin"}
+export CLIENT_ID=${CLIENT_ID:-"admin"}
+export CLIENT_SECRET=${CLIENT_SECRET:-"admin"}
+export REDIRECT_URL=${REDIRECT_URL:-"https://my-client.gotapaas.com"}
+export AUTH_URL=${AUTH_URL:-"https://login.gotapaas.com/oauth/authorize"}
+export TOKEN_URL=${TOKEN_URL:-"https://uaa.gotapaas.com/oauth/token"}
+
 
 if [[ "${CF_PASS}X" == "X" ]]; then
   echo "ERROR: set \$CF_PASS for the $CF_USER password"

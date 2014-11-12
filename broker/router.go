@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/go-martini/martini"
+	auth2 "github.com/golang/oauth2"
+	"github.com/martini-contrib/oauth2"
+	"github.com/martini-contrib/sessions"
 )
 
 const (
@@ -30,12 +33,28 @@ type router struct {
 
 func newRouter(h *handler) *router {
 
+	oauthOpts := &auth2.Options{
+		ClientID:     Config.ClientID,
+		ClientSecret: Config.ClientSecret,
+		RedirectURL:  Config.RedirectURL,
+		Scopes:       []string{""},
+	}
+
+	static := martini.Static("assets", martini.StaticOptions{Fallback: "/index.html", Exclude: "/v2"})
+
 	m := martini.Classic()
+
+	cf := oauth2.NewOAuth2Provider(oauthOpts, Config.AuthURL, Config.TokenURL)
+	m.Use(sessions.Sessions("app_launcher", sessions.NewCookieStore([]byte("appsecretlauncher"))))
+	m.Use(cf)
 	m.Get(catalogURLPattern, reponseHandler(h.catalog))
 	m.Put(provisioningURLPattern, reponseHandler(h.provision))
 	m.Delete(provisioningURLPattern, reponseHandler(h.deprovision))
 	m.Put(bindingURLPattern, reponseHandler(h.bind))
 	m.Delete(bindingURLPattern, reponseHandler(h.unbind))
+
+	m.NotFound(oauth2.LoginRequired, static, http.NotFound)
+
 	return &router{m}
 }
 

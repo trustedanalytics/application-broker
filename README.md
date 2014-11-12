@@ -192,6 +192,16 @@ cf set-env $APPNAME CF_SRC ./apps/cf-env
 cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
 ```
 
+Now configure how to connect to oauth app
+```
+cf set-env $APPNAME CLIENT_ID my_client
+cf set-env $APPNAME CLIENT_SECRET my_secret
+cf set-env $APPNAME REDIRECT_URL https://my-client.gotapaas.com
+cf set-env $APPNAME AUTH_URL https://login.gotapaas.com/oauth/authorize
+cf set-env $APPNAME TOKEN_URL https://uaa.gotapaas.com/oauth/token
+
+```
+
 Optional configuration:
 
 -	Skip SSL validation with CF API: `cf set-env $APPNAME CF_API_SKIP_SSL_VALID true`
