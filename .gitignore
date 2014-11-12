@@ -23,6 +23,8 @@ _testmain.go
 *.test
 *.prof
 
+npm-debug.log
+
 # dep
 Godeps/_workspace
 
