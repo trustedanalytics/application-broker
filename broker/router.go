@@ -52,9 +52,10 @@ func newRouter(h *handler) *router {
 	m.Delete(provisioningURLPattern, reponseHandler(h.deprovision))
 	m.Put(bindingURLPattern, reponseHandler(h.bind))
 	m.Delete(bindingURLPattern, reponseHandler(h.unbind))
+	m.Use(oauth2.LoginRequired)
+	m.Group("/ui", apiRouter)
 
 	m.NotFound(oauth2.LoginRequired, static, http.NotFound)
-
 	return &router{m}
 }
 

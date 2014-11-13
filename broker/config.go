@@ -24,6 +24,7 @@ type BrokerConfig struct {
 	RedirectURL  string
 	AuthURL      string
 	TokenURL     string
+	ApiURL       string
 	Debug        bool
 	CFEnv        *cfenv.App
 }
@@ -39,6 +40,7 @@ func (c *BrokerConfig) initialize() {
 	c.RedirectURL = os.Getenv("REDIRECT_URL")
 	c.AuthURL = os.Getenv("AUTH_URL")
 	c.TokenURL = os.Getenv("TOKEN_URL")
+	c.ApiURL = os.Getenv("API_URL")
 
 	cfEnv, err := cfenv.Current()
 	if err != nil || cfEnv == nil {
@@ -76,6 +78,9 @@ func (c *BrokerConfig) validate() {
 	}
 	if c.TokenURL == "" {
 		missingEnvVars = append(missingEnvVars, "TOKEN_URL")
+	}
+	if c.ApiURL == "" {
+		missingEnvVars = append(missingEnvVars, "API_URL")
 	}
 	if len(missingEnvVars) > 0 {
 		log.Println("Missing environment variable configuration:")

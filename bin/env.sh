@@ -5,12 +5,13 @@ export CF_SRC=${CF_SRC:-"$PWD/apps/cf-env"}
 export CF_DEP=${CF_DEP:-"consul|free,nats|free"}
 export CF_CATALOG_PATH=${CF_CATALOG_PATH:-"$PWD/catalog.json"}
 export CF_USER=${CF_USER:-"admin"}
-export CLIENT_ID=${CLIENT_ID:-"admin"}
-export CLIENT_SECRET=${CLIENT_SECRET:-"admin"}
+export CLIENT_ID=${CLIENT_ID:-"WQXng43TEfj"}
+export CLIENT_SECRET=${CLIENT_SECRET:-"c1oudc0wc1oudc0w"}
 export ROOT_DOMAIN=${ROOT_DOMAIN:-gotapaas.com}
-export REDIRECT_URL=${REDIRECT_URL:-"https://my-client.$ROOT_DOMAIN"}
+export REDIRECT_URL=${REDIRECT_URL:-"http://localhost:9999/oauth2callback"}
 export AUTH_URL=${AUTH_URL:-"https://login.$ROOT_DOMAIN/oauth/authorize"}
 export TOKEN_URL=${TOKEN_URL:-"https://uaa.$ROOT_DOMAIN/oauth/token"}
+export API_URL=${TOKEN_URL:-"https://api.$ROOT_DOMAIN"}
 
 
 if [[ "${CF_PASS}X" == "X" ]]; then

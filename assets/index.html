@@ -50,108 +50,22 @@
     </div>
   </nav>
 
-
-  <div class="jumbotron">
-    <div class="container">
-      <h1>ATK Server with Spark/Hadoop</h1>
-      <p>It has never been easier to analyse data. Launch an Intel Analytic Toolkit (ATK) Server
-      with a Cloudera Hadoop and Apache Spark backend within minutes.</p>
-      <p><a class="btn btn-primary btn-lg" href="#" role="button">Launch &raquo;</a></p>
-    </div>
+  <div ui-view>
   </div>
 
+  <!-- Bootstrap -->
+  <script src="/js/jquery-1.11.0.min.js"></script>
+  <script src="/js/bootstrap.min.js"></script>
 
-  <ol class="breadcrumb">
-    <li>Page: Home</li>
-    <li class="active">Request new cluster</li>
-  </ol>
+  <!-- Bootflat's JS files.-->
+  <script src="/js/icheck.min.js"></script>
+  <script src="/js/jquery.fs.selecter.min.js"></script>
+  <script src="/js/jquery.fs.stepper.min.js"></script>
 
-  <div class="container">
-    <form role="form">
-      <div class="form-group">
-        <label for="organization">Organization</label>
-        <select id="organization" class="form-control">
-          <option>intel</option>
-          <option>intel-demo</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="project">Project name</label>
-        <div class="input-group">
-          <span class="input-group-addon">@</span>
-          <input type="text" class="form-control" id="project" placeholder="(changable)">
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary">Launch</button>
-  </div>
-
-  <ol class="breadcrumb" id="booting">
-    <li>Page: Home</li>
-    <li>Servers</li>
-    <li class="active">Project Foo Bar (booting)</li>
-  </ol>
-
-  <div class="container">
-    <h2>Project Foo Bar <small>booting...</small></h2>
-    <ul class="list-group">
-      <li class="list-group-item list-group-item-success">Creating project space</li>
-      <li class="list-group-item list-group-item-success">Uploading latest ATK server</li>
-      <li class="list-group-item list-group-item-info">Provisioning Cloudera/Spark service</li>
-      <li class="list-group-item">Provisioning database</li>
-      <li class="list-group-item">Binding services</li>
-      <li class="list-group-item">Restarting ATK server</li>
-      <li class="list-group-item">Create first user account on ATK server</li>
-    </ul>
-    <p>(will redirect to next view when complete)</p>
-  </div>
-
-  <ol class="breadcrumb" id="running">
-    <li>Page: Home</li>
-    <li>Servers</li>
-    <li class="active">Project Foo Bar (running)</li>
-  </ol>
-
-  <div class="container">
-    <h2>Project Foo Bar <small>running</small></h2>
-    <p>Organization: <kbd>intel</kbd></p>
-
-    <h3>Python configuration</h3>
-    <p>Add the following to your python scripts to connect to this ATK server.</p>
-    <pre>
-this is some python code
-yep... it is.</pre>
-
-    <h3>Hadoop configuration</h3>
-    <p>To import data Hadoop/HDFS, use the following connection credentials.</p>
-    <div class="panel panel-default">
-      <table class="table">
-        <tr>
-          <th>Zookeeper Hosts</th><td>10.10.2.10, 10.10.2.11, 10.10.2.12</td>
-        </tr>
-        <tr>
-          <th>Zookeeper Port</th><td>5555</td>
-        </tr>
-      </table>
-
-      <div class="panel-footer">
-        Remember that your import application must have network connectivity to Hadoop/HDFS.
-      </div>
-    </div>
-  </div>
-
-
-<!-- Bootstrap -->
-<script src="/js/jquery-1.11.0.min.js"></script>
-<script src="/js/bootstrap.min.js"></script>
-
-<!-- Bootflat's JS files.-->
-<script src="/js/icheck.min.js"></script>
-<script src="/js/jquery.fs.selecter.min.js"></script>
-<script src="/js/jquery.fs.stepper.min.js"></script>
-
-<script src="/js/angular.min.js"></script>
-<script src="/js/angular-ui-router.min.js"></script>
-<script src="/js/app.js"></script>
+  <script src="/js/angular.min.js"></script>
+  <script src="/js/angular-ui-router.min.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/controller.js"></script>
 
 </body>
 </html>
