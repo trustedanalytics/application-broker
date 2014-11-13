@@ -193,6 +193,7 @@ cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
 ```
 
 Now configure how to connect to oauth app
+
 ```
 cf set-env $APPNAME CLIENT_ID my_client
 cf set-env $APPNAME CLIENT_SECRET my_secret

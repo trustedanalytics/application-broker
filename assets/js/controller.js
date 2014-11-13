@@ -1,7 +1,7 @@
 app.controller('HomeCtrl', function($scope, $http, $state) {
 })
 
-app.controller('NewCtrl', function($scope, $http) {
+app.controller('AppNewCtrl', function($scope, $http) {
   $http.get('/ui/organizations').success(function(data) {
     $scope.orgs = data
   })
@@ -11,10 +11,14 @@ app.controller('NewCtrl', function($scope, $http) {
       $scope.spaces = data
     })
   }
+
+  $scope.setProjectSpaceName = function(spaceName){
+    $scope.projectSpaceName = spaceName
+  }
 })
 
-app.controller('ViewCtrl', function($scope, $http) {
+app.controller('AppViewCtrl', function($scope, $http) {
 })
 
-app.controller('ProvisionCtrl', function($scope, $http) {
+app.controller('AppProvisionStatusCtrl', function($scope, $http) {
 })

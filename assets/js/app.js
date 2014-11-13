@@ -17,19 +17,19 @@ app.config(function($stateProvider, $urlRouterProvider) {
       templateUrl: "partials/home.html",
       controller: 'HomeCtrl'
     })
-    .state('new', {
-      url: "/new",
+    .state('app-new', {
+      url: "/app/new",
       templateUrl: "partials/new.html",
-      controller: 'NewCtrl'
+      controller: 'AppNewCtrl'
     })
-    .state('provision', {
-      url: "/provision/:id",
+    .state('app-provision', {
+      url: "/app/provision/:id",
       templateUrl: "partials/provision.html",
-      controller: 'ProvisionCtrl'
+      controller: 'AppProvisionCtrl'
     })
-    .state('view', {
-      url: "/view/:id",
+    .state('app-view', {
+      url: "/app/view/:id",
       templateUrl: "partials/view.html",
-      controller: 'ViewCtrl'
+      controller: 'AppViewCtrl'
     });
 });
