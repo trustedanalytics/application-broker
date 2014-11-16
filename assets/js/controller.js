@@ -20,5 +20,16 @@ app.controller('AppNewCtrl', function($scope, $http) {
 app.controller('AppViewCtrl', function($scope, $http) {
 })
 
-app.controller('AppProvisionStatusCtrl', function($scope, $http) {
+app.controller('AppProvisionCtrl', function($scope, $http, $stateParams) {
+  id = $stateParams.id
+  $http.get('/ui/apps/' + id ).success(function(data) {
+    console.log(data)
+    $scope.app = data
+  })
+})
+
+app.controller('NavBarCtrl', function($scope, $http) {
+  $http.get('/ui/apps').success(function(data) {
+    $scope.apps = data
+  })
 })
