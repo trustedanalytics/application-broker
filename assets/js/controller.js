@@ -17,10 +17,14 @@ app.controller('AppNewCtrl', function($scope, $http) {
   }
 })
 
-app.controller('AppViewCtrl', function($scope, $http) {
+app.controller('AppViewCtrl', function($scope, $http, $stateParams) {
+  id = $stateParams.id
+  $http.get('/ui/apps/' + id ).success(function(data) {
+    $scope.app = data
+  })
 })
 
-app.controller('AppProvisionCtrl', function($scope, $http, $stateParams, $timeout) {
+app.controller('AppProvisionCtrl', function($scope, $http, $state, $stateParams, $timeout) {
   id = $stateParams.id
   var levels = {
     creating: 1,
@@ -46,7 +50,11 @@ app.controller('AppProvisionCtrl', function($scope, $http, $stateParams, $timeou
   var getApp = function() {
     $http.get('/ui/apps/' + id ).success(function(data) {
       $scope.app = data
-      $scope.level = levels[$scope.app.environment_json["APP_LAUNCHER_STATE"]]
+      state = $scope.app.environment_vars["APP_LAUNCHER_STATE"]
+      $scope.level = levels[state]
+      if (state == "finished") {
+        $state.go("app-view", { id: id})
+      }
     })
     $timeout(getApp, 5000);
   }
