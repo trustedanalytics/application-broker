@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-martini/martini"
 	auth2 "github.com/golang/oauth2"
+	"github.com/intel-data/app-launching-service-broker/api"
 	"github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 )
@@ -53,7 +54,7 @@ func newRouter(h *handler) *router {
 	m.Put(bindingURLPattern, reponseHandler(h.bind))
 	m.Delete(bindingURLPattern, reponseHandler(h.unbind))
 	m.Use(oauth2.LoginRequired)
-	m.Group("/ui", apiRouter)
+	m.Group("/ui", api.Router)
 
 	m.NotFound(oauth2.LoginRequired, static, http.NotFound)
 	return &router{m}
