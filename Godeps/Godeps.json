@@ -8,6 +8,10 @@
 			"Rev": "9d1554b400d726c7aa54b6e4a836f273b72b97f7"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry-community/go-cfclient",
+			"Rev": "b7fec29951f8ca36d81a88fc0705f250e28ed911"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
 			"Comment": "v1.3-15-gdb26cf7",
 			"Rev": "db26cf7b4a1a562641392e8455975dda9f0f90d0"
