@@ -9,7 +9,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfclient",
-			"Rev": "b7fec29951f8ca36d81a88fc0705f250e28ed911"
+			"Rev": "9ba9cd9056c221dd4622ec945864076d200717e2"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
