@@ -80,7 +80,12 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 		return cf.Err()
 	}
 
+	// set env to APP, change if more then one app launcher is needed
+	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_NAME", "APP_LAUNCHER")
+	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_STATE", "creating")
+
 	// TODO: Add cleanup of dependencies
+	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_STATE", "create_bind_services")
 	for i, dep := range c.config.Dependencies {
 		depName := dep.Name + "-" + ctx.AppName
 		cf.WithArgs("create-service", dep.Name, dep.Plan, depName).Exec()
@@ -98,12 +103,14 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// start
+	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_STATE", "start")
 	cf.WithArgs("start", ctx.AppName).Exec()
 	if cf.Err() != nil {
 		log.Printf("err cmd: %v", cf)
 		c.deprovision(ctx)
 		return cf.Err()
 	}
+	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_STATE", "finished")
 
 	return nil
 }
