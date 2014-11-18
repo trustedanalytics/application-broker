@@ -1,9 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/intel-data/app-launching-service-broker/broker"
 	"github.com/intel-data/app-launching-service-broker/service"
-	"log"
 )
 
 func init() {
