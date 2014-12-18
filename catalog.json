@@ -1,12 +1,12 @@
 {
   "services": [{
-    "id": "B6D73C9E-302D-4B78-BC46-56E92C6C000E",
-    "name": "cf-env",
+    "id": "cf8f9a19-a193-4a86-b449-b448350db54d",
+    "name": "gateway",
     "description": "View environment variables",
     "bindable": true,
     "tags": ["demo", "backend"],
     "plans": [{
-      "id": "4672FA24-4330-404B-AFC0-235AB6EA0F8X",
+      "id": "ef73fc74-8b8d-422b-8217-4a8eb6b6ce5a",
       "name": "simple",
       "description": "Simple",
       "free": true

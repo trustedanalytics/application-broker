@@ -94,6 +94,14 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.Service
 	}
 	log.Printf("app route - %s", route)
 
+	appCreds, err := p.client.runSetupScript(ctx)
+	if err != nil {
+		return nil, cf.NewServiceProviderError(cf.ErrorServerException, err)
+	}
+	for key, value := range appCreds {
+		b.Credentials[key] = value
+	}
+
 	b.Credentials["name"] = ctx.AppName
 	b.Credentials["route"] = route
 	b.Credentials["url"] = "https://" + route // TODO determine protocol

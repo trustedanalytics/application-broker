@@ -39,11 +39,13 @@ type ServiceConfig struct {
 	APIPassword  string
 	AppSource    string
 	DepString    string
+	SetupScript  string
 	CFEnv        *cfenv.App
 	CatalogPath  string
 	Catalog      *cf.Catalog
 	ServiceName  string
 	Dependencies []*Dependency
+	CFHomeDir    string
 }
 
 func (c *ServiceConfig) initialize() {
@@ -55,6 +57,7 @@ func (c *ServiceConfig) initialize() {
 	c.APIPassword = GetEnvVarAsString("CF_PASS", "")
 	c.AppSource = GetEnvVarAsString("CF_SRC", "")
 	c.DepString = GetEnvVarAsString("CF_DEP", "")
+	c.SetupScript = GetEnvVarAsString("CF_SETUP_PATH", "")
 	c.CatalogPath = GetEnvVarAsString("CF_CATALOG_PATH", "./catalog.json")
 
 	cfEnv, err := cfenv.Current()

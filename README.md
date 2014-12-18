@@ -189,6 +189,7 @@ Now configure how to deploy the app-as-a-service. Paths are relative to this app
 ```
 cf set-env $APPNAME CF_CATALOG_PATH ./catalog.json
 cf set-env $APPNAME CF_SRC ./apps/cf-env
+cf set-env $APPNAME CF_SETUP_PATH ./app/cf-env/setup.sh
 cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
 ```
 

@@ -44,6 +44,7 @@ func (c *CFClient) initialize() (*utils.CommandLogger, error) {
 		log.Fatalf("err cmd: %v", cf.Err())
 		return cf, cf.Err()
 	}
+	c.config.CFHomeDir = appDir
 
 	// auth
 	cf.WithArgs("auth", c.config.APIUser, c.config.APIPassword).Exec()
@@ -150,6 +151,44 @@ func (c *CFClient) deprovision(ctx *CFServiceContext) error {
 	}
 
 	return nil
+}
+
+func (c *CFClient) runSetupScript(ctx *CFServiceContext) (map[string]string, error) {
+	var output map[string]string
+	if c.config.SetupScript != "" {
+
+		// initialize
+		cf, err := c.initialize()
+		if err != nil {
+			log.Fatalf("err initializing command: %v", err)
+			return nil, err
+		}
+
+		// target
+		cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
+		if cf.Err() != nil {
+			log.Fatalf("err cmd: %s", cf.Err())
+			return nil, cf.Err()
+		}
+
+		script := utils.NewCommandLogger(c.config.SetupScript)
+		script.WithArgs(ctx.AppName).
+			WithEnv("CF_HOME", c.config.CFHomeDir).Exec()
+		if script.Err() != nil {
+			log.Printf("error running setup script: %v", script.Err())
+			return nil, script.Err()
+		}
+		log.Printf("output of script %v", script.Out())
+		err = json.Unmarshal([]byte(script.Out()), &output)
+		if err != nil {
+			log.Printf("error unmarshalling json of setup script: %v", err)
+			return nil, script.Err()
+		}
+		return output, nil
+	}
+	// Create empty hash if nothing is in script
+	output = make(map[string]string)
+	return output, nil
 }
 
 func (c *CFClient) queryAPI(query string) (string, error) {

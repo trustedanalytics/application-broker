@@ -104,6 +104,8 @@ func handleServiceError(err *cf.ServiceProviderError) (int, string) {
 		return marshalEntity(responseEntity{http.StatusConflict, empty})
 	case cf.ErrorInstanceNotFound:
 		return marshalEntity(responseEntity{http.StatusGone, empty})
+	case cf.ErrorServerException:
+		return marshalEntity(responseEntity{http.StatusInternalServerError, empty})
 	default:
 		return marshalEntity(responseEntity{
 			http.StatusInternalServerError,
