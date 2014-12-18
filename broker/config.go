@@ -17,30 +17,26 @@ func init() {
 
 // BrokerConfig hold the broker configuration
 type BrokerConfig struct {
-	Username     string
-	Password     string
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string
 	AuthURL      string
 	TokenURL     string
-	ApiURL       string
+	UI           bool
 	Debug        bool
 	CFEnv        *cfenv.App
 }
 
 func (c *BrokerConfig) initialize() {
 	log.Println("initializing broker config...")
-	c.Username = os.Getenv("CF_USER")
-	c.Password = os.Getenv("CF_PASS")
 	c.Debug = os.Getenv("CF_DEBUG") == "true"
+	c.Debug = os.Getenv("UI") == "true"
 
 	c.ClientID = os.Getenv("CLIENT_ID")
 	c.ClientSecret = os.Getenv("CLIENT_SECRET")
 	c.RedirectURL = os.Getenv("REDIRECT_URL")
 	c.AuthURL = os.Getenv("AUTH_URL")
 	c.TokenURL = os.Getenv("TOKEN_URL")
-	c.ApiURL = os.Getenv("API_URL")
 
 	cfEnv, err := cfenv.Current()
 	if err != nil || cfEnv == nil {
@@ -58,29 +54,22 @@ func (c *BrokerConfig) initialize() {
 func (c *BrokerConfig) validate() {
 	missingEnvVars := []string{}
 
-	if c.Username == "" {
-		missingEnvVars = append(missingEnvVars, "CF_USER")
-	}
-	if c.Password == "" {
-		missingEnvVars = append(missingEnvVars, "CF_PASS")
-	}
-	if c.ClientID == "" {
-		missingEnvVars = append(missingEnvVars, "CLIENT_ID")
-	}
-	if c.ClientSecret == "" {
-		missingEnvVars = append(missingEnvVars, "CLIENT_SECRET")
-	}
-	if c.RedirectURL == "" {
-		missingEnvVars = append(missingEnvVars, "REDIRECT_URL")
-	}
-	if c.AuthURL == "" {
-		missingEnvVars = append(missingEnvVars, "AUTH_URL")
-	}
-	if c.TokenURL == "" {
-		missingEnvVars = append(missingEnvVars, "TOKEN_URL")
-	}
-	if c.ApiURL == "" {
-		missingEnvVars = append(missingEnvVars, "API_URL")
+	if c.UI {
+		if c.ClientID == "" {
+			missingEnvVars = append(missingEnvVars, "CLIENT_ID")
+		}
+		if c.ClientSecret == "" {
+			missingEnvVars = append(missingEnvVars, "CLIENT_SECRET")
+		}
+		if c.RedirectURL == "" {
+			missingEnvVars = append(missingEnvVars, "REDIRECT_URL")
+		}
+		if c.AuthURL == "" {
+			missingEnvVars = append(missingEnvVars, "AUTH_URL")
+		}
+		if c.TokenURL == "" {
+			missingEnvVars = append(missingEnvVars, "TOKEN_URL")
+		}
 	}
 	if len(missingEnvVars) > 0 {
 		log.Println("Missing environment variable configuration:")
