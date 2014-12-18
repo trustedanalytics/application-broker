@@ -47,14 +47,13 @@ func newRouter(h *handler) *router {
 
 	cf := oauth2.NewOAuth2Provider(oauthOpts, Config.AuthURL, Config.TokenURL)
 	m.Use(sessions.Sessions("app_launcher", sessions.NewCookieStore([]byte("appsecretlauncher"))))
-	m.Use(cf)
 	m.Get(catalogURLPattern, reponseHandler(h.catalog))
 	m.Put(provisioningURLPattern, reponseHandler(h.provision))
 	m.Delete(provisioningURLPattern, reponseHandler(h.deprovision))
 	m.Put(bindingURLPattern, reponseHandler(h.bind))
 	m.Delete(bindingURLPattern, reponseHandler(h.unbind))
-	m.Use(oauth2.LoginRequired)
-	m.Group("/ui", api.Router)
+	m.Use(cf)
+	m.Group("/ui", api.Router, oauth2.LoginRequired)
 
 	m.NotFound(oauth2.LoginRequired, static, http.NotFound)
 	return &router{m}
