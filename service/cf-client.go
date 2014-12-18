@@ -41,7 +41,7 @@ func (c *CFClient) initialize() (*utils.CommandLogger, error) {
 	cf.WithArgs("api", c.config.APIEndpoint, "--skip-ssl-validation").
 		WithEnv("CF_HOME", appDir).Exec()
 	if cf.Err() != nil {
-		log.Fatalf("err cmd: %v", cf)
+		log.Fatalf("err cmd: %v", cf.Err())
 		return cf, cf.Err()
 	}
 
@@ -68,7 +68,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	// target
 	cf.WithArgs("target", "-o", ctx.OrgName, "-s", ctx.SpaceName).Exec()
 	if cf.Err() != nil {
-		log.Fatalf("err cmd: %v", cf)
+		log.Fatalf("err cmd: %s", cf.Err())
 		return cf.Err()
 	}
 
@@ -106,7 +106,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	cf.WithArgs("set-env", ctx.AppName, "APP_LAUNCHER_STATE", "start")
 	cf.WithArgs("start", ctx.AppName).Exec()
 	if cf.Err() != nil {
-		log.Printf("err cmd: %v", cf)
+		log.Printf("err cmd: %s", cf.Err())
 		c.deprovision(ctx)
 		return cf.Err()
 	}
@@ -198,6 +198,7 @@ func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServic
 		log.Printf("error getting service: %v", err)
 		return nil, err
 	}
+	t.InstanceName = srv.Name
 	t.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
 
 	space, err := c.getSpace(srv.SpaceGUID)
