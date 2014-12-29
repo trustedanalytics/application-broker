@@ -14,6 +14,7 @@ func init() {
 // APIConfig hold the broker configuration
 type APIConfig struct {
 	ApiURL string
+	UI     bool
 	Debug  bool
 }
 
@@ -21,6 +22,7 @@ func (c *APIConfig) initialize() {
 	log.Println("initializing broker config...")
 
 	c.ApiURL = os.Getenv("API_URL")
+	c.UI = os.Getenv("UI") == "true"
 
 	c.validate()
 }
@@ -28,8 +30,10 @@ func (c *APIConfig) initialize() {
 func (c *APIConfig) validate() {
 	missingEnvVars := []string{}
 
-	if c.ApiURL == "" {
-		missingEnvVars = append(missingEnvVars, "API_URL")
+	if c.UI {
+		if c.ApiURL == "" {
+			missingEnvVars = append(missingEnvVars, "API_URL")
+		}
 	}
 	if len(missingEnvVars) > 0 {
 		log.Println("Missing environment variable configuration:")

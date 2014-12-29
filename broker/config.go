@@ -30,7 +30,7 @@ type BrokerConfig struct {
 func (c *BrokerConfig) initialize() {
 	log.Println("initializing broker config...")
 	c.Debug = os.Getenv("CF_DEBUG") == "true"
-	c.Debug = os.Getenv("UI") == "true"
+	c.UI = os.Getenv("UI") == "true"
 
 	c.ClientID = os.Getenv("CLIENT_ID")
 	c.ClientSecret = os.Getenv("CLIENT_SECRET")
