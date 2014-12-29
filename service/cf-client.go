@@ -108,6 +108,9 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	cf.WithArgs("start", ctx.AppName).Exec()
 	if cf.Err() != nil {
 		log.Printf("err cmd: %s", cf.Err())
+		log.Printf("err out: %s", cf.Out())
+		cf.WithArgs("logs", ctx.AppName, "--recent").Exec()
+		log.Printf("logs out: %s", cf.Out())
 		c.deprovision(ctx)
 		return cf.Err()
 	}
