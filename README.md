@@ -22,6 +22,8 @@ If the backend application requires any services for itself, then those too are 
 
 The backend application and its own dependency services are created into the same organization and space being used by the end user.
 
+![](app_launcher_workflow.jpg)
+
 Development
 -----------
 
@@ -172,7 +174,7 @@ cd -
 Although the newly created `apps/` folder is ignored by `.gitignore` it will be correctly uploaded to Cloud Foundry as part of the deployment below.
 
 ```
-godep save
+godep save ./..
 cf push $APPNAME --no-start
 ```
 
@@ -193,9 +195,12 @@ cf set-env $APPNAME CF_SETUP_PATH ./app/cf-env/setup.sh
 cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
 ```
 
+CF_SETUP_PATH is script that is ran on binding service. This script is expected to return json that is added to credentials. First parameter passed into script is appname. This can be used to set environment variables for app.
+
 Now configure how to connect to oauth app
 
 ```
+cf set-env $APPNAME UI true
 cf set-env $APPNAME CLIENT_ID my_client
 cf set-env $APPNAME CLIENT_SECRET my_secret
 cf set-env $APPNAME REDIRECT_URL https://my-client.gotapaas.com
@@ -225,3 +230,17 @@ cf enable-service-access cf-env
 ```
 
 The latter command will make the service available to all organizations. You might want to restrict it to a subset of organizations with the `-o` flag.
+
+
+Tips for apps
+-----------------------
+
+### Golang tips
+
+Using golang apps requires you to pull in app dependency of the app that is being launched.
+
+```
+godep save ./...
+```
+
+The app that is being launched need a new godep save in order to be launched as well.
