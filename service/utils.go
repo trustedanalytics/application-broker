@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -161,4 +162,9 @@ func getTime(f string) string {
 		f = time.RFC850
 	}
 	return fmt.Sprintln(getNowInUtc().Format(f))
+}
+
+func reduceInstanceID(id string) string {
+	idSplit := strings.Split(id, "-")
+	return strings.Join(idSplit[0:len(idSplit)-1], "-")
 }

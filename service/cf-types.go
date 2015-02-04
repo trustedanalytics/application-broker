@@ -98,7 +98,9 @@ type CFBindingResponse struct {
 
 // NewCFServiceContext creates a new CFServiceContext including generated ServiceName
 func NewCFServiceContext(instanceID string) (ctx *CFServiceContext) {
-	ctx = &CFServiceContext{InstanceID: instanceID}
-	ctx.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
+	reduceID := reduceInstanceID(instanceID)
+	ctx = &CFServiceContext{InstanceID: reduceID}
+
+	ctx.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, reduceID)
 	return
 }

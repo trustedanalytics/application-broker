@@ -232,6 +232,7 @@ func (c *CFClient) getContextFromSpaceOrg(instanceID, spaceGUID, orgGUID string)
 func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServiceContext, error) {
 	log.Printf("getting service context for: %s", instanceID)
 
+	reduceID := reduceInstanceID(instanceID)
 	t := &CFServiceContext{}
 	t.InstanceID = instanceID
 
@@ -241,7 +242,7 @@ func (c *CFClient) getContextFromServiceInstanceID(instanceID string) (*CFServic
 		return nil, err
 	}
 	t.InstanceName = srv.Name
-	t.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, instanceID)
+	t.AppName = fmt.Sprintf("%s-%s", Config.ServiceName, reduceID)
 
 	space, err := c.getSpace(srv.SpaceGUID)
 	if err != nil {
