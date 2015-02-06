@@ -30,7 +30,11 @@ func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) 
 // CreateService create a service instance
 func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
-	d := &cf.ServiceCreationResponse{DashboardURL: ""}
+	dashboardUrl := ""
+	if p.config.DashboardURL != "" {
+		dashboardUrl = p.config.DashboardURL + "/" + r.InstanceID
+	}
+	d := &cf.ServiceCreationResponse{DashboardURL: dashboardUrl}
 
 	ctx, err := p.client.getContextFromSpaceOrg(r.InstanceID, r.SpaceGUID, r.OrganizationGUID)
 	if err != nil {

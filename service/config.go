@@ -40,6 +40,7 @@ type ServiceConfig struct {
 	AppSource    string
 	DepString    string
 	SetupScript  string
+	DashboardURL string
 	CFEnv        *cfenv.App
 	CatalogPath  string
 	Catalog      *cf.Catalog
@@ -58,6 +59,7 @@ func (c *ServiceConfig) initialize() {
 	c.AppSource = GetEnvVarAsString("CF_SRC", "")
 	c.DepString = GetEnvVarAsString("CF_DEP", "")
 	c.SetupScript = GetEnvVarAsString("CF_SETUP_PATH", "")
+	c.DashboardURL = GetEnvVarAsString("DASHBOARD_URL", "")
 	c.CatalogPath = GetEnvVarAsString("CF_CATALOG_PATH", "./catalog.json")
 
 	cfEnv, err := cfenv.Current()

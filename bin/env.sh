@@ -12,6 +12,7 @@ export REDIRECT_URL=${REDIRECT_URL:-"http://localhost:9999/oauth2callback"}
 export AUTH_URL=${AUTH_URL:-"https://login.$ROOT_DOMAIN/oauth/authorize"}
 export TOKEN_URL=${TOKEN_URL:-"https://uaa.$ROOT_DOMAIN/oauth/token"}
 export API_URL=${API_URL:-"https://api.$ROOT_DOMAIN"}
+export DASHBOARD_URL=${DASHBOARD_URL:-"http://foobar.com/instances/"}
 
 
 if [[ "${CF_PASS}X" == "X" ]]; then
