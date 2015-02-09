@@ -235,6 +235,27 @@ The latter command will make the service available to all organizations. You mig
 Tips for apps
 -----------------------
 
+### Setup script tips
+
+#### Parsing services attached environment variables
+
+Appname is passed in as first environment variable. We can use it to find app GUID with that we are able to get environment variables. Using [jq](http://stedolan.github.io/jq/)
+
+```
+app_guid=$($cf curl "/v2/apps?q=name:$appname" | $jq -r '.resources | .[0].metadata.guid')
+postgres_uri=$($cf curl /v2/apps/$app_guid/env | $jq -r '.system_env_json.VCAP_SERVICES.postgresql93 | .[0].credentials.uri')
+```
+
+#### Running single postgres command
+
+[Pgopher](https://github.com/longnguyen11288/pgopher) is a static binary used to run single queries against postgres
+
+example
+```
+pgopher --uri $postgres_uri -q "insert into users values(1, '$username', '$password', now(), now())"
+```
+
+
 ### Golang tips
 
 Using golang apps requires you to pull in app dependency of the app that is being launched.
