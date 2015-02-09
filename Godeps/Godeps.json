@@ -1,29 +1,7 @@
 {
 	"ImportPath": "github.com/intel-data/app-launching-service-broker",
 	"GoVersion": "go1.4",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
-		{
-			"ImportPath": "code.google.com/p/go-uuid/uuid",
-			"Comment": "null-15",
-			"Rev": "35bc42037350f0078e3c974c6ea690f1926603ab"
-		},
-		{
-			"ImportPath": "code.google.com/p/go.net/websocket",
-			"Comment": "null-236",
-			"Rev": "ff3b47fbfca01acfa052297ae28a270172236d42"
-		},
-		{
-			"ImportPath": "code.google.com/p/snappy-go/snappy",
-			"Comment": "null-15",
-			"Rev": "12e4b4183793ac4b061921e7980845e750679fd0"
-		},
-		{
-			"ImportPath": "github.com/Shopify/sarama",
-			"Rev": "306a77a0d23b8ce58ec71c77244b7c5140759098"
-		},
 		{
 			"ImportPath": "github.com/boj/redistore",
 			"Comment": "v1",
@@ -35,7 +13,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
-			"Comment": "v1.3-15-gdb26cf7",
+			"Comment": "v1.7-3-gdb26cf7",
 			"Rev": "db26cf7b4a1a562641392e8455975dda9f0f90d0"
 		},
 		{
@@ -47,10 +25,6 @@
 			"ImportPath": "github.com/codegangsta/inject",
 			"Comment": "v1.0-rc1-4-g4b81725",
 			"Rev": "4b8172520a03fa190f427bbd284db01b459bfce7"
-		},
-		{
-			"ImportPath": "github.com/eapache/go-resiliency/breaker",
-			"Rev": "ba73ce34de8ebe286f7eb54f43d2c830cd6e5592"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
@@ -93,10 +67,6 @@
 		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
 			"Rev": "740c764bc6149d3f1806231418adb9f52c11bcbf"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/assert",
-			"Rev": "de7fcff264cd05cc0c90c509ea789a436a0dd206"
 		}
 	]
 }
