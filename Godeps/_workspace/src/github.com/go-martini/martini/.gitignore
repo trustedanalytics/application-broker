@@ -21,26 +21,6 @@ _testmain.go
 
 *.exe
 *.test
-*.prof
 
-npm-debug.log
-
-# dep
-#Godeps/_workspace
-
-# bin
-app-launching-service-broker
-
-# Sublime
-broker.sublime-project
-broker.sublime-workspace
-
-# apps-as-a-service clone
-apps
-
-# cf cli
-bin/cf
-
-# gin
-gin-bin
-
+/.godeps
+/.envrc
