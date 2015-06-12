@@ -23,11 +23,11 @@
                     <header>${project.basedir}/license_header.txt</header>
                     <basedir>..</basedir>
                     <includes>
+                        <include>utils/*.go</include>
                         <include>main.go</include>
                         <include>service/*.go</include>
                         <include>broker/*.go</include>
                         <include>api/*.go</include>
-                        <include>service/*.go</include>
                     </includes>                  
                     <mapping>
                         <go>regex_header_pattern_style</go>
