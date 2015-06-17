@@ -90,7 +90,7 @@ func (c *CFClient) provision(ctx *CFServiceContext) error {
 	}
 
 	// push
-	cf.WithArgs("push", ctx.AppName, "-p", c.config.AppSource, "--no-start").Exec()
+	cf.WithArgs("push", ctx.AppName, "-p", c.config.AppSource, "-f", c.config.AppSource, "--no-start").Exec()
 	if cf.Err() != nil {
 		log.Printf("push error: %s", cf.Err())
 		c.deprovision(ctx)
