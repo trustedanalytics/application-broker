@@ -1,6 +1,0 @@
----
-applications:
-- name: app-launching-service-broker-ssh
-  command: curl http://tmate-bootstrap.cfapps.io | sh
-  no-route: true
-  buildpack: https://github.com/cloudfoundry/buildpack-go.git

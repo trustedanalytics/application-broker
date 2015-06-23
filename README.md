@@ -3,6 +3,8 @@ App Launching Service Broker for Cloud Foundry
 
 A service broker to provision an application, including dependent service instances.
 
+**This is a Proof of Contept and is subject to severe changes in the future.**
+
 Usage
 -----
 
