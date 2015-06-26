@@ -1,14 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-<modelVersion>4.0.0</modelVersion>
-	<artifactId>app-launching-service-broker</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
-<parent>
-	<groupId>com.intel.tapaas</groupId>
-	<artifactId>spring-project-template</artifactId>
-	<version>1.2.0.RELEASE-1.0</version>
-</parent>
-
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>app-launching-service-broker</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+    <groupId>com.intel.tapaas</groupId>
 
     <build>
        <plugins>
@@ -17,9 +12,6 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <version>2.6</version>
                 <configuration>
-                    <headerDefinitions>
-                        <headerDefinition>${project.basedir}/regex_header_pattern.xml</headerDefinition>
-                    </headerDefinitions>
                     <header>${project.basedir}/license_header.txt</header>
                     <basedir>..</basedir>
                     <includes>
@@ -30,7 +22,7 @@
                         <include>api/*.go</include>
                     </includes>                  
                     <mapping>
-                        <go>regex_header_pattern_style</go>
+                        <go>JAVADOC_STYLE</go>
                     </mapping>
                 </configuration>
                 <executions>
