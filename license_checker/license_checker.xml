@@ -20,9 +20,12 @@
                         <include>service/*.go</include>
                         <include>broker/*.go</include>
                         <include>api/*.go</include>
+                        <include>license_checker/*.sh</include>
+                        <include>bin/*.sh</include>
                     </includes>                  
                     <mapping>
                         <go>JAVADOC_STYLE</go>
+                        <sh>SCRIPT_STYLE</sh>
                     </mapping>
                 </configuration>
                 <executions>
