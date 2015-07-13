@@ -17,6 +17,7 @@ package utils
 
 import (
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/mchmarny/go-cmd"
@@ -53,6 +54,18 @@ func (c *CommandLogger) WithArgs(args ...string) *CommandLogger {
 func (c *CommandLogger) Exec() *CommandLogger {
 	log.Printf("%s.Exec()", c.Command.Cmd)
 	c.Command.Exec()
+
+	if len(c.Command.Out) > 0 {
+		for _, line := range strings.Split(c.Command.Out, "\n") {
+			log.Printf("--> %s\n", line)
+		}
+	}
+
+	if c.Command.Err != nil {
+		for _, line := range strings.Split(c.Command.Err.Error(), "\n") {
+			log.Printf("!!> %s\n", line)
+		}
+	}
 	return c
 }
 

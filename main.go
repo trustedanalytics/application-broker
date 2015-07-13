@@ -17,6 +17,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/intel-data/app-launching-service-broker/broker"
 	"github.com/intel-data/app-launching-service-broker/service"
@@ -28,6 +29,8 @@ func init() {
 
 func main() {
 
+	log.SetFlags(0)
+
 	s, err := service.New()
 	if err != nil {
 		log.Panicf("failed to initialize service: %v", err)
@@ -37,6 +40,8 @@ func main() {
 	if err != nil {
 		log.Panicf("failed to initialize broker: %v", err)
 	}
+
+	log.SetOutput(os.Stdout)
 
 	b.Start()
 }
