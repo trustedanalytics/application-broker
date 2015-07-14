@@ -19,12 +19,18 @@ import (
 	"log"
 	"testing"
 
+	"github.com/intel-data/app-launching-service-broker/nats/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/cloudfoundry-community/types-cf"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestGetCatalog(t *testing.T) {
 
-	p, err := New()
+	m := new(nats.MockedNats)
+	m.On("Publish", mock.Anything).Return(nil)
+	p, err := New(m)
+
 	assert.Nil(t, err, "error on create")
 	assert.NotNil(t, p, "nil provider")
 
@@ -60,7 +66,18 @@ func TestGetCatalog(t *testing.T) {
 			assert.NotNil(t, pln.Free, "nil plan free indicator")
 
 		}
-
 	}
+}
 
+func TestNatsUsage(t *testing.T) {
+	m := new(nats.MockedNats)
+	m.On("Publish", mock.Anything).Return(nil)
+	p, err := New(m)
+
+	assert.Nil(t, err)
+
+	request := &cf.ServiceCreationRequest{}
+	p.CreateService(request)
+
+	m.AssertNumberOfCalls(t, "Publish", 2)
 }

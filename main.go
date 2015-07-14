@@ -19,6 +19,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/intel-data/app-launching-service-broker/nats"
 	"github.com/intel-data/app-launching-service-broker/broker"
 	"github.com/intel-data/app-launching-service-broker/service"
 )
@@ -30,8 +31,14 @@ func init() {
 func main() {
 
 	log.SetFlags(0)
+	
+	n, err := nats.NewMessageBus(nats.Config.Url)
+	if err != nil {
+		log.Panicf("failed to initialize nats: %v", err)
+	}
 
-	s, err := service.New()
+	s, err := service.New(n)
+
 	if err != nil {
 		log.Panicf("failed to initialize service: %v", err)
 	}

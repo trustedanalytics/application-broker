@@ -18,6 +18,7 @@ package service
 import (
 	"log"
 
+	"github.com/intel-data/app-launching-service-broker/nats"
 	"github.com/cloudfoundry-community/types-cf"
 )
 
@@ -25,13 +26,21 @@ import (
 type LaunchingService struct {
 	config *ServiceConfig
 	client *CFClient
+	nats   nats.MessageBus
+}
+
+type ServiceCreationStatus struct {
+	ServiceId   string
+	ServiceType string
+	Message     string
 }
 
 // New creates an isntance of the LaunchingService
-func New() (*LaunchingService, error) {
+func New(natsInstance nats.MessageBus) (*LaunchingService, error) {
 	s := &LaunchingService{
 		config: Config,
 		client: NewCFClient(Config),
+		nats:   natsInstance,
 	}
 	return s, nil
 }
@@ -45,6 +54,9 @@ func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) 
 // CreateService create a service instance
 func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
+	msg := ServiceCreationStatus{ServiceId: r.InstanceID, ServiceType: r.ServiceID, Message: "CreateService fired"}
+	p.nats.Publish(msg)
+
 	dashboardUrl := ""
 	if p.config.DashboardURL != "" {
 		dashboardUrl = p.config.DashboardURL + "/" + r.InstanceID
@@ -54,11 +66,18 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	ctx, err := p.client.getContextFromSpaceOrg(r.InstanceID, r.SpaceGUID, r.OrganizationGUID)
 	if err != nil {
 		log.Printf("error getting app: %v", err)
+		msg.Message = "Getting context failed while service creation. Err: " + err.Error()
+		p.nats.Publish(msg)
 		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
-	p.client.provision(ctx)
-
+	err = p.client.provision(ctx)
+	if err != nil {
+		msg.Message = "Service provisioning failed with error: " + err.Error()
+	} else {
+		msg.Message = "Service creation succeded"
+	}
+	p.nats.Publish(msg)
 	return d, nil
 }
 
