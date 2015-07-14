@@ -2,8 +2,8 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>app-launching-service-broker</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
-    <groupId>com.intel.tapaas</groupId>
+    <version>0.0.3-SNAPSHOT</version>
+    <groupId>com.intel.taproot</groupId>
 
     <build>
        <plugins>
