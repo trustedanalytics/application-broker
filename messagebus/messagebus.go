@@ -13,16 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nats
 
-import (
-	"github.com/stretchr/testify/mock"
-)
+package messagebus
 
-type MockedNats struct {
-	mock.Mock
-}
-
-func (m *MockedNats) Publish(v interface{}) {
-	m.Called(v)
+type MessageBus interface {
+	Publish(v MessageWithTimestamp)
 }

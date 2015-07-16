@@ -13,32 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nats
+package messagebus
 
 import (
 	"log"
 
 	"github.com/nats-io/nats"
+	"time"
 )
 
-type MessageBus interface {
-	Publish(v interface{})
-}
-
 type NatsMessageBus struct {
-	NatsConnection      *nats.EncodedConn
+	NatsConnection  *nats.EncodedConn
+	Subject          string
 }
 
+func NewNatsMessageBus(configuration NatsConfig) (MessageBus, error) {
 
-func NewMessageBus(url string) (*NatsMessageBus, error) {
-
-	log.Printf("creating nats connection: %v", url)
-	opts := nats.Options {
-		Url: url,
-		AllowReconnect: true,
-	}
-
-	connection, err := opts.Connect()
+	log.Printf("creating nats connection: %v", configuration.Url)
+	connection, err := nats.Connect(configuration.Url)
 	if err != nil {
 		log.Printf("Unable to connect with nats: %v", err)
 		return nil, err
@@ -53,11 +45,14 @@ func NewMessageBus(url string) (*NatsMessageBus, error) {
 
 	return &NatsMessageBus{
 		NatsConnection: encoded,
+		Subject: configuration.Subject,
 	}, nil
 }
 
-func (n *NatsMessageBus) Publish(v interface{}) {
-	err := n.NatsConnection.Publish(Config.Subject, v)
+func (n *NatsMessageBus) Publish(m MessageWithTimestamp) {
+	m.SetTimestamp(time.Now())
+
+	err := n.NatsConnection.Publish(n.Subject, m)
 	if err != nil {
 		log.Panic("Unable to publish message with nats: ", err)
 	}

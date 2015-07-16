@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nats
+package messagebus
 
 import (
 	"log"
@@ -22,19 +22,13 @@ import (
 	"os"
 )
 
-var Config = &NatsConfig{}
-
-func init() {
-	Config.initialize()
-}
-
 // Holds values needed to set-up connection with NATs
 type NatsConfig struct {
-	Url        string
-	Subject    string
+	Url         string
+	Subject     string
 }
 
-func (c *NatsConfig) initialize() {
+func (c *NatsConfig) Initialize() bool {
 	log.Println("initializing nats config...")
 
 	cfEnv, err := cfenv.Current()
@@ -42,12 +36,20 @@ func (c *NatsConfig) initialize() {
 		log.Printf("CF env vars gathering problem: %v (running locally?)", err)
 		c.Url = os.Getenv("NATS_URL")
 		c.Subject = os.Getenv("NATS_SERVICE_CREATION_SUBJECT")
-	} else {
-		service, err := cfEnv.Services.WithName("nats-provider")
-		if err != nil {
-			log.Print("Cannot locate nats service in CF environment")
+
+		if(len(c.Url) == 0 || len(c.Subject) == 0) {
+			log.Printf("Unable to collect nats configuration from local envs")
+			return false
 		}
-		c.Url = service.Credentials["url"]
-		c.Subject = service.Credentials["service-creation-subject"]
+		return true
 	}
+
+	service, err := cfEnv.Services.WithName("nats-provider")
+	if err != nil {
+		log.Print("Cannot locate nats service in CF environment")
+		return false
+	}
+	c.Url = service.Credentials["url"]
+	c.Subject = service.Credentials["service-creation-subject"]
+	return true
 }

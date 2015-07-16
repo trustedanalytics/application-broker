@@ -19,7 +19,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/intel-data/app-launching-service-broker/nats/mocks"
+	"github.com/intel-data/app-launching-service-broker/messagebus"
 	"github.com/stretchr/testify/assert"
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/stretchr/testify/mock"
@@ -27,7 +27,7 @@ import (
 
 func TestGetCatalog(t *testing.T) {
 
-	m := new(nats.MockedNats)
+	m := new(messagebus.MockedNats)
 	m.On("Publish", mock.Anything).Return(nil)
 	p, err := New(m)
 
@@ -70,7 +70,7 @@ func TestGetCatalog(t *testing.T) {
 }
 
 func TestNatsUsage(t *testing.T) {
-	m := new(nats.MockedNats)
+	m := new(messagebus.MockedNats)
 	m.On("Publish", mock.Anything).Return(nil)
 	p, err := New(m)
 
