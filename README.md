@@ -49,8 +49,8 @@ This will create a set of environment variables used to configure the service br
 
 ```
 $ env | grep CF
-CF_API=https://api.gotapaas.com
-CF_SRC=/Users/drnic/Projects/cloudfoundry/apps/cf-env
+CF_API=https://api.foobar.com
+CF_SRC=/users/myself/Projects/cloudfoundry/apps/cf-env
 CF_DEP=postgresql93|free,consul|free
 CF_CATALOG_PATH=./catalog.json
 ```
@@ -58,8 +58,8 @@ CF_CATALOG_PATH=./catalog.json
 You now need to configure which admin user credentials the broker will use to communicate with Cloud Foundry:
 
 ```
-export CF_USER=admin
-export CF_PASS=c1oudc0w
+export CF_USER=adminuser
+export CF_PASS=adminpass
 ```
 
 If you are using self-signed certificates, you may need to ignore SSL verification:
@@ -85,7 +85,7 @@ The broker, via `gin`, will be running on port 3000 by default.
 
 ```
 $ curl http://localhost:3000/v2/catalog
-{"services":[{"id":"B6D73C9E-302D-4B78-BC46-56E92C6C000D","name":"cf-env","description":"View environment variables","bindable":true,"tags":["demo","backend"],"plans":[{"id":"4672FA24-4330-404B-AFC0-235AB6EA0F8C","name":"simple","description":"Simple","free":true}]}]}
+{"services":[{"id":"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX","name":"cf-env","description":"View environment variables","bindable":true,"tags":["demo","backend"],"plans":[{"id":"YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY","name":"simple","description":"Simple","free":true}]}]}
 ```
 
 The output here matches the contents of the `./catalog.json` example file.
@@ -143,7 +143,7 @@ In this example, the broker will be deployed to launch the [cf-env](https://gith
 ```
 export SERVICE=cf-env-launching
 export APPNAME=$SERVICE-service-broker
-git clone https://github.com/intel-data/app-launching-service-broker.git $APPNAME
+git clone https://github.com/platform-data/app-launching-service-broker.git $APPNAME
 cd $APPNAME
 ```
 
@@ -183,7 +183,7 @@ cf push $APPNAME --no-start
 You now need to configure the broker with credentials for your target Cloud Foundry as an admin-level user. Most likely this will be the same Cloud Foundry you are deploying too.
 
 ```
-cf set-env $APPNAME CF_API https://api.gotapaas.com
+cf set-env $APPNAME CF_API https://api.foobar.com
 cf set-env $APPNAME CF_USER admin
 cf set-env $APPNAME CF_PASS admin-password
 ```
@@ -205,10 +205,10 @@ Now configure how to connect to oauth app
 cf set-env $APPNAME UI true
 cf set-env $APPNAME CLIENT_ID my_client
 cf set-env $APPNAME CLIENT_SECRET my_secret
-cf set-env $APPNAME REDIRECT_URL https://my-client.gotapaas.com
-cf set-env $APPNAME AUTH_URL https://login.gotapaas.com/oauth/authorize
-cf set-env $APPNAME TOKEN_URL https://uaa.gotapaas.com/oauth/token
-cf set-env $APPNAME API_URL https://api.gotapaas.com/
+cf set-env $APPNAME REDIRECT_URL https://my-client.foobar.com
+cf set-env $APPNAME AUTH_URL https://login.foobar.com/oauth/authorize
+cf set-env $APPNAME TOKEN_URL https://uaa.foobar.com/oauth/token
+cf set-env $APPNAME API_URL https://api.foobar.com/
 
 ```
 
