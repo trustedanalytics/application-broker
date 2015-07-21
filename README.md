@@ -49,7 +49,7 @@ This will create a set of environment variables used to configure the service br
 
 ```
 $ env | grep CF
-CF_API=https://api.foobar.com
+CF_API=https://api.<platform_domain>
 CF_SRC=/users/myself/Projects/cloudfoundry/apps/cf-env
 CF_DEP=postgresql93|free,consul|free
 CF_CATALOG_PATH=./catalog.json
@@ -183,7 +183,7 @@ cf push $APPNAME --no-start
 You now need to configure the broker with credentials for your target Cloud Foundry as an admin-level user. Most likely this will be the same Cloud Foundry you are deploying too.
 
 ```
-cf set-env $APPNAME CF_API https://api.foobar.com
+cf set-env $APPNAME CF_API https://api.<platform_domain>
 cf set-env $APPNAME CF_USER admin
 cf set-env $APPNAME CF_PASS admin-password
 ```
@@ -205,10 +205,10 @@ Now configure how to connect to oauth app
 cf set-env $APPNAME UI true
 cf set-env $APPNAME CLIENT_ID my_client
 cf set-env $APPNAME CLIENT_SECRET my_secret
-cf set-env $APPNAME REDIRECT_URL https://my-client.foobar.com
-cf set-env $APPNAME AUTH_URL https://login.foobar.com/oauth/authorize
-cf set-env $APPNAME TOKEN_URL https://uaa.foobar.com/oauth/token
-cf set-env $APPNAME API_URL https://api.foobar.com/
+cf set-env $APPNAME REDIRECT_URL https://my-client.<platform_domain>
+cf set-env $APPNAME AUTH_URL https://login.<platform_domain>/oauth/authorize
+cf set-env $APPNAME TOKEN_URL https://uaa.<platform_domain>/oauth/token
+cf set-env $APPNAME API_URL https://api.<platform_domain>/
 
 ```
 
