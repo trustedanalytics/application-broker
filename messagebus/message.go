@@ -15,8 +15,6 @@
  */
 package messagebus
 
-import "time"
-
 type MessageWithTimestamp interface {
-	SetTimestamp(timestamp time.Time)
+	SetTimestamp(timestamp int64)
 }

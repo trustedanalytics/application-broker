@@ -17,14 +17,14 @@ package messagebus
 
 import (
 	"log"
+	"time"
 
 	"github.com/nats-io/nats"
-	"time"
 )
 
 type NatsMessageBus struct {
-	NatsConnection  *nats.EncodedConn
-	Subject          string
+	NatsConnection *nats.EncodedConn
+	Subject        string
 }
 
 func NewNatsMessageBus(configuration NatsConfig) (MessageBus, error) {
@@ -45,15 +45,21 @@ func NewNatsMessageBus(configuration NatsConfig) (MessageBus, error) {
 
 	return &NatsMessageBus{
 		NatsConnection: encoded,
-		Subject: configuration.Subject,
+		Subject:        configuration.Subject,
 	}, nil
 }
 
 func (n *NatsMessageBus) Publish(m MessageWithTimestamp) {
-	m.SetTimestamp(time.Now())
+	m.SetTimestamp(getMillisecondsTimestamp())
 
 	err := n.NatsConnection.Publish(n.Subject, m)
 	if err != nil {
 		log.Panic("Unable to publish message with nats: ", err)
 	}
+}
+
+func getMillisecondsTimestamp() int64 {
+	const NanosecondsPerMillisecond = 1000
+	now := time.Now()
+	return now.UnixNano() / NanosecondsPerMillisecond
 }

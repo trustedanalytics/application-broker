@@ -15,15 +15,13 @@
  */
 package service
 
-import "time"
-
 type ServiceCreationStatus struct {
 	ServiceId   string
 	ServiceType string
 	Message     string
-	Timestamp	time.Time
+	Timestamp   int64
 }
 
-func (s *ServiceCreationStatus) SetTimestamp(timestamp time.Time) {
+func (s *ServiceCreationStatus) SetTimestamp(timestamp int64) {
 	s.Timestamp = timestamp
 }
