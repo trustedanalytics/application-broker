@@ -143,7 +143,7 @@ In this example, the broker will be deployed to launch the [cf-env](https://gith
 ```
 export SERVICE=cf-env-launching
 export APPNAME=$SERVICE-service-broker
-git clone https://github.com/platform-data/app-launching-service-broker.git $APPNAME
+git clone https://github.com/intel-data/app-launching-service-broker.git $APPNAME
 cd $APPNAME
 ```
 
