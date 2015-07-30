@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 package service
+import "github.com/trustedanalytics/app-launching-service-broker/messagebus"
 
 type ServiceCreationStatus struct {
-	ServiceId   string
+	ServiceName string
 	ServiceType string
+	OrgGuid     string
 	Message     string
 	Timestamp   int64
 }
 
-func (s *ServiceCreationStatus) SetTimestamp(timestamp int64) {
-	s.Timestamp = timestamp
+type ServiceCreationStatusFactory struct {
+}
+
+func (f ServiceCreationStatusFactory) NewServiceStatus(name string , stype string, org string, msg string) (messagebus.Message) {
+	return ServiceCreationStatus{
+		ServiceName: name,
+		ServiceType: stype,
+		OrgGuid: org,
+		Message: msg,
+		Timestamp: messagebus.GetMillisecondsTimestamp(),
+	}
 }

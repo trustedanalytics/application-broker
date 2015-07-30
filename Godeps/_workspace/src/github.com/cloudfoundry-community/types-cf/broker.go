@@ -7,6 +7,7 @@ type ServiceCreationRequest struct {
 	PlanID           string `json:"plan_id"`
 	OrganizationGUID string `json:"organization_guid"`
 	SpaceGUID        string `json:"space_guid"`
+	Parameters       map[string]string `json:parameters`
 }
 
 // ServiceCreationResponse describes Cloud Foundry service provisioning response

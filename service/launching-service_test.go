@@ -29,7 +29,7 @@ func TestGetCatalog(t *testing.T) {
 
 	m := new(messagebus.MockedNats)
 	m.On("Publish", mock.Anything).Return(nil)
-	p, err := New(m)
+	p, err := New(m, ServiceCreationStatusFactory{})
 
 	assert.Nil(t, err, "error on create")
 	assert.NotNil(t, p, "nil provider")
@@ -71,8 +71,8 @@ func TestGetCatalog(t *testing.T) {
 
 func TestNatsUsage(t *testing.T) {
 	m := new(messagebus.MockedNats)
-	m.On("Publish", mock.Anything).Return(nil)
-	p, err := New(m)
+	m.On("Publish", mock.Anything).Return()
+	p, err := New(m, ServiceCreationStatusFactory{})
 
 	assert.Nil(t, err)
 
@@ -80,4 +80,33 @@ func TestNatsUsage(t *testing.T) {
 	p.CreateService(request)
 
 	m.AssertNumberOfCalls(t, "Publish", 2)
+}
+
+type MockServiceCreationStatusFactory struct {
+	mock.Mock
+}
+
+func (f *MockServiceCreationStatusFactory) NewServiceStatus(name string, stype string, org string, msg string) (messagebus.Message) {
+	f.Called(name, stype, org, msg)
+	return ServiceCreationStatus{}
+}
+
+func TestNatsProperDataSent(t *testing.T) {
+	m := new(messagebus.MockedNats)
+	m.On("Publish", mock.Anything).Return()
+	f := new(MockServiceCreationStatusFactory)
+	f.On("NewServiceStatus", "someFakeName", Config.ServiceName, "1234", mock.Anything).
+		Return().
+		Times(2)
+	p, err := New(m, f)
+
+	assert.Nil(t, err)
+
+	request := &cf.ServiceCreationRequest{}
+	request.Parameters = map[string]string{}
+	request.Parameters["name"] = "someFakeName"
+	request.OrganizationGUID = "1234"
+	p.CreateService(request)
+
+	f.AssertExpectations(t)
 }

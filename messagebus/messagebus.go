@@ -17,5 +17,5 @@
 package messagebus
 
 type MessageBus interface {
-	Publish(v MessageWithTimestamp)
+	Publish(v Message)
 }

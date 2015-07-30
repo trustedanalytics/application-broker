@@ -45,7 +45,7 @@ func main() {
 		n = &messagebus.StubbedNats{}
 	}
 
-	s, err := service.New(n)
+	s, err := service.New(n, service.ServiceCreationStatusFactory{})
 	if err != nil {
 		log.Panicf("failed to initialize service: %v", err)
 	}

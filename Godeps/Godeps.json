@@ -18,8 +18,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/types-cf",
-			"Comment": "v.1.4-1-g3434c7d",
-			"Rev": "3434c7da6d73a0930eff321f7477795e0cd2a615"
+			"Rev": "05ff064af454d843ab5216b11e2ad9d1d1f5d3fc"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/inject",

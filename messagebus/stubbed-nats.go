@@ -17,4 +17,4 @@ package messagebus
 
 type StubbedNats struct {}
 
-func (m *StubbedNats) Publish(v MessageWithTimestamp) {}
+func (m *StubbedNats) Publish(v Message) {}

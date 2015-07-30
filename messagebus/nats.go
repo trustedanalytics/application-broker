@@ -17,7 +17,6 @@ package messagebus
 
 import (
 	"log"
-	"time"
 
 	"github.com/nats-io/nats"
 )
@@ -49,17 +48,9 @@ func NewNatsMessageBus(configuration NatsConfig) (MessageBus, error) {
 	}, nil
 }
 
-func (n *NatsMessageBus) Publish(m MessageWithTimestamp) {
-	m.SetTimestamp(getMillisecondsTimestamp())
-
+func (n *NatsMessageBus) Publish(m Message) {
 	err := n.NatsConnection.Publish(n.Subject, m)
 	if err != nil {
-		log.Panic("Unable to publish message with nats: ", err)
+		log.Printf("Unable to publish message with nats: %v", err)
 	}
-}
-
-func getMillisecondsTimestamp() int64 {
-	const NanosecondsPerMillisecond = 1000
-	now := time.Now()
-	return now.UnixNano() / NanosecondsPerMillisecond
 }

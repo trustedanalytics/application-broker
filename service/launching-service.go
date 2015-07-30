@@ -24,17 +24,19 @@ import (
 
 // LaunchingService object
 type LaunchingService struct {
-	config *ServiceConfig
-	client *CFClient
-	nats   messagebus.MessageBus
+	config     *ServiceConfig
+	client     *CFClient
+	msgBus     messagebus.MessageBus
+	msgFactory messagebus.MessageFactory
 }
 
 // New creates an isntance of the LaunchingService
-func New(natsInstance messagebus.MessageBus) (*LaunchingService, error) {
+func New(natsInstance messagebus.MessageBus, messageFactory messagebus.MessageFactory) (*LaunchingService, error) {
 	s := &LaunchingService{
-		config: Config,
-		client: NewCFClient(Config),
-		nats:   natsInstance,
+		config:     Config,
+		client:     NewCFClient(Config),
+		msgBus:     natsInstance,
+		msgFactory: messageFactory,
 	}
 	return s, nil
 }
@@ -48,8 +50,12 @@ func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) 
 // CreateService create a service instance
 func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, *cf.ServiceProviderError) {
 	log.Printf("creating service: %v", r)
-	msg := &ServiceCreationStatus{ServiceId: r.InstanceID, ServiceType: Config.ServiceName, Message: "CreateService operation started"}
-	p.nats.Publish(msg)
+	name := r.Parameters["name"]
+	stype := Config.ServiceName
+	org := r.OrganizationGUID
+
+	msg := p.msgFactory.NewServiceStatus(name, stype, org, "CreateService operation started")
+	p.msgBus.Publish(msg)
 
 	dashboardUrl := ""
 	if p.config.DashboardURL != "" {
@@ -60,18 +66,18 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	ctx, err := p.client.getContextFromSpaceOrg(r.InstanceID, r.SpaceGUID, r.OrganizationGUID)
 	if err != nil {
 		log.Printf("error getting app: %v", err)
-		msg.Message = "Getting context failed while service creation. Err: " + err.Error()
-		p.nats.Publish(msg)
+		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Getting context failed while service creation. Err: " + err.Error())
+		p.msgBus.Publish(msg)
 		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
 	}
 
 	err = p.client.provision(ctx)
 	if err != nil {
-		msg.Message = "Service spawning failed with error: " + err.Error()
+		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning failed with error: " + err.Error())
 	} else {
-		msg.Message = "Service spawning succeded"
+		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning succeded")
 	}
-	p.nats.Publish(msg)
+	p.msgBus.Publish(msg)
 	return d, nil
 }
 

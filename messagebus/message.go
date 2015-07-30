@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 package messagebus
+import "time"
 
-type MessageWithTimestamp interface {
-	SetTimestamp(timestamp int64)
+type Message interface {
+}
+
+type MessageFactory interface {
+	NewServiceStatus(name string, stype string, org string, msg string) (Message)
+}
+
+func GetMillisecondsTimestamp() int64 {
+	const NanosecondsPerMillisecond = 1000000
+	now := time.Now()
+	return now.UnixNano() / NanosecondsPerMillisecond
 }

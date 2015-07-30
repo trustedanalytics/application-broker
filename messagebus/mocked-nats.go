@@ -23,6 +23,6 @@ type MockedNats struct {
 	mock.Mock
 }
 
-func (m *MockedNats) Publish(v MessageWithTimestamp) {
+func (m *MockedNats) Publish(v Message) {
 	m.Called(v)
 }
