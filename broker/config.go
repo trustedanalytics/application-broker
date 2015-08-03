@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/intel-data/app-launching-service-broker/service"
+	"github.com/trustedanalytics/app-launching-service-broker/service"
 )
 
 // Config hold a global BrokerConfig isntance

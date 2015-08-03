@@ -19,7 +19,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/intel-data/app-launching-service-broker/messagebus"
+	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
 	"github.com/stretchr/testify/assert"
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/stretchr/testify/mock"

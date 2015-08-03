@@ -18,7 +18,7 @@ package service
 import (
 	"log"
 
-	"github.com/intel-data/app-launching-service-broker/messagebus"
+	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
 	"github.com/cloudfoundry-community/types-cf"
 )
 

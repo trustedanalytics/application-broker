@@ -23,7 +23,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/intel-data/app-launching-service-broker/utils"
+	"github.com/trustedanalytics/app-launching-service-broker/utils"
 )
 
 // CFClient object

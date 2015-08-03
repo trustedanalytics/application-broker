@@ -19,9 +19,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/intel-data/app-launching-service-broker/messagebus"
-	"github.com/intel-data/app-launching-service-broker/broker"
-	"github.com/intel-data/app-launching-service-broker/service"
+	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
+	"github.com/trustedanalytics/app-launching-service-broker/broker"
+	"github.com/trustedanalytics/app-launching-service-broker/service"
 )
 
 func init() {
