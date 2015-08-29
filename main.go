@@ -16,46 +16,47 @@
 package main
 
 import (
-	"log"
-	"os"
-
-	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
-	"github.com/trustedanalytics/app-launching-service-broker/broker"
-	"github.com/trustedanalytics/app-launching-service-broker/service"
+	log "github.com/cihub/seelog"
+	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/trustedanalytics/application-broker/broker"
+	"github.com/trustedanalytics/application-broker/cloud"
+	"github.com/trustedanalytics/application-broker/dao"
+	"github.com/trustedanalytics/application-broker/logging"
+	"github.com/trustedanalytics/application-broker/messagebus"
+	"github.com/trustedanalytics/application-broker/service"
 )
-
-func init() {
-	log.SetFlags(log.Ltime | log.Lshortfile)
-}
 
 func main() {
 
-	log.SetFlags(0)
-
-	var n messagebus.MessageBus
+	var mbus messagebus.MessageBus
 	var err error
 
-	natsConfig := messagebus.NatsConfig{}
-	natsAvailable := natsConfig.Initialize()
+	logging.Initialize()
+
+	cfEnv, err := cfenv.Current()
+	if err != nil {
+		log.Warnf("CF Env vars gathering failed with error [%v]. Running locally, probably.", err)
+	}
+	natsConfig := messagebus.Config{}
+	natsAvailable := natsConfig.TryInitialize(cfEnv)
 	if natsAvailable {
-		n, err = messagebus.NewNatsMessageBus(natsConfig)
+		mbus, err = messagebus.NewNatsMessageBus(natsConfig)
 	}
 	if err != nil || !natsAvailable {
-		log.Printf("Failed to initialize nats. Events information publishing will be skipped.")
-		n = &messagebus.StubbedNats{}
+		log.Warn("Failed to initialize nats. Events information publishing will be skipped.")
+		mbus = &messagebus.DevNullBus{}
 	}
 
-	s, err := service.New(n, service.ServiceCreationStatusFactory{})
-	if err != nil {
-		log.Panicf("failed to initialize service: %v", err)
-	}
+	db := dao.MongoFactory(cfEnv)
+	cloud := cloud.NewCfAPI()
+	s := service.New(db, cloud, mbus, service.CreationStatusFactory{})
 
 	b, err := broker.New(s)
 	if err != nil {
-		log.Panicf("failed to initialize broker: %v", err)
+		log.Criticalf("failed to initialize broker: [%v]", err)
 	}
 
-	log.SetOutput(os.Stdout)
-
-	b.Start()
+	brokerCfg := broker.Config{}
+	brokerCfg.Initialize(cfEnv)
+	b.Start(brokerCfg)
 }

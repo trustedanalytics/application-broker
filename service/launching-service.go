@@ -16,163 +16,180 @@
 package service
 
 import (
-	"log"
-
-	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
+	"github.com/trustedanalytics/application-broker/cloud"
+	"github.com/trustedanalytics/application-broker/dao"
+	"github.com/trustedanalytics/application-broker/messagebus"
+	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/types"
 )
 
-// LaunchingService object
+// LaunchingService wraps access to db, cloud controller and messagebus
 type LaunchingService struct {
-	config     *ServiceConfig
-	client     *CFClient
+	db         dao.Facade
+	cloud      cloud.API
 	msgBus     messagebus.MessageBus
 	msgFactory messagebus.MessageFactory
 }
 
-// New creates an isntance of the LaunchingService
-func New(natsInstance messagebus.MessageBus, messageFactory messagebus.MessageFactory) (*LaunchingService, error) {
+// New creates an instance of the LaunchingService
+func New(db dao.Facade, cloud cloud.API, natsInstance messagebus.MessageBus, messageFactory messagebus.MessageFactory) *LaunchingService {
 	s := &LaunchingService{
-		config:     Config,
-		client:     NewCFClient(Config),
+		db:         db,
+		cloud:      cloud,
 		msgBus:     natsInstance,
 		msgFactory: messageFactory,
 	}
-	return s, nil
+	return s
+}
+
+// InsertToCatalog adds new application description that can be spawned/duplicated on demand
+// Description is stored in underlying implementation of Catalog interface
+func (p *LaunchingService) InsertToCatalog(svc *types.ServiceExtension) error {
+	if !types.Validate(svc) {
+		return misc.InvalidInputError{}
+	}
+	if err := p.db.Append(svc); err != nil {
+		return err
+	}
+
+	if err := p.UpdateBroker(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteFromCatalog deletes data pointing to reference application from internal storage
+func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
+	if _, err := p.db.Find(serviceID); err != nil {
+		return err
+	}
+
+	services, err := p.db.Get()
+	if err != nil {
+		return err
+	}
+	if len(services) <= 1 {
+		return misc.InternalServerError{Context: "Cannot delete the only service offering. Catalog cannot be empty."}
+	}
+
+	hasInstances, err := p.db.HasInstancesOf(serviceID)
+	if err != nil {
+		return err
+	}
+
+	if hasInstances {
+		return misc.ExistingInstancesError{}
+	}
+
+	if err := p.db.Remove(serviceID); err != nil {
+		return err
+	}
+
+	if err := p.UpdateBroker(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetCatalog parses catalog response
-func (p *LaunchingService) GetCatalog() (*cf.Catalog, *cf.ServiceProviderError) {
-	log.Println("getting catalog...")
-	return p.config.Catalog, nil
+func (p *LaunchingService) GetCatalog() (*types.CatalogExtension, error) {
+	log.Debug("getting catalog...")
+
+	var err error
+	toReturn := types.CatalogExtension{}
+	toReturn.Services, err = p.db.Get()
+
+	if err != nil {
+		return nil, err
+	}
+	return &toReturn, nil
 }
 
-// CreateService create a service instance
-func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, *cf.ServiceProviderError) {
-	log.Printf("creating service: %v", r)
+// CreateService creates a service instance
+func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error) {
+	service, err := p.db.Find(r.ServiceID)
+	if err != nil {
+		return nil, err
+	}
 	name := r.Parameters["name"]
-	stype := Config.ServiceName
+	stype := service.Name
 	org := r.OrganizationGUID
 
 	msg := p.msgFactory.NewServiceStatus(name, stype, org, "CreateService operation started")
 	p.msgBus.Publish(msg)
 
-	dashboardUrl := ""
-	if p.config.DashboardURL != "" {
-		dashboardUrl = p.config.DashboardURL + "/" + r.InstanceID
-	}
-	d := &cf.ServiceCreationResponse{DashboardURL: dashboardUrl}
-
-	ctx, err := p.client.getContextFromSpaceOrg(r.InstanceID, r.SpaceGUID, r.OrganizationGUID)
+	//TODO: instead of referenceApp.GUID we should pass entire app object
+	resp, err := p.cloud.Provision(service.ReferenceApp.Meta.GUID, r)
 	if err != nil {
-		log.Printf("error getting app: %v", err)
-		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Getting context failed while service creation. Err: " + err.Error())
+		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning failed with error: "+err.Error())
 		p.msgBus.Publish(msg)
-		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+		return nil, err
 	}
-
-	err = p.client.provision(ctx)
-	if err != nil {
-		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning failed with error: " + err.Error())
-	} else {
-		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning succeded")
-	}
+	msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning succeded")
 	p.msgBus.Publish(msg)
-	return d, nil
+
+	toAppend := types.ServiceInstanceExtension{
+		App:       resp.App,
+		ID:        r.InstanceID,
+		ServiceID: r.ServiceID,
+	}
+	if err := p.db.AppendInstance(toAppend); err != nil {
+		return nil, err
+	}
+	return &resp.ServiceCreationResponse, nil
 }
 
-// DeleteService deletes itself and its dependencies
-func (p *LaunchingService) DeleteService(instanceID string) *cf.ServiceProviderError {
-	log.Printf("deleting service: %s", instanceID)
+// DeleteService deletes service instance and its dependencies
+func (p *LaunchingService) DeleteService(instanceID string) error {
+	log.Debugf("Deleting service %s...", instanceID)
 
-	ctx, err := p.client.getContextFromServiceInstanceID(instanceID)
+	service, err := p.db.FindInstance(instanceID)
 	if err != nil {
-		log.Printf("error getting app: %v", err)
-		return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+		return err
 	}
 
-	err = p.client.deprovision(ctx)
-	if err != nil {
-		cf.NewServiceProviderError(cf.ErrorServerException, err)
+	if err := p.cloud.Deprovision(service.App.Meta.GUID); err != nil {
+		return err
 	}
-
+	p.db.RemoveInstance(service.ID)
 	return nil
 }
 
-// BindService creates a service instance binding
-func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*cf.ServiceBindingResponse, *cf.ServiceProviderError) {
-	log.Printf("creating service binding: %v", r)
-
-	b := &cf.ServiceBindingResponse{}
-
-	ctx, err := p.client.getContextFromServiceInstanceID(r.InstanceID)
+// BindService creates a (service instance <-> application) binding
+func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*types.ServiceBindingResponse, error) {
+	instance, err := p.db.FindInstance(r.InstanceID)
 	if err != nil {
-		log.Printf("error getting service: %v", err)
-		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
+		return nil, err
 	}
 
-	app, err := p.client.getAppByName(ctx.SpaceGUID, ctx.AppName)
-	if err != nil {
-		log.Printf("error getting app by name: %v", err)
-		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	}
-
-	// TODO: See if the above is even needed for this generic kind of an app
-	log.Printf("binding - ctx[%v] app[%v]", ctx, app)
-
-	// TODO: Return app URL from the context in API
-	b.Credentials = make(map[string]string)
-
-	// TODO: Set this to the app URI
-	// func to get first route for AppName
-	route, err := p.client.getFirstFullRouteURL(app)
-	if err != nil {
-		log.Printf("error getting app route: %v", err)
-		return nil, cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	}
-	log.Printf("app route - %s", route)
-
-	appCreds, err := p.client.runSetupScript(ctx)
-	if err != nil {
-		return nil, cf.NewServiceProviderError(cf.ErrorServerException, err)
-	}
-	for key, value := range appCreds {
-		b.Credentials[key] = value
-	}
-
-	b.Credentials["name"] = ctx.AppName
-	b.Credentials["route"] = route
-	b.Credentials["url"] = "https://" + route // TODO determine protocol
-
-	return b, nil
+	resp := new(types.ServiceBindingResponse)
+	resp.Credentials = make(map[string]string)
+	resp.Credentials["url"] = instance.App.Meta.URL
+	return resp, nil
 }
 
-// UnbindService deletes service instance binding
-func (p *LaunchingService) UnbindService(instanceID, bindingID string) *cf.ServiceProviderError {
-	log.Printf("deleting service binding: %s/%s", instanceID, bindingID)
+func (p *LaunchingService) UpdateBroker() error {
+	vcapSerialized := misc.GetEnvVarAsString("VCAP_APPLICATION", "{}")
+	vcap := new(types.CfVcapApplication)
+	json.NewDecoder(bytes.NewReader([]byte(vcapSerialized))).Decode(vcap)
+	username := misc.GetEnvVarAsString("AUTH_USER", "")
+	password := misc.GetEnvVarAsString("AUTH_PASS", "")
 
-	// NOTE: Currently no action required for unbinding; return Ok
+	if len(vcap.Name) == 0 {
+		return misc.InternalServerError{Context: "Application name is not set"}
+	}
 
-	// ctx, err := p.client.getContextFromServiceInstanceID(instanceID)
-	// if err != nil {
-	// 	log.Printf("error getting service: %v", err)
-	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	// }
-	//
-	// bind, err := p.client.getBinding(bindingID)
-	// if err != nil {
-	// 	log.Printf("error getting binding: %v", err)
-	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	// }
-	//
-	// app, err := p.client.getApp(bind.AppGUID)
-	// if err != nil {
-	// 	log.Printf("error getting app: %v", err)
-	// 	return cf.NewServiceProviderError(cf.ErrorInstanceNotFound, err)
-	// }
-	//
-	// // TODO: See if the above is even needed for this generic kind of an app
-	// log.Printf("binding - bind[%v] ctx[%v] app[%v]", bind, ctx, app)
+	if len(vcap.Uris) == 0 || len(vcap.Uris[0]) == 0 {
+		return misc.InternalServerError{Context: "Application has no url set"}
+	}
+	url := fmt.Sprintf("http://%v", vcap.Uris[0])
 
-	return nil
+	return p.cloud.UpdateBroker(vcap.Name, url, username, password)
 }

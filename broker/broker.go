@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package broker
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+	log "github.com/cihub/seelog"
 	"os"
 	"os/signal"
 
-	"github.com/cloudfoundry-community/types-cf"
+	"fmt"
+	"github.com/trustedanalytics/application-broker/types"
+	"net/http"
 )
 
 // Broker represents a running CF Service Broker API
@@ -30,18 +31,18 @@ type Broker struct {
 	router *router
 }
 
-// New creates a loaded instance o the broker
-func New(p cf.ServiceProvider) (*Broker, error) {
+// New creates a loaded instance of the broker
+func New(p types.ServiceProviderExtension) (*Broker, error) {
 	return &Broker{
 		router: newRouter(newHandler(p)),
 	}, nil
 }
 
 // Start the broker
-func (b *Broker) Start() {
+func (b *Broker) Start(config Config) {
 
-	addr := fmt.Sprintf("%s:%d", Config.CFEnv.Host, Config.CFEnv.Port)
-	log.Printf("starting: %s", addr)
+	addr := fmt.Sprintf("%s:%d", config.CFEnv.Host, config.CFEnv.Port)
+	log.Infof("starting: %s", addr)
 
 	sigCh := make(chan os.Signal, 1)
 
@@ -57,10 +58,10 @@ func (b *Broker) Start() {
 	// non blocking as some of these cf ops are kind of lengthy
 	select {
 	case err := <-errCh:
-		log.Printf("broker error: %v", err)
+		log.Errorf("broker error: %v", err)
 	case sig := <-sigCh:
 		var _ = sig
-		log.Print("broker done")
+		log.Info("broker done")
 	}
 
 }

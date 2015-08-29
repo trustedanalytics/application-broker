@@ -2,11 +2,11 @@ package cf
 
 // ServiceCreationRequest describes Cloud Foundry service provisioning request
 type ServiceCreationRequest struct {
-	InstanceID       string `json:"-"`
-	ServiceID        string `json:"service_id"`
-	PlanID           string `json:"plan_id"`
-	OrganizationGUID string `json:"organization_guid"`
-	SpaceGUID        string `json:"space_guid"`
+	InstanceID       string            `json:"-"`
+	ServiceID        string            `json:"service_id"`
+	PlanID           string            `json:"plan_id"`
+	OrganizationGUID string            `json:"organization_guid"`
+	SpaceGUID        string            `json:"space_guid"`
 	Parameters       map[string]string `json:parameters`
 }
 
@@ -28,6 +28,11 @@ type ServiceBindingRequest struct {
 type ServiceBindingResponse struct {
 	Credentials    map[string]string `json:"credentials"`
 	SyslogDrainURL string            `json:"syslog_drain_url"`
+}
+
+type ServiceLastOperationResponse struct {
+	State       string `json:"-"`
+	Description string `json:"-"`
 }
 
 // BrokerError describes Cloud Foundry broker error

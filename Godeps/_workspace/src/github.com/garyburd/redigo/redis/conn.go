@@ -51,29 +51,96 @@ type conn struct {
 	numScratch [40]byte
 }
 
-// Dial connects to the Redis server at the given network and address.
-func Dial(network, address string) (Conn, error) {
-	c, err := net.Dial(network, address)
-	if err != nil {
-		return nil, err
-	}
-	return NewConn(c, 0, 0), nil
-}
-
 // DialTimeout acts like Dial but takes timeouts for establishing the
 // connection to the server, writing a command and reading a reply.
+//
+// DialTimeout is deprecated.
 func DialTimeout(network, address string, connectTimeout, readTimeout, writeTimeout time.Duration) (Conn, error) {
-	var c net.Conn
-	var err error
-	if connectTimeout > 0 {
-		c, err = net.DialTimeout(network, address, connectTimeout)
-	} else {
-		c, err = net.Dial(network, address)
+	return Dial(network, address,
+		DialConnectTimeout(connectTimeout),
+		DialReadTimeout(readTimeout),
+		DialWriteTimeout(writeTimeout))
+}
+
+// DialOption specifies an option for dialing a Redis server.
+type DialOption struct {
+	f func(*dialOptions)
+}
+
+type dialOptions struct {
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+	dial         func(network, addr string) (net.Conn, error)
+	db           int
+	password     string
+}
+
+// DialReadTimeout specifies the timeout for reading a single command reply.
+func DialReadTimeout(d time.Duration) DialOption {
+	return DialOption{func(do *dialOptions) {
+		do.readTimeout = d
+	}}
+}
+
+// DialWriteTimeout specifies the timeout for writing a single command.
+func DialWriteTimeout(d time.Duration) DialOption {
+	return DialOption{func(do *dialOptions) {
+		do.writeTimeout = d
+	}}
+}
+
+// DialConnectTimeout specifies the timeout for connecting to the Redis server.
+func DialConnectTimeout(d time.Duration) DialOption {
+	return DialOption{func(do *dialOptions) {
+		dialer := net.Dialer{Timeout: d}
+		do.dial = dialer.Dial
+	}}
+}
+
+// DialDatabase specifies the database to select when dialing a connection.
+func DialDatabase(db int) DialOption {
+	return DialOption{func(do *dialOptions) {
+		do.db = db
+	}}
+}
+
+// Dial connects to the Redis server at the given network and
+// address using the specified options.
+func Dial(network, address string, options ...DialOption) (Conn, error) {
+	do := dialOptions{
+		dial: net.Dial,
 	}
+	for _, option := range options {
+		option.f(&do)
+	}
+
+	netConn, err := do.dial(network, address)
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c, readTimeout, writeTimeout), nil
+	c := &conn{
+		conn:         netConn,
+		bw:           bufio.NewWriter(netConn),
+		br:           bufio.NewReader(netConn),
+		readTimeout:  do.readTimeout,
+		writeTimeout: do.writeTimeout,
+	}
+
+	if do.password != "" {
+		if _, err := c.Do("AUTH", do.password); err != nil {
+			netConn.Close()
+			return nil, err
+		}
+	}
+
+	if do.db != 0 {
+		if _, err := c.Do("SELECT", do.db); err != nil {
+			netConn.Close()
+			return nil, err
+		}
+	}
+
+	return c, nil
 }
 
 // NewConn returns a new Redigo connection for the given net connection.
@@ -191,17 +258,23 @@ func (c *conn) writeCommand(cmd string, args []interface{}) (err error) {
 	return err
 }
 
+type protocolError string
+
+func (pe protocolError) Error() string {
+	return fmt.Sprintf("redigo: %s (possible server error or unsupported concurrent read by application)", string(pe))
+}
+
 func (c *conn) readLine() ([]byte, error) {
 	p, err := c.br.ReadSlice('\n')
 	if err == bufio.ErrBufferFull {
-		return nil, errors.New("redigo: long response line")
+		return nil, protocolError("long response line")
 	}
 	if err != nil {
 		return nil, err
 	}
 	i := len(p) - 2
 	if i < 0 || p[i] != '\r' {
-		return nil, errors.New("redigo: bad response line terminator")
+		return nil, protocolError("bad response line terminator")
 	}
 	return p[:i], nil
 }
@@ -209,7 +282,7 @@ func (c *conn) readLine() ([]byte, error) {
 // parseLen parses bulk string and array lengths.
 func parseLen(p []byte) (int, error) {
 	if len(p) == 0 {
-		return -1, errors.New("redigo: malformed length")
+		return -1, protocolError("malformed length")
 	}
 
 	if p[0] == '-' && len(p) == 2 && p[1] == '1' {
@@ -221,7 +294,7 @@ func parseLen(p []byte) (int, error) {
 	for _, b := range p {
 		n *= 10
 		if b < '0' || b > '9' {
-			return -1, errors.New("redigo: illegal bytes in length")
+			return -1, protocolError("illegal bytes in length")
 		}
 		n += int(b - '0')
 	}
@@ -232,7 +305,7 @@ func parseLen(p []byte) (int, error) {
 // parseInt parses an integer reply.
 func parseInt(p []byte) (interface{}, error) {
 	if len(p) == 0 {
-		return 0, errors.New("redigo: malformed integer")
+		return 0, protocolError("malformed integer")
 	}
 
 	var negate bool
@@ -240,7 +313,7 @@ func parseInt(p []byte) (interface{}, error) {
 		negate = true
 		p = p[1:]
 		if len(p) == 0 {
-			return 0, errors.New("redigo: malformed integer")
+			return 0, protocolError("malformed integer")
 		}
 	}
 
@@ -248,7 +321,7 @@ func parseInt(p []byte) (interface{}, error) {
 	for _, b := range p {
 		n *= 10
 		if b < '0' || b > '9' {
-			return 0, errors.New("redigo: illegal bytes in length")
+			return 0, protocolError("illegal bytes in length")
 		}
 		n += int64(b - '0')
 	}
@@ -270,7 +343,7 @@ func (c *conn) readReply() (interface{}, error) {
 		return nil, err
 	}
 	if len(line) == 0 {
-		return nil, errors.New("redigo: short response line")
+		return nil, protocolError("short response line")
 	}
 	switch line[0] {
 	case '+':
@@ -301,7 +374,7 @@ func (c *conn) readReply() (interface{}, error) {
 		if line, err := c.readLine(); err != nil {
 			return nil, err
 		} else if len(line) != 0 {
-			return nil, errors.New("redigo: bad bulk string format")
+			return nil, protocolError("bad bulk string format")
 		}
 		return p, nil
 	case '*':
@@ -318,7 +391,7 @@ func (c *conn) readReply() (interface{}, error) {
 		}
 		return r, nil
 	}
-	return nil, errors.New("redigo: unexpected response line")
+	return nil, protocolError("unexpected response line")
 }
 
 func (c *conn) Send(cmd string, args ...interface{}) error {
@@ -345,20 +418,24 @@ func (c *conn) Flush() error {
 }
 
 func (c *conn) Receive() (reply interface{}, err error) {
-	c.mu.Lock()
-	// There can be more receives than sends when using pub/sub. To allow
-	// normal use of the connection after unsubscribe from all channels, do not
-	// decrement pending to a negative value.
-	if c.pending > 0 {
-		c.pending -= 1
-	}
-	c.mu.Unlock()
 	if c.readTimeout != 0 {
 		c.conn.SetReadDeadline(time.Now().Add(c.readTimeout))
 	}
 	if reply, err = c.readReply(); err != nil {
 		return nil, c.fatal(err)
 	}
+	// When using pub/sub, the number of receives can be greater than the
+	// number of sends. To enable normal use of the connection after
+	// unsubscribing from all channels, we do not decrement pending to a
+	// negative value.
+	//
+	// The pending field is decremented after the reply is read to handle the
+	// case where Receive is called before Send.
+	c.mu.Lock()
+	if c.pending > 0 {
+		c.pending -= 1
+	}
+	c.mu.Unlock()
 	if err, ok := reply.(Error); ok {
 		return nil, err
 	}
@@ -366,22 +443,28 @@ func (c *conn) Receive() (reply interface{}, err error) {
 }
 
 func (c *conn) Do(cmd string, args ...interface{}) (interface{}, error) {
+	c.mu.Lock()
+	pending := c.pending
+	c.pending = 0
+	c.mu.Unlock()
+
+	if cmd == "" && pending == 0 {
+		return nil, nil
+	}
+
 	if c.writeTimeout != 0 {
 		c.conn.SetWriteDeadline(time.Now().Add(c.writeTimeout))
 	}
 
 	if cmd != "" {
-		c.writeCommand(cmd, args)
+		if err := c.writeCommand(cmd, args); err != nil {
+			return nil, c.fatal(err)
+		}
 	}
 
 	if err := c.bw.Flush(); err != nil {
 		return nil, c.fatal(err)
 	}
-
-	c.mu.Lock()
-	pending := c.pending
-	c.pending = 0
-	c.mu.Unlock()
 
 	if c.readTimeout != 0 {
 		c.conn.SetReadDeadline(time.Now().Add(c.readTimeout))

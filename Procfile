@@ -1,1 +1,1 @@
-web: app-launching-service-broker
+web: application-broker

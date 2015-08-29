@@ -13,32 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// Package messagebus handles emitting events to buses like NATS
 package messagebus
 
 import (
-	"log"
+	log "github.com/cihub/seelog"
 
 	"github.com/cloudfoundry-community/go-cfenv"
-	"os"
+	"github.com/trustedanalytics/application-broker/misc"
 )
 
-// Holds values needed to set-up connection with NATs
-type NatsConfig struct {
-	Url         string
-	Subject     string
+// Config holds values needed to set-up connection with MessageBus
+type Config struct {
+	url     string
+	subject string
 }
 
-func (c *NatsConfig) Initialize() bool {
-	log.Println("initializing nats config...")
+// TryInitialize initialize connection with message bus.
+// It may fail when bad url was given for example.
+// It will return true on success, false otherwise. */
+func (c *Config) TryInitialize(cfEnv *cfenv.App) bool {
+	log.Info("initializing nats config...")
 
-	cfEnv, err := cfenv.Current()
-	if err != nil || cfEnv == nil {
-		log.Printf("CF env vars gathering problem: %v (running locally?)", err)
-		c.Url = os.Getenv("NATS_URL")
-		c.Subject = os.Getenv("NATS_SERVICE_CREATION_SUBJECT")
+	if cfEnv == nil {
+		c.url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
+		c.subject = misc.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
 
-		if(len(c.Url) == 0 || len(c.Subject) == 0) {
-			log.Printf("Unable to collect nats configuration from local envs")
+		if len(c.url) == 0 || len(c.subject) == 0 {
+			log.Debug("Unable to collect nats configuration from local envs")
 			return false
 		}
 		return true
@@ -46,10 +49,10 @@ func (c *NatsConfig) Initialize() bool {
 
 	service, err := cfEnv.Services.WithName("nats-provider")
 	if err != nil {
-		log.Print("Cannot locate nats service in CF environment")
+		log.Debug("Cannot locate nats service in CF environment")
 		return false
 	}
-	c.Url = service.Credentials["url"]
-	c.Subject = service.Credentials["service-creation-subject"]
+	c.url = service.Credentials["url"].(string)
+	c.subject = service.Credentials["service-creation-subject"].(string)
 	return true
 }

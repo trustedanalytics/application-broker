@@ -6,6 +6,7 @@
 # Folders
 _obj
 _test
+.idea/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -29,11 +30,15 @@ npm-debug.log
 #Godeps/_workspace
 
 # bin
-app-launching-service-broker
+application-broker
 
 # Sublime
 broker.sublime-project
 broker.sublime-workspace
+
+# testing-related
+*.coverprofile
+*.guid
 
 # apps-as-a-service clone
 apps
@@ -43,4 +48,10 @@ bin/cf
 
 # gin
 gin-bin
+
+# IntelliJ IDEA
+*.iml
+
+# vim
+*.swp
 

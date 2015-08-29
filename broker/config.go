@@ -13,53 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package broker
 
 import (
-	"log"
+	log "github.com/cihub/seelog"
 	"os"
 
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/trustedanalytics/app-launching-service-broker/service"
+	"github.com/trustedanalytics/application-broker/misc"
 )
 
-// Config hold a global BrokerConfig isntance
-var Config = &BrokerConfig{}
-
-func init() {
-	Config.initialize()
+// Config hold the broker configuration
+type Config struct {
+	CFEnv *cfenv.App
 }
 
-// BrokerConfig hold the broker configuration
-type BrokerConfig struct {
-	Debug        bool
-	CFEnv        *cfenv.App
-}
+// Initialize config with values from environment variables
+func (c *Config) Initialize(cfEnv *cfenv.App) {
+	log.Debug("initializing broker config...")
 
-func (c *BrokerConfig) initialize() {
-	log.Println("initializing broker config...")
-	c.Debug = os.Getenv("CF_DEBUG") == "true"
-
-	cfEnv, err := cfenv.Current()
-	if err != nil || cfEnv == nil {
-		log.Printf("failed to get CF env vars, probably running locally: %v", err)
+	if cfEnv == nil {
 		cfEnv = &cfenv.App{}
-		cfEnv.Port = service.GetEnvVarAsInt("PORT", 9999)
+		cfEnv.Port = misc.GetEnvVarAsInt("PORT", 9999)
 		cfEnv.Host = "0.0.0.0"
 		cfEnv.TempDir = os.TempDir()
 	}
 	c.CFEnv = cfEnv
-
-	c.validate()
-}
-
-func (c *BrokerConfig) validate() {
-	missingEnvVars := []string{}
-	if len(missingEnvVars) > 0 {
-		log.Println("Missing environment variable configuration:")
-		for _, envVar := range missingEnvVars {
-			log.Printf("* %s", envVar)
-		}
-		os.Exit(1)
-	}
 }

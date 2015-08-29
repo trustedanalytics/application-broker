@@ -13,16 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package messagebus
+
 import "time"
 
+// Message interface representing event being sent to message bus
 type Message interface {
 }
 
+// MessageFactory easily instantiates events object
 type MessageFactory interface {
-	NewServiceStatus(name string, stype string, org string, msg string) (Message)
+	NewServiceStatus(name string, stype string, org string, msg string) Message
 }
 
+// GetMillisecondsTimestamp calculates actual timestamp in milliseconds from epoch
 func GetMillisecondsTimestamp() int64 {
 	const NanosecondsPerMillisecond = 1000000
 	now := time.Now()

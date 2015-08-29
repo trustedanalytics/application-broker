@@ -13,44 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package messagebus
 
 import (
-	"log"
+	log "github.com/cihub/seelog"
 
 	"github.com/nats-io/nats"
 )
 
+// NatsMessageBus is an implementation of MessageBus interface
 type NatsMessageBus struct {
 	NatsConnection *nats.EncodedConn
 	Subject        string
 }
 
-func NewNatsMessageBus(configuration NatsConfig) (MessageBus, error) {
+// NewNatsMessageBus is constructor for nats connection wrapper
+func NewNatsMessageBus(configuration Config) (MessageBus, error) {
 
-	log.Printf("creating nats connection: %v", configuration.Url)
-	connection, err := nats.Connect(configuration.Url)
+	log.Debugf("creating nats connection: %v", configuration.url)
+	connection, err := nats.Connect(configuration.url)
 	if err != nil {
-		log.Printf("Unable to connect with nats: %v", err)
+		log.Debugf("Unable to connect with nats: [%v]", err)
 		return nil, err
 	}
-	log.Println("connection created!")
+	log.Debug("connection created!")
 
 	encoded, err := nats.NewEncodedConn(connection, nats.JSON_ENCODER)
 	if err != nil {
-		log.Printf("Unable to create encoded connection with nats: %v", err)
+		log.Debugf("Unable to create encoded connection with nats: [%v]", err)
 		return nil, err
 	}
 
 	return &NatsMessageBus{
 		NatsConnection: encoded,
-		Subject:        configuration.Subject,
+		Subject:        configuration.subject,
 	}, nil
 }
 
+// Publish sends given message to the bus
 func (n *NatsMessageBus) Publish(m Message) {
 	err := n.NatsConnection.Publish(n.Subject, m)
 	if err != nil {
-		log.Printf("Unable to publish message with nats: %v", err)
+		log.Errorf("Unable to publish message with nats: [%v]", err)
 	}
 }

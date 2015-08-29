@@ -16,6 +16,7 @@
 
 package messagebus
 
+// MessageBus in an interface to publish events to the bus
 type MessageBus interface {
 	Publish(v Message)
 }

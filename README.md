@@ -1,269 +1,168 @@
-App Launching Service Broker for Cloud Foundry
+Application Broker for Cloud Foundry
 ==============================================
 
 A service broker to provision an application, including dependent service instances.
 
-**This is a Proof of Contept and is subject to severe changes in the future.**
+**This is a second experimental version and may be subject to severe changes in the future.**
+**First implementation was based on cf/cli calls which was considered bad solution due to concurrency problems. Now we are using regular REST requests under the hood.**
+
+
+Idea behind
+-----------
+Cloud Foundry introduces two notions when talking about software running within it. **Application** (pushed and controlled by developers) and **Service** (spawned by so-called brokers and used by Applications). In general, the first one is a kind of web service. The second one, works as a resource (database for example) to be used on-demand by Application. Initially Cloud Foundry provides a set of Service offerings to choose from (postgresql, mongodb, NATS, etc...). Every single offering in internal marketplace has broker behind it. Broker manages every instance of service and handles its binding to Applications. No service exists without its corresponding broker.
+
+To easily create service offerings without implementing separate broker you may want to use **Application Broker**. The only thing you need to do is to prepare reference app and register it in our broker. Then you will be able to spawn copies of your reference app and treat them like service instances. Offering will be also visible within CF marketplace. As simple as that.
+
+References:
+[Custom Services](https://docs.cloudfoundry.org/services/)
 
 Usage
 -----
 
-Once the service broker is running as an app, registered as a service broker, and enabled for access by users, a user can use like any other service broker:
-
+Application broker is regular long-living app that has to be pushed to CF. An example of properly filled manifest.yml shall look like this:
 ```
-cf create-service some-service some-plan some-service-name
-cf bind-service my-app some-service-name
+---
+applications:
+- name: application-broker
+  memory: 256M
+  instances: 1
+  path: .
+  buildpack: go_buildpack
+  services:
+    - application-broker-mongodb
+  env:
+    AUTH_USER: admin            #broker API is secured with these BasicAuth credentials
+    AUTH_PASS: password
+    CLIENT_ID: client           #broker communicates with CF using OAuth
+    CLIENT_SECRET: clientSecret #when asking for token it uses these credentials
+    TOKEN_URL: https://uaa.yourserver.com/token_key
+    CF_API: http://api.yourserver.com
+    VERSION: "0.5.8"
+```
+
+When manifest.yml is ready the following command can be issued:
+```
+$ cf push
+```
+
+Application broker serves a catalog of service offerings. It means that it is responsible for multiple entries in marketplace. Informations about services that broker controls (catalog) are held in mongodb database bound to ApplicationBroker. Initially catalog is empty. You must register at least one to benefit from using it. So, push an app that you want to place in marketplace and remember its guid (we will call it referenceAppGuid).
+
+Next, you should register your app within Application Broker catalog using Catalog API.
+For example (as simple as possible):
+```
+curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X POST  \
+    -u $AUTH_USER:$AUTH_PASS                             \
+    -H "Content-Type: application/json"                  \
+    -d '{
+            "app" : {"metadata" : {"guid" : "<referenceAppGuid>"}},
+            "id" : "<place random guid here>",
+            "plans" : [{"id" : "<place random guid here>"}],
+            "description" : "<describe your service briefly>",
+            "name" : "<service exposed by your broker>"
+        }'
+```
+Now Application Broker has one service registered. When asked it responds with non-empty catalog. You can check by firing:
+```
+curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X GET -u $AUTH_USER:$AUTH_PASS
+```
+Next we need to inform CF that your Application Broker instance is in fact broker.
+```
+$ cf create-service-broker <brokerName> admin admin http://address.of.pushed.application.broker
+$ cf enable-service-access <service exposed by your broker>
+```
+While running `cf create-service-broker` Cloud Controller make request to provided URL and saves catalog that Application Broker exposes.
+
+Once the service broker is running as an app, registered as a service broker, and enabled for access by users, a user can use like any other service broker:
+```
+cf create-service <service exposed by your broker> Simple <instanceName>
+cf bind-service my-app <instanceName>
 cf restage my-app
 ```
 
-The client application `my-app` would have a `$VCAP_SERVICE` service for `some-service`. The credentials would include the hostname, username and password to access the backend service application.
+The client application `my-app` would have a `$VCAP_SERVICE` service for `<instanceName>`. The credentials would include the url to access the backend service application.
 
-Behind the scenes, when `cf create-service` was invoked the CLI asked the Cloud Controller for the new service instance. The Cloud Controller asked the App Launching Service Broker for a new service instance. The App Launching Service Broker deploys a new backend application.
+Behind the scenes, when `cf create-service` was invoked the CLI asked the Cloud Controller for the new service instance. The Cloud Controller asked the Application Broker for a new service instance. The Application Broker deploys a new backend application as a copy of referenceApp.
 
 If the backend application requires any services for itself, then those too are created and bound to the new backend application.
 
 The backend application and its own dependency services are created into the same organization and space being used by the end user.
 
-![](app_launcher_workflow.jpg)
+NATS
+-----------
+Application Broker uses NATS messagebus to emit events. For now, events are being sent on every service instance provisioning. Events are meant to inform users about correct or erroneous results of operation. To enable NATS for your broker use the environment variable named `NATS_URL` pointing to address your NATS is listening on. Additionally, you can specify topic Application Broker should talk on using `NATS_SERVICE_CREATION_SUBJECT`. By default it is `service-creation`.
 
 Development
 -----------
 
-To locally develop this service broker, you need to clone down an example application that will be deployed. Something small/fast to deploy will make your life better.
+### Prerequisites
 
-As an example, use the [spring-music](https://github.com/cloudfoundry-samples/spring-music) application. It is interesting as it supports a range of backend services.
+To locally develop this service broker, we encourage you to use lightweight reference app that will push and start fast. Testing won't take too much time. You can use sampleApp we placed in functional_tests/sampleApp directory.
 
-Alternately, try the [cf-env](https://github.com/cloudfoundry-community/cf-env) application which has the sole purpose to display its environment variables.
+Additionally you will need mongodb instance. Install it by using package-manager your distro provides. For Ubuntu/Debian it will be: `sudo apt-get install mongodb`. Local Application Broker will connect to it on default port so no additional configuration is needed.
 
-```
-cd path/to/apps
-git clone https://github.com/cloudfoundry-community/cf-env
-cd cf-env
-bundle
-export CF_SRC=$(pwd)
-cd -
-./bin/env.sh
-```
-
-This will create a set of environment variables used to configure the service broker:
-
-```
-$ env | grep CF
-CF_API=https://api.<platform_domain>
-CF_SRC=/users/myself/Projects/cloudfoundry/apps/cf-env
-CF_DEP=postgresql93|free,consul|free
-CF_CATALOG_PATH=./catalog.json
-```
-
-You now need to configure which admin user credentials the broker will use to communicate with Cloud Foundry:
-
-```
-export CF_USER=adminuser
-export CF_PASS=adminpass
-```
-
-If you are using self-signed certificates, you may need to ignore SSL verification:
-
-```
-export CF_API_SKIP_SSL_VALID=true
-```
-
-Finally, load other default environment variables:
-
-```
-source bin/env.sh
-```
-
-You can now run the service broker locally via [gin](https://github.com/codegangsta/gin), which will automatically reload any file changes during development:
+### Running locally
+You can run the Application Broker locally via [gin](https://github.com/codegangsta/gin), which will automatically reload any file changes during development. Our application needs several environment variables to work properly. Ensure that they are exported before starting. Running following commands is sufficient to run the Application Broker correctly:
 
 ```
 go get github.com/codegangsta/gin
-gin
+export CF_API=http://api.yourserver.com
+export TOKEN_URL=https://uaa.yourserver.com/oauth/token
+export CLIENT_ID=client
+export CLIENT_SECRET=clientSecret
+export AUTH_USER=admin
+export AUTH_PASS=password
+gin -a 9999 -i run main.go
 ```
 
 The broker, via `gin`, will be running on port 3000 by default.
 
-```
-$ curl http://localhost:3000/v2/catalog
-{"services":[{"id":"XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX","name":"cf-env","description":"View environment variables","bindable":true,"tags":["demo","backend"],"plans":[{"id":"YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY","name":"simple","description":"Simple","free":true}]}]}
-```
+### Unit Testing
 
-The output here matches the contents of the `./catalog.json` example file.
-
-You can now even register your local app with a remote Cloud Foundry using [ngrok](https://ngrok.com/). Run the following in another terminal:
+To write self-describing unit tests easily we adopted ginkgo framework. Running these is simple as:
 
 ```
-$ ngrok 3000
+go get github.com/onsi/ginkgo/ginkgo
+export PATH=$PATH:$GOPATH/bin
+#commands above need to be executed just once
+ginkgo -r
 ```
 
-It will display a public URL for your local broker app.
+### Functional tests
+In functional_tests directory there is a bunch of bash scripts that help test Application Broker in broader context. Basically it needs regular CF environment to operate on. Application Broker itself is not pushed to the cloud but sampleApp is. Then, when testing provision, we request new instance creation in locally running broker but actual copy of sampleApp is done in the cloud. The same with bindings and deprovisioning.
 
-Register your broker app URL:
+ 1. To use environment of your choice execute`source envs` in two shells
+	 1. The one you run `gin` in.
+	 2. The one you execute functional tests in.
+ 2. To push referenceApp automatically run `setCFandPushSampleApp.sh`
+ 3. To test registering referenceApp in catalog run `registerSampleAppInCatalog.sh`
+ 4. To test provisioning new service instance run `provision.sh`
+ 5. To test bindingCreation of existing instance run `createBinding.sh`
+ 6. To test deprovisioning of existing instance run `deprovision.sh`
 
-```
-$ cf create-service-broker cf-env-broker admin admin http://3f1c1555.ngrok.com
-$ cf enable-service-access cf-env
-```
+> Notice that scripts depend on each other. They shall be executed in order.
 
-You can now create service instances, which will deploy the local example app `cf-env`:
 
-```
-$ cf m
-$ cf create-service cf-env simple cf-env-example
-```
 
-To clean up, delete services, then delete the service broker:
+### IDE
+We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/) as IDE with [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin). To apply formatting automatically on every save you may use go-fmt with [File Watcher plugin](http://www.idmworks.com/blog/entry/automatically-calling-go-fmt-from-intellij).
 
-```
-$ cf delete-service cf-env-example
-$ cf delete-service-broker cf-env-broker
-```
 
-Testing
--------
-
-```
-git clone https://github.com/cloudfoundry-community/cf-env apps/cf-env
-cd apps/cf-env
-bundle
-cd -
-
-export CF_API=https://api.MYCLOUDFOUNDRY
-export CF_PASS=<admin-password>
-./bin/test.sh
-```
-
-Deploy to Cloud Foundry
+Tips
 -----------------------
-
-The App Launching Service Broker is both *for* Cloud Foundry and can *run* on Cloud Foundry. This section shows how to deploy/run it on Cloud Foundry.
-
-In this example, the broker will be deployed to launch the [cf-env](https://github.com/cloudfoundry-community/cf-env) sample app (which matches the sample `./catalog.json`):
-
-```
-export SERVICE=cf-env-launching
-export APPNAME=$SERVICE-service-broker
-git clone https://github.com/trustedanalytics/app-launching-service-broker.git $APPNAME
-cd $APPNAME
-```
-
-The broker will need access to the Cloud Foundry CLI within the Linux container it runs within. For this we need to download a version of the CLI that works with the target Cloud Foundry API:
-
-```
-./bin/fetch_cf_cli.sh
-```
-
-You would modify the `catalog.json` to document the application to be offered as a service. In this example, the included `catalog.json` corresponds to `cf-env`.
-
-For the service ID and plan ID, you need unique UUIDs. Run the `uuid` command to generate different UUIDs and replace them into the `catalog.json`. Cloud Foundry will complain later if you try to register a service broker that uses the same UUIDs as existing brokers.
-
-```
-$ uuid
-7d6f6d2a-6440-11e4-a6b5-6c4008a663f0
-$ uuid
-7dd52d9a-6440-11e4-b30c-6c4008a663f0
-```
-
-You need to embed the target application-as-a-service into the source code tree (in future the target application source will be fetched at runtime from remote blobs).
-
-```
-git clone https://github.com/cloudfoundry-community/cf-env apps/cf-env
-cd apps/cf-env
-bundle
-cd -
-```
-
-Although the newly created `apps/` folder is ignored by `.gitignore` it will be correctly uploaded to Cloud Foundry as part of the deployment below.
-
-```
-godep save ./..
-cf push $APPNAME --no-start
-```
-
-You now need to configure the broker with credentials for your target Cloud Foundry as an admin-level user. Most likely this will be the same Cloud Foundry you are deploying too.
-
-```
-cf set-env $APPNAME CF_API https://api.<platform_domain>
-cf set-env $APPNAME CF_USER admin
-cf set-env $APPNAME CF_PASS admin-password
-```
-
-Now configure how to deploy the app-as-a-service. Paths are relative to this application folder.
-
-```
-cf set-env $APPNAME CF_CATALOG_PATH ./catalog.json
-cf set-env $APPNAME CF_SRC ./apps/cf-env
-cf set-env $APPNAME CF_SETUP_PATH ./app/cf-env/setup.sh
-cf set-env $APPNAME CF_DEP postgresql93|free,consul|free
-```
-
-CF_SETUP_PATH is script that is ran on binding service. This script is expected to return json that is added to credentials. First parameter passed into script is appname. This can be used to set environment variables for app.
-
-Now configure how to connect to oauth app
-
-```
-cf set-env $APPNAME UI true
-cf set-env $APPNAME CLIENT_ID my_client
-cf set-env $APPNAME CLIENT_SECRET my_secret
-cf set-env $APPNAME REDIRECT_URL https://my-client.<platform_domain>
-cf set-env $APPNAME AUTH_URL https://login.<platform_domain>/oauth/authorize
-cf set-env $APPNAME TOKEN_URL https://uaa.<platform_domain>/oauth/token
-cf set-env $APPNAME API_URL https://api.<platform_domain>/
-
-```
-
-Optional configuration:
-
--	Skip SSL validation with CF API: `cf set-env $APPNAME CF_API_SKIP_SSL_VALID true`
--	Enable debugging: `cf set-env $APPNAME CF_DEBUG true`
-
-To start or restart the application after any configuration changes:
-
-```
-cf restart $APPNAME
-```
-
-To register the broker:
-
-```
-export SERVICE_URL=$(cf app $APPNAME | grep urls: | awk '{print $2}')
-cf create-service-broker $SERVICE admin admin https://$SERVICE_URL
-cf enable-service-access cf-env
-```
-
-The latter command will make the service available to all organizations. You might want to restrict it to a subset of organizations with the `-o` flag.
-
-
-Tips for apps
------------------------
-
-### Setup script tips
-
-#### Parsing services attached environment variables
-
-Appname is passed in as first environment variable. We can use it to find app GUID with that we are able to get environment variables. Using [jq](http://stedolan.github.io/jq/)
-
-```
-app_guid=$($cf curl "/v2/apps?q=name:$appname" | $jq -r '.resources | .[0].metadata.guid')
-postgres_uri=$($cf curl /v2/apps/$app_guid/env | $jq -r '.system_env_json.VCAP_SERVICES.postgresql93 | .[0].credentials.uri')
-```
-
-#### Running single postgres command
-
-[Pgopher](https://github.com/longnguyen11288/pgopher) is a static binary used to run single queries against postgres
-
-example
-```
-pgopher --uri $postgres_uri -q "insert into users values(1, '$username', '$password', now(), now())"
-```
-
 
 ### Golang tips
 
-Using golang apps requires you to pull in app dependency of the app that is being launched.
+Developing golang apps requires you store all dependencies (Godeps) in separate directory. They shall be placed in source control.
 
 ```
 godep save ./...
 ```
 
-The app that is being launched need a new godep save in order to be launched as well.
+Command above places all dependencies from `$GOPATH`, your app uses, in Godeps and writes its versions to Godeps/Godeps.json file.
+
+
+Limitations
+-----------------------
+Actually, Application Broker does not handle user-provided services bound to reference app. Having said that, all newly spawned instances won't have user-provided services associated.
+
+Additionally, in special circumstances, some problems may occur when spawning new instance with dependencies. Imagine referenceApp with dependencyServiceInstance bound to it. It is possible to spawn copy of referenceApp to space that dependencyService is not enabled in. In such situation provision operation will end up with failure.

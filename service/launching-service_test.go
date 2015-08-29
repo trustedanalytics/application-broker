@@ -13,100 +13,273 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package service
 
 import (
-	"log"
-	"testing"
-
-	"github.com/trustedanalytics/app-launching-service-broker/messagebus"
-	"github.com/stretchr/testify/assert"
+	"errors"
 	"github.com/cloudfoundry-community/types-cf"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"github.com/trustedanalytics/application-broker/cloud"
+	"github.com/trustedanalytics/application-broker/dao"
+	"github.com/trustedanalytics/application-broker/messagebus"
+	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/types"
+	"os"
 )
 
-func TestGetCatalog(t *testing.T) {
+var _ = Describe("Launching service", func() {
 
-	m := new(messagebus.MockedNats)
-	m.On("Publish", mock.Anything).Return(nil)
-	p, err := New(m, ServiceCreationStatusFactory{})
+	var (
+		dataCatalog *dao.FacadeMock
+		nats        messagebus.MessageBus
+		cfMock      *cloud.CfMock
+	)
 
-	assert.Nil(t, err, "error on create")
-	assert.NotNil(t, p, "nil provider")
+	BeforeEach(func() {
+		dataCatalog = new(dao.FacadeMock)
+		nats = new(messagebus.DevNullBus)
+		os.Setenv("VCAP_APPLICATION", "{\"name\":\"banana\",\"uris\":[\"http://fakeurl\"]}")
+		cfMock = new(cloud.CfMock)
+		cfMock.On("UpdateBroker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	})
 
-	catalog, err2 := p.GetCatalog()
+	AfterEach(func() {
+		os.Unsetenv("VCAP_APPLICATION")
+	})
 
-	assert.Nil(t, err2, err2)
-	assert.NotNil(t, catalog, "nil catalog")
-	assert.NotNil(t, catalog.Services, "nil catalog services")
+	Describe("get catalog", func() {
+		Context("when catalog is empty", func() {
+			It("should return zero services", func() {
+				dataCatalog.On("Get").Return([]*types.ServiceExtension{})
 
-	for i, srv := range catalog.Services {
-		log.Printf("service:%d", i)
+				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
+				catalog, _ := sut.GetCatalog()
 
-		// check the required fields
-		assert.NotEmpty(t, srv.ID, "nil service ID")
-		assert.NotEmpty(t, srv.Name, "nil service name")
-		assert.NotEmpty(t, srv.Description, "nil service description")
-		assert.NotNil(t, srv.Plans, "nil service plans")
+				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Get", 1)
+				Expect(len(catalog.Services)).To(Equal(0))
+			})
+		})
 
-		if srv.Dashboard != nil {
-			log.Printf("dashboard: %d", i)
-			assert.NotNil(t, srv.Dashboard.ID, "nil services dashboard id")
-			assert.NotNil(t, srv.Dashboard.Secret, "nil services dashboard secret")
-			assert.NotNil(t, srv.Dashboard.URI, "nil services dashboard URL")
-		}
+		Context("when catalog filled with one service", func() {
+			It("should return one service", func() {
+				services := []*types.ServiceExtension{}
+				services = append(services, &types.ServiceExtension{
+					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
+				})
+				dataCatalog.On("Get", mock.Anything).Return(services, nil)
 
-		for j, pln := range srv.Plans {
-			log.Printf("service plan:%d[%d]", i, j)
+				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
+				catalog, _ := sut.GetCatalog()
 
-			// check the required fields
-			assert.NotEmpty(t, pln.ID, "nil plan ID")
-			assert.NotEmpty(t, pln.Name, "nil plan name")
-			assert.NotEmpty(t, pln.Description, "nil plan description")
-			assert.NotNil(t, pln.Free, "nil plan free indicator")
+				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Get", 1)
+				Expect(len(catalog.Services)).To(Equal(1))
+			})
+		})
+	})
 
-		}
-	}
-}
+	Describe("append", func() {
+		Context("not valid service", func() {
+			It("should return error indicating bad input", func() {
+				dataCatalog.On("Append", mock.Anything).Return()
+				service := &types.ServiceExtension{
+					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
+				}
+				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
+				err := sut.InsertToCatalog(service)
 
-func TestNatsUsage(t *testing.T) {
-	m := new(messagebus.MockedNats)
-	m.On("Publish", mock.Anything).Return()
-	p, err := New(m, ServiceCreationStatusFactory{})
+				Expect(err).To(Equal(misc.InvalidInputError{}))
+				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Append", 0)
+			})
+		})
 
-	assert.Nil(t, err)
+		Context("valid service", func() {
+			It("should return non empty response", func() {
+				basic := cf.Service{Name: "someName", Description: "desc"}
+				service := &types.ServiceExtension{
+					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
+					Service:      basic,
+				}
+				dataCatalog.On("Append", service).Return()
 
-	request := &cf.ServiceCreationRequest{}
-	p.CreateService(request)
+				sut := New(dataCatalog, cfMock, nats, CreationStatusFactory{})
+				err := sut.InsertToCatalog(service)
 
-	m.AssertNumberOfCalls(t, "Publish", 2)
-}
+				Expect(err).To(BeNil())
+				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Append", 1)
+			})
+		})
+	})
 
-type MockServiceCreationStatusFactory struct {
-	mock.Mock
-}
+	Describe("delete from catalog", func() {
+		Context("not existing service", func() {
+			It("should return error", func() {
+				expectedError := errors.New("No such service")
+				cfApi := new(cloud.CfMock)
+				dataCatalog.On("Find", "fakeId").Return(nil, expectedError)
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
 
-func (f *MockServiceCreationStatusFactory) NewServiceStatus(name string, stype string, org string, msg string) (messagebus.Message) {
-	f.Called(name, stype, org, msg)
-	return ServiceCreationStatus{}
-}
+				err := sut.DeleteFromCatalog("fakeId")
+				Expect(err).Should(HaveOccurred())
+				Expect(err).Should(MatchError(expectedError))
+			})
+		})
 
-func TestNatsProperDataSent(t *testing.T) {
-	m := new(messagebus.MockedNats)
-	m.On("Publish", mock.Anything).Return()
-	f := new(MockServiceCreationStatusFactory)
-	f.On("NewServiceStatus", "someFakeName", Config.ServiceName, "1234", mock.Anything).
-		Return().
-		Times(2)
-	p, err := New(m, f)
+		Context("service that has instances", func() {
+			It("should return error", func() {
+				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
+				dataCatalog.On("HasInstancesOf", "fakeId").Return(true, nil)
+				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension), new(types.ServiceExtension)})
 
-	assert.Nil(t, err)
+				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 
-	request := &cf.ServiceCreationRequest{}
-	request.Parameters = map[string]string{}
-	request.Parameters["name"] = "someFakeName"
-	request.OrganizationGUID = "1234"
-	p.CreateService(request)
+				err := sut.DeleteFromCatalog("fakeId")
+				Expect(err).Should(HaveOccurred())
+				Expect(err).Should(MatchError(misc.ExistingInstancesError{}))
+			})
+		})
 
-	f.AssertExpectations(t)
-}
+		Context("service without instances", func() {
+			It("should succeed", func() {
+				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
+				dataCatalog.On("HasInstancesOf", "fakeId").Return(false, nil)
+				dataCatalog.On("Remove", "fakeId").Return(nil)
+				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension), new(types.ServiceExtension)})
+
+				sut := New(dataCatalog, cfMock, nats, CreationStatusFactory{})
+
+				err := sut.DeleteFromCatalog("fakeId")
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+		})
+
+		Context("the only service in catalog", func() {
+			It("should thron an error", func() {
+				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
+				dataCatalog.On("HasInstancesOf", "fakeId").Return(false, nil)
+				dataCatalog.On("Remove", "fakeId").Return(nil)
+				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension)})
+
+				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
+
+				err := sut.DeleteFromCatalog("fakeId")
+				Expect(err).Should(HaveOccurred())
+			})
+		})
+	})
+
+	Describe("create service", func() {
+		Context("in case of cloud foundry error", func() {
+			//TODO:make this test simplier, shorter, etc...
+			It("should propagate error", func() {
+				svc := cf.Service{Name: "super_service"}
+				svcExt := &types.ServiceExtension{
+					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "source_app_id"}},
+					Service:      svc,
+				}
+				dataCatalog.On("Find", mock.Anything).Return(svcExt)
+				request := new(cf.ServiceCreationRequest)
+
+				cfApi := new(cloud.CfMock)
+				expectedErr := errors.New("ERROR!")
+				cfApi.On("Provision", mock.Anything, mock.Anything).Return(nil, expectedErr)
+
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
+				resp, err := sut.CreateService(request)
+
+				cfApi.AssertExpectations(GinkgoT())
+				Expect(resp).To(BeNil())
+				Expect(err).To(Equal(expectedErr))
+			})
+		})
+
+		Context("when provisioning succeeds", func() {
+			//TODO:make this test simplier, shorter, etc...
+			It("should return non empty response", func() {
+				svc := cf.Service{Name: "super_service"}
+				svcExt := &types.ServiceExtension{
+					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "source_app_id"}},
+					Service:      svc,
+				}
+				dataCatalog.On("Find", "service_id").Return(svcExt)
+				dataCatalog.On("AppendInstance", mock.Anything).Return()
+				request := new(cf.ServiceCreationRequest)
+				request.SpaceGUID = "space_guid"
+				request.ServiceID = "service_id"
+
+				cfApi := new(cloud.CfMock)
+				createAppResp := &types.ServiceCreationResponse{}
+				cfApi.On("Provision", "source_app_id", request).Return(createAppResp, nil)
+
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
+				resp, _ := sut.CreateService(request)
+
+				cfApi.AssertExpectations(GinkgoT())
+				Expect(resp).NotTo(BeNil())
+			})
+		})
+
+		Context("with nats configured", func() {
+			It("should publish events", func() {
+				nats = new(messagebus.MessageBusMock)
+				nats.(*messagebus.MessageBusMock).On("Publish", mock.Anything).Return()
+
+				dataCatalog.On("Find", mock.Anything).Return(&types.ServiceExtension{})
+				dataCatalog.On("AppendInstance", mock.Anything).Return()
+
+				request := &cf.ServiceCreationRequest{}
+				cfApi := new(cloud.CfMock)
+				createAppResp := &types.ServiceCreationResponse{}
+				cfApi.On("Provision", "", request).Return(createAppResp, nil)
+
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
+				sut.CreateService(request)
+
+				nats.(*messagebus.MessageBusMock).AssertNumberOfCalls(GinkgoT(), "Publish", 2)
+			})
+		})
+	})
+
+	Describe("delete service", func() {
+		Context("in case of cloud foundry error", func() {
+			It("should propagate error", func() {
+				svcExt := &types.ServiceInstanceExtension{
+					App: types.CfAppResource{Meta: types.CfMeta{GUID: "appGuid"}}}
+				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
+
+				cfApi := new(cloud.CfMock)
+				expectedErr := errors.New("ERROR!")
+				cfApi.On("Deprovision", mock.Anything).Return(expectedErr)
+
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
+				err := sut.DeleteService("serviceID")
+
+				Expect(err).To(Equal(expectedErr))
+			})
+		})
+
+		Context("when deprovisioning succeeds", func() {
+			It("should return non empty response", func() {
+				svcExt := &types.ServiceInstanceExtension{
+					ID:  "entryId",
+					App: types.CfAppResource{Meta: types.CfMeta{GUID: "appGuid"}}}
+				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
+				dataCatalog.On("RemoveInstance", mock.Anything).Return(nil)
+
+				cfApi := new(cloud.CfMock)
+				cfApi.On("Deprovision", mock.Anything).Return(nil)
+
+				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
+				err := sut.DeleteService("serviceID")
+
+				Expect(err).To(BeNil())
+				dataCatalog.AssertCalled(GinkgoT(), "RemoveInstance", "entryId")
+			})
+		})
+	})
+})
