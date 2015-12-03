@@ -1,35 +1,78 @@
 #!/bin/bash
 
-#Script that registers application in catalog of the Application Broker.
+function show_help {
+    echo '
+Script that registers application in catalog of the Application Broker.
 
-# Usage: ./register.sh brokerAddress basicAuthUser basicAuthPass nameOfAppToRegister marketName "marketDescription" marketIcon
+Usage: ./register.sh  -b <brokerAddress> -u <basicAuthUser> -p <basicAuthPass> -a <nameOfAppToRegister> -n <marketName> -d <marketDescription> [-s <marketDisplayName] [-i <marketIcon>]
 
-# brokerAddress                  - address of the Application Broker
-# basicAuthUser basicAuthPass    - credentials that broker API is secured with
-# nameOfAppToRegister            - name of existing reference app that will be treated as service
-# marketName                     - name of the offering in marketplace that will be created
-# marketDescription              - explanation of what application being registered provides
-# marketIcon                     - path to icon that will be placed in marketplace (or empty "")
-#Caution!
-#This script assumes that you are targeted to particular org and space with CF CLI
+-b brokerAddress          - address of the Application Broker
+-u basicAuthUser          - broker credentials - user
+-p basicAuthPass          - broker credentials - password
+-a nameOfAppToRegister    - name of existing reference app that will be treated as service
+-n marketName             - name of the service offering that will be created
+-s displayName (optiona)  - display name that will be visible in the marketplace
+-d marketDescription      - explanation of what application being registered provides
+-i marketIcon (optional)  - path to icon that will be placed in marketplace (or empty "")
 
-brokerAddress=$1
+Caution!
+This script assumes that you are targeted to particular org and space with CF CLI
+'
+}
+
+while getopts "b:u:p:a:n:s:d:i:h" optname; do
+    case "$optname" in
+        "b")
+            brokerAddress=$OPTARG
+            ;;
+        "u")
+            basicAuthUser=$OPTARG
+            ;;
+        "p")
+            basicAuthPass=$OPTARG
+            ;;
+        "a")
+            appName=$OPTARG
+            ;;
+        "n")
+            marketName=$OPTARG
+            ;;
+        "s")
+            displayName=$OPTARG
+            ;;
+        "d")
+            marketDesc=$OPTARG
+            ;;
+        "i")
+            marketIcon=$OPTARG
+            ;;
+        "h")
+            show_help
+            exit
+            ;;
+        "?")
+            echo "Unknown option $OPTARG"
+            exit
+            ;;
+        ":")
+            echo "No argument value for option $OPTARG"
+            ;;
+        *)
+            # Should not occur
+            echo "Unknown error while processing options"
+            ;;
+    esac
+done
+
+if [ "$displayName" == "" ]; then
+    displayName=$marketName
+fi
+
 echo "Address of application broker: " $brokerAddress
-
-basicAuthUser=$2
-
-basicAuthPass=$3
-
-appName=$4
 echo "App name to register: " $appName
-
-marketName=$5
-echo "Name of service to register in marketplace: " $marketName
-
-marketDesc=$6
+echo "Name of the service offering: " $marketName
+echo "Display name (name that will appear in marketplace): " $displayName
 echo "Application description in marketplace: " $marketDesc
-
-marketIcon=$7
 echo "Application icon in marketplace: " $marketIcon
 
 if [ "$marketIcon" != "" ]
@@ -37,8 +80,12 @@ then
 	#get file
 	extension="${marketIcon##*.}"
 	base64_encoded="$( base64 $marketIcon | tr -d '\n' )"
-	metadata=', "metadata" : {"imageUrl":"data:image/'"$extension"';base64,'"$base64_encoded"'"}'
+	marketIcon='data:image/'"$extension"';base64,'"$base64_encoded"
 fi
+metadata='{
+    "displayName": "'$displayName'",
+    "imageUrl": "'$marketIcon'"
+}'
 
 applicationGuid=`cf app $appName --guid`
 echo $applicationGuid
@@ -49,8 +96,8 @@ status_code=`curl -sL $brokerAddress/v2/catalog -X POST      \
 	-d '{
             "app" : {"metadata" : {"guid" : "'$applicationGuid'"}},
             "description" : "'"${marketDesc}"'",
-            "name" : "'$marketName'"
-			'"$metadata"'
+            "name" : "'$marketName'",
+			"metadata" : '"$metadata"'
             }'			\
     -w "%{http_code}\\n"			\
 	-o demoRegister.log`
