@@ -91,6 +91,16 @@ func (c *Mongo) Append(service *types.ServiceExtension) error {
 	return err
 }
 
+func (c *Mongo) Update(service *types.ServiceExtension) error {
+
+	err := c.services.Update(bson.M{"service.id": service.ID}, service)
+	if err != nil {
+		log.Errorf("Could not insert service to catalog: [%v]", err)
+		err = misc.InternalServerError{Context: "Problem while appending service to DB"}
+	}
+	return err
+}
+
 func (c *Mongo) Remove(serviceID string) error {
 	if err := c.services.Remove(bson.M{"service.id": serviceID}); err != nil {
 		log.Errorf("Could not remove service from catalog: [%v]", err)

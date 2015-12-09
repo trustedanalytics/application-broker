@@ -15,4 +15,4 @@ applications:
     CLIENT_SECRET: <provide oauth2 client secret>
     TOKEN_URL: <provide token url>
     CF_API: <provide api url>
-    VERSION: "0.5.21"
+    VERSION: "0.5.22"

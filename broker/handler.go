@@ -18,8 +18,9 @@ package broker
 
 import (
 	"encoding/json"
-	log "github.com/cihub/seelog"
 	"net/http"
+
+	log "github.com/cihub/seelog"
 
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/go-martini/martini"
@@ -52,6 +53,28 @@ func (h *handler) append(req *http.Request, params martini.Params) (int, string)
 		return handleServiceError(err)
 	}
 	return marshalEntity(responseEntity{http.StatusCreated, toAdd})
+}
+
+func (h *handler) update(req *http.Request, params martini.Params) (int, string) {
+	service_id := params["service_id"]
+	log.Infof("handler updating service id: [%v] in catalog: [%v]", service_id, req.Body)
+	toUpdate := new(types.ServiceExtension)
+
+	err := json.NewDecoder(req.Body).Decode(&toUpdate)
+	if err != nil {
+		return handleDecodingError(err)
+	}
+	if service_id != toUpdate.ID {
+		log.Warn("Service id in URL different from service id in body send")
+		return handleServiceError(misc.InvalidInputError{})
+	}
+	log.Debugf("handler provisioning update decoded: %+v", toUpdate)
+
+	if err := h.provider.UpdateCatalog(toUpdate); err != nil {
+		return handleServiceError(err)
+	}
+	log.Infof("ID: %v", toUpdate.ID)
+	return marshalEntity(responseEntity{http.StatusOK, toUpdate})
 }
 
 func (h *handler) remove(req *http.Request, params martini.Params) (int, string) {

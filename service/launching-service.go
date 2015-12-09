@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/trustedanalytics/application-broker/cloud"
@@ -54,6 +55,23 @@ func (p *LaunchingService) InsertToCatalog(svc *types.ServiceExtension) error {
 		return misc.InvalidInputError{}
 	}
 	if err := p.db.Append(svc); err != nil {
+		return err
+	}
+
+	if err := p.UpdateBroker(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateCatalog update application description that can be spawned/duplicated on demand
+// Description is stored in underlying implementation of Catalog interface
+func (p *LaunchingService) UpdateCatalog(svc *types.ServiceExtension) error {
+	if !types.Validate(svc) {
+		return misc.InvalidInputError{}
+	}
+	if err := p.db.Update(svc); err != nil {
 		return err
 	}
 

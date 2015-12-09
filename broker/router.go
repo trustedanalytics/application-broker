@@ -18,9 +18,10 @@ package broker
 
 import (
 	"fmt"
-	log "github.com/cihub/seelog"
 	"net/http"
 	"net/http/httputil"
+
+	log "github.com/cihub/seelog"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/auth"
@@ -34,10 +35,10 @@ const (
 )
 
 var (
-	catalogURLPattern       = fmt.Sprintf("/%v/catalog", apiVersion)
-	catalogRemoveURLPattern = fmt.Sprintf("/%v/catalog/:service_id", apiVersion)
-	provisioningURLPattern  = fmt.Sprintf("/%v/service_instances/:instance_id", apiVersion)
-	bindingURLPattern       = fmt.Sprintf("/%v/service_instances/:instance_id/service_bindings/:binding_id", apiVersion)
+	catalogURLPattern          = fmt.Sprintf("/%v/catalog", apiVersion)
+	catalogServiceIdURLPattern = fmt.Sprintf("/%v/catalog/:service_id", apiVersion)
+	provisioningURLPattern     = fmt.Sprintf("/%v/service_instances/:instance_id", apiVersion)
+	bindingURLPattern          = fmt.Sprintf("/%v/service_instances/:instance_id/service_bindings/:binding_id", apiVersion)
 )
 
 type router struct {
@@ -52,7 +53,8 @@ func newRouter(h *handler) *router {
 
 	m.Use(sessions.Sessions("app_launcher", sessions.NewCookieStore([]byte("appsecretlauncher"))))
 	m.Post(catalogURLPattern, responseHandler(h.append))
-	m.Delete(catalogRemoveURLPattern, responseHandler(h.remove))
+	m.Delete(catalogServiceIdURLPattern, responseHandler(h.remove))
+	m.Put(catalogServiceIdURLPattern, responseHandler(h.update))
 	m.Get(catalogURLPattern, responseHandler(h.catalog))
 	m.Put(provisioningURLPattern, responseHandler(h.provision))
 	m.Delete(provisioningURLPattern, responseHandler(h.deprovision))

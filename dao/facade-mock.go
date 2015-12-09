@@ -35,6 +35,11 @@ func (c *FacadeMock) Append(service *types.ServiceExtension) (err error) {
 	return nil
 }
 
+func (c *FacadeMock) Update(service *types.ServiceExtension) (err error) {
+	c.Called(service)
+	return nil
+}
+
 func (c *FacadeMock) Remove(serviceID string) (err error) {
 	c.Called(serviceID)
 	return nil

@@ -25,4 +25,5 @@ type Catalog interface {
 	Get() ([]*types.ServiceExtension, error)
 	Find(id string) (*types.ServiceExtension, error)
 	Remove(string) (err error)
+	Update(*types.ServiceExtension) error
 }

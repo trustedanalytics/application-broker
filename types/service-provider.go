@@ -24,6 +24,9 @@ type ServiceProviderExtension interface {
 	// Appends service to the catalog managed by this broker
 	InsertToCatalog(*ServiceExtension) error
 
+	// Updates service in the catalog managed by this broker
+	UpdateCatalog(*ServiceExtension) error
+
 	// Deletes service description from the catalog
 	DeleteFromCatalog(serviceID string) error
 
