@@ -64,7 +64,7 @@ while getopts "b:u:p:a:n:s:d:i:h" optname; do
     esac
 done
 
-if [ "$displayName" == "" ]; then
+if [ -n "$displayName" ]; then
     displayName=$marketName
 fi
 
@@ -75,13 +75,14 @@ echo "Display name (name that will appear in marketplace): " $displayName
 echo "Application description in marketplace: " $marketDesc
 echo "Application icon in marketplace: " $marketIcon
 
-if [ "$marketIcon" != "" ]
+if [[ "$marketIcon" ]] && [[ "$marketIcon" != "data:image"* ]]
 then
 	#get file
 	extension="${marketIcon##*.}"
 	base64_encoded="$( base64 $marketIcon | tr -d '\n' )"
 	marketIcon='data:image/'"$extension"';base64,'"$base64_encoded"
 fi
+
 metadata='{
     "displayName": "'$displayName'",
     "imageUrl": "'$marketIcon'"
