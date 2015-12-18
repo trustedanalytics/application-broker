@@ -31,6 +31,7 @@ func (c *CfAPI) createApp(app types.CfApp) (*types.CfAppResource, error) {
 	address := c.BaseAddress + "/v2/apps"
 	log.Infof("Requesting app creation: %v", address)
 	m, _ := json.Marshal(app)
+	log.Debugf("Creating new app: [%+v]", app)
 	resp, err := c.Post(address, "application/json", bytes.NewReader(m))
 
 	if err != nil {
@@ -57,9 +58,12 @@ func (c *CfAPI) getAppSummary(id string) (*types.CfAppSummary, error) {
 	}
 
 	toReturn := new(types.CfAppSummary)
-	json.NewDecoder(resp.Body).Decode(toReturn)
+	if err := json.NewDecoder(resp.Body).Decode(toReturn); err != nil {
+		log.Errorf("Error decoding AppSummary response: [%v]", err);
+		return nil, err
+	}
 	log.Debugf("getAppSummary status code: [%v]", resp.StatusCode)
-	log.Debugf("AppSummary retrieved. GUID: [%v]", toReturn.GUID)
+	log.Debugf("AppSummary retrieved. [%+v]", toReturn)
 	return toReturn, nil
 }
 
