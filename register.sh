@@ -64,7 +64,7 @@ while getopts "b:u:p:a:n:s:d:i:h" optname; do
     esac
 done
 
-if [ -n "$displayName" ]; then
+if [ -z "$displayName" ]; then
     displayName=$marketName
 fi
 
