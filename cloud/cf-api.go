@@ -77,8 +77,8 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 
 	//Newly spawned app instance shall have almost identical config as reference app
 	destApp := types.NewCfAppResource(*sourceAppSummary, requestedName, r.SpaceGUID)
-	if destApp.Entity.Envs == nil && len(r.Parameters) >0 {
-		destApp.Entity.Envs = map[string]string{}
+	if destApp.Entity.Envs == nil && len(r.Parameters) > 0 {
+		destApp.Entity.Envs = map[string]interface{}{}
 	}
 	for k, v := range r.Parameters {
 		log.Debugf("Setting additional env: %v:%v", k, v)

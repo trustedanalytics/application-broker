@@ -112,17 +112,17 @@ type CfService struct {
 }
 
 type CfApp struct {
-	Name          string            `json:"name"`
-	SpaceGUID     string            `json:"space_guid"`
-	RoutesURL     string            `json:"routes_url"`
-	State         string            `json:"state"`
-	BuildpackUrl  string            `json:"buildpack"`
-	Command       string            `json:"command"`
-	DiskQuota     int64             `json:"disk_quota"`
-	InstanceCount int               `json:"instances"`
-	Memory        int64             `json:"memory"`
-	Path          string            `json:"path"`
-	Envs          map[string]string `json:"environment_json"`
+	Name          string                 `json:"name"`
+	SpaceGUID     string                 `json:"space_guid"`
+	RoutesURL     string                 `json:"routes_url"`
+	State         string                 `json:"state"`
+	BuildpackUrl  string                 `json:"buildpack"`
+	Command       string                 `json:"command"`
+	DiskQuota     int64                  `json:"disk_quota"`
+	InstanceCount int                    `json:"instances"`
+	Memory        int64                  `json:"memory"`
+	Path          string                 `json:"path"`
+	Envs          map[string]interface{} `json:"environment_json"`
 }
 
 type ServiceBindingResponse struct {
