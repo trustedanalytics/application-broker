@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/trustedanalytics/application-broker.svg)](https://travis-ci.org/trustedanalytics/application-broker)
+
 Application Broker for Cloud Foundry
 ==============================================
 
