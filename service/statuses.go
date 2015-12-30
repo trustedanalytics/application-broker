@@ -20,7 +20,7 @@ import "github.com/trustedanalytics/application-broker/messagebus"
 type ServiceCreationStatus struct {
 	ServiceName string
 	ServiceType string
-	OrgGUID     string
+	OrgGuid     string
 	Message     string
 	Timestamp   int64
 }
@@ -32,7 +32,7 @@ func (f CreationStatusFactory) NewServiceStatus(name string, stype string, org s
 	return ServiceCreationStatus{
 		ServiceName: name,
 		ServiceType: stype,
-		OrgGUID:     org,
+		OrgGuid:     org,
 		Message:     msg,
 		Timestamp:   messagebus.GetMillisecondsTimestamp(),
 	}
