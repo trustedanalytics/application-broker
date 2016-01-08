@@ -184,6 +184,7 @@ var _ = Describe("Launching service", func() {
 				}
 				dataCatalog.On("Find", mock.Anything).Return(svcExt)
 				request := new(cf.ServiceCreationRequest)
+				request.Parameters = make(map[string]string)
 
 				cfApi := new(cloud.CfMock)
 				expectedErr := errors.New("ERROR!")
@@ -211,6 +212,7 @@ var _ = Describe("Launching service", func() {
 				request := new(cf.ServiceCreationRequest)
 				request.SpaceGUID = "space_guid"
 				request.ServiceID = "service_id"
+				request.Parameters = make(map[string]string)
 
 				cfApi := new(cloud.CfMock)
 				createAppResp := &types.ServiceCreationResponse{}
@@ -233,6 +235,7 @@ var _ = Describe("Launching service", func() {
 				dataCatalog.On("AppendInstance", mock.Anything).Return()
 
 				request := &cf.ServiceCreationRequest{}
+				request.Parameters = make(map[string]string)
 				cfApi := new(cloud.CfMock)
 				createAppResp := &types.ServiceCreationResponse{}
 				cfApi.On("Provision", "", request).Return(createAppResp, nil)

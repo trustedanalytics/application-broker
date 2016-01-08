@@ -24,7 +24,6 @@ import (
 
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/go-martini/martini"
-	"github.com/nu7hatch/gouuid"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/types"
 )
@@ -104,11 +103,6 @@ func (h *handler) provision(req *http.Request, params martini.Params) (int, stri
 	if preq.Parameters == nil {
 		preq.Parameters = map[string]string{}
 	}
-	if preq.Parameters["name"] == "" {
-		random, _ := uuid.NewV4()
-		preq.Parameters["name"] = random.String()
-	}
-	log.Infof("handler provisioning: [%v]", preq.Parameters["name"])
 	log.Debugf("handler provisioning request decoded: [%+v]", preq)
 	resp, err := h.provider.CreateService(preq)
 	if err != nil {

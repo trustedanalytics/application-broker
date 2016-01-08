@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
@@ -136,7 +137,20 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	if err != nil {
 		return nil, err
 	}
+
+	if r.Parameters["name"] == "" {
+		r.Parameters["name"] = service.Name
+	}
+
+	idx := strings.Index(r.InstanceID, "-")
+	if idx > 0 {
+		// Take only first part of the GUID
+		r.Parameters["name"] = r.Parameters["name"] + "-" + r.InstanceID[0:idx]
+	}
+
 	name := r.Parameters["name"]
+	log.Infof("create service: [%v]", name)
+
 	stype := service.Name
 	org := r.OrganizationGUID
 
