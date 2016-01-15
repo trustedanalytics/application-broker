@@ -26,8 +26,7 @@ import (
 )
 
 type Mongo struct {
-	services  *mgo.Collection
-	instances *mgo.Collection
+	session *mgo.Session
 }
 
 func MongoFactory(envs *cfenv.App) *Mongo {
@@ -46,14 +45,15 @@ func MongoFactory(envs *cfenv.App) *Mongo {
 	if err != nil {
 		log.Criticalf("Cannot dial to mongodb! Err: [%v]", err)
 	}
-	svcs := session.DB("").C("services")
-	ists := session.DB("").C("instances")
-	return &Mongo{services: svcs, instances: ists}
+	return &Mongo{session: session}
 }
 
 func (c *Mongo) Get() ([]*types.ServiceExtension, error) {
 	result := []*types.ServiceExtension{}
-	err := c.services.Find(nil).All(&result)
+	session := c.session.Copy()
+	defer session.Close()
+	services := session.DB("").C("services")
+	err := services.Find(nil).All(&result)
 	if err != nil {
 		log.Errorf("Problems while getting catalog: [%v]", err)
 		return nil, misc.InternalServerError{Context: "Could not get catalog from DB"}
@@ -63,7 +63,10 @@ func (c *Mongo) Get() ([]*types.ServiceExtension, error) {
 
 func (c *Mongo) Find(id string) (*types.ServiceExtension, error) {
 	result := new(types.ServiceExtension)
-	err := c.services.Find(bson.M{"service.id": id}).One(&result)
+	session := c.session.Copy()
+	defer session.Close()
+	services := session.DB("").C("services")
+	err := services.Find(bson.M{"service.id": id}).One(&result)
 	if err != nil || result == nil {
 		log.Errorf("No service found in catalog for id: [%v], Err: [%v]", id, err)
 		return nil, misc.ServiceNotFoundError{}
@@ -72,18 +75,21 @@ func (c *Mongo) Find(id string) (*types.ServiceExtension, error) {
 }
 
 func (c *Mongo) Append(service *types.ServiceExtension) error {
-	count, _ := c.services.Find(bson.M{"service.id": service.ID}).Count()
+	session := c.session.Copy()
+	defer session.Close()
+	services := session.DB("").C("services")
+	count, _ := services.Find(bson.M{"service.id": service.ID}).Count()
 	if count > 0 {
 		log.Errorf("Service already exists in catalog for id: [%v]", service.ID)
 		return misc.ServiceAlreadyExistsError{}
 	}
-	count, _ = c.services.Find(bson.M{"service.name": service.Name}).Count()
+	count, _ = services.Find(bson.M{"service.name": service.Name}).Count()
 	if count > 0 {
 		log.Errorf("Service already exists in catalog for name: [%v]", service.Name)
 		return misc.ServiceAlreadyExistsError{}
 	}
 
-	err := c.services.Insert(service)
+	err := services.Insert(service)
 	if err != nil {
 		log.Errorf("Could not insert service to catalog: [%v]", err)
 		err = misc.InternalServerError{Context: "Problem while appending service to DB"}
@@ -92,8 +98,11 @@ func (c *Mongo) Append(service *types.ServiceExtension) error {
 }
 
 func (c *Mongo) Update(service *types.ServiceExtension) error {
+	session := c.session.Copy()
+	defer session.Close()
+	services := session.DB("").C("services")
 
-	err := c.services.Update(bson.M{"service.id": service.ID}, service)
+	err := services.Update(bson.M{"service.id": service.ID}, service)
 	if err != nil {
 		log.Errorf("Could not insert service to catalog: [%v]", err)
 		err = misc.InternalServerError{Context: "Problem while appending service to DB"}
@@ -102,7 +111,11 @@ func (c *Mongo) Update(service *types.ServiceExtension) error {
 }
 
 func (c *Mongo) Remove(serviceID string) error {
-	if err := c.services.Remove(bson.M{"service.id": serviceID}); err != nil {
+	session := c.session.Copy()
+	defer session.Close()
+	services := session.DB("").C("services")
+
+	if err := services.Remove(bson.M{"service.id": serviceID}); err != nil {
 		log.Errorf("Could not remove service from catalog: [%v]", err)
 		return misc.InternalServerError{Context: "Problem while removing service from DB"}
 	}
@@ -110,7 +123,11 @@ func (c *Mongo) Remove(serviceID string) error {
 }
 
 func (c *Mongo) AppendInstance(instance types.ServiceInstanceExtension) error {
-	err := c.instances.Insert(instance)
+	session := c.session.Copy()
+	defer session.Close()
+	instances := session.DB("").C("instances")
+
+	err := instances.Insert(instance)
 	if err != nil {
 		log.Errorf("Could not insert instance to database: [%v]", err)
 		return misc.InternalServerError{Context: "Problem with storing svc instance in DB"}
@@ -119,8 +136,12 @@ func (c *Mongo) AppendInstance(instance types.ServiceInstanceExtension) error {
 }
 
 func (c *Mongo) FindInstance(id string) (*types.ServiceInstanceExtension, error) {
+	session := c.session.Copy()
+	defer session.Close()
+	instances := session.DB("").C("instances")
+
 	result := new(types.ServiceInstanceExtension)
-	c.instances.Find(bson.M{"id": id}).One(&result)
+	instances.Find(bson.M{"id": id}).One(&result)
 	if len(result.ID) == 0 {
 		log.Errorf("No service instance found in database for id: [%v]", id)
 		return nil, misc.InstanceNotFoundError{}
@@ -129,7 +150,11 @@ func (c *Mongo) FindInstance(id string) (*types.ServiceInstanceExtension, error)
 }
 
 func (c *Mongo) HasInstancesOf(serviceID string) (bool, error) {
-	count, err := c.instances.Find(bson.M{"serviceid": serviceID}).Count()
+	session := c.session.Copy()
+	defer session.Close()
+	instances := session.DB("").C("instances")
+
+	count, err := instances.Find(bson.M{"serviceid": serviceID}).Count()
 	if err != nil {
 		return false, err
 	}
@@ -137,7 +162,11 @@ func (c *Mongo) HasInstancesOf(serviceID string) (bool, error) {
 }
 
 func (c *Mongo) RemoveInstance(id string) error {
-	err := c.instances.Remove(bson.M{"id": id})
+	session := c.session.Copy()
+	defer session.Close()
+	instances := session.DB("").C("instances")
+
+	err := instances.Remove(bson.M{"id": id})
 	if err != nil {
 		log.Errorf("Could not delete instance %v from database: [%v]", id, err)
 		err = misc.InternalServerError{Context: err.Error()}
