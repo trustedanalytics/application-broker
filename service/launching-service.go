@@ -16,8 +16,6 @@
 package service
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -55,11 +53,17 @@ func (p *LaunchingService) InsertToCatalog(svc *types.ServiceExtension) error {
 	if !types.Validate(svc) {
 		return misc.InvalidInputError{}
 	}
+
 	if err := p.db.Append(svc); err != nil {
 		return err
 	}
 
+	if err := p.cloud.CheckIfServiceExists(svc.Name); err != nil {
+		p.db.Remove(svc.ID)
+		return err
+	}
 	if err := p.UpdateBroker(); err != nil {
+		p.db.Remove(svc.ID)
 		return err
 	}
 
@@ -208,9 +212,7 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*types.Serv
 }
 
 func (p *LaunchingService) UpdateBroker() error {
-	vcapSerialized := misc.GetEnvVarAsString("VCAP_APPLICATION", "{}")
-	vcap := new(types.CfVcapApplication)
-	json.NewDecoder(bytes.NewReader([]byte(vcapSerialized))).Decode(vcap)
+	vcap := types.GetVcapApplication()
 	username := misc.GetEnvVarAsString("AUTH_USER", "")
 	password := misc.GetEnvVarAsString("AUTH_PASS", "")
 

@@ -17,7 +17,6 @@
 package cloud
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
@@ -170,32 +169,33 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 
 // UpdateBroker registers or updates catalog in CF
 func (c *CfAPI) UpdateBroker(brokerName string, brokerURL string, username string, password string) error {
-	address := fmt.Sprintf("%v/v2/service_brokers?q=name:%v", c.BaseAddress, brokerName)
-	response, err := c.Get(address)
+	brokers, err := c.getBrokers(brokerName)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to get available service brokers: %v", err.Error())
-		log.Error(msg)
-		return misc.InternalServerError{Context: msg}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("Failed to get available service brokers: Status code %d, Error %v", response.StatusCode,
-			misc.ReaderToString(response.Body))
-		log.Error(msg)
-		return misc.InternalServerError{Context: msg}
-	}
-
-	brokers := new(types.CfServiceBrokerResources)
-	if err := json.NewDecoder(response.Body).Decode(brokers); err != nil {
-		msg := fmt.Sprintf("Failed to parse broker list response: %v", err.Error())
-		log.Error(msg)
-		return misc.InternalServerError{Context: msg}
+		return err
 	}
 
 	if brokers.TotalResults == 0 {
 		return c.registerBroker(brokerName, brokerURL, username, password)
 	}
 	return c.updateBroker(brokers.Resources[0].Meta.GUID, brokerURL, username, password)
+}
+
+func (c *CfAPI) CheckIfServiceExists(serviceName string) error {
+	myData := types.GetVcapApplication()
+	broker, err := c.getBrokers(myData.Name)
+	duplicate, err := c.getServiceOfName(serviceName)
+	if err != nil {
+		return err
+	}
+	if duplicate != nil {
+		if broker.TotalResults == 0 || broker.Resources[0].Meta.GUID != duplicate.Entity.BrokerGUID {
+			return misc.InternalServerError{Context: "Service name already registered in different CF broker!"}
+		} else if broker.TotalResults > 0 && broker.Resources[0].Meta.GUID == duplicate.Entity.BrokerGUID {
+			log.Infof("Service name was registered in CF for THIS broker but was missing in internal DB, purging...", serviceName)
+			return c.purgeService(duplicate.Meta.GUID, duplicate.Entity.Name, duplicate.Entity.PlansURL)
+		}
+	}
+	return nil
 }
 
 func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfAppSummaryService, wg *sync.WaitGroup, errors chan error) {

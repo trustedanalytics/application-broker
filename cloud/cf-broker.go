@@ -48,7 +48,7 @@ func (c *CfAPI) updateBroker(brokerGUID string, brokerURL string, username strin
 	req := types.CfServiceBroker{URL: brokerURL, Username: username, Password: password}
 	serialized, _ := json.Marshal(req)
 
-	log.Infof("Updating: %v %v", address, serialized)
+	log.Infof("Updating: %v %v", address, brokerURL)
 
 	request, err := http.NewRequest(httputils.MethodPut, address, bytes.NewReader(serialized))
 	if err != nil {
@@ -72,4 +72,29 @@ func (c *CfAPI) updateBroker(brokerGUID string, brokerURL string, username strin
 	}
 
 	return nil
+}
+
+func (c *CfAPI) getBrokers(brokerName string) (*types.CfServiceBrokerResources, error) {
+	address := fmt.Sprintf("%v/v2/service_brokers?q=name:%v", c.BaseAddress, brokerName)
+	response, err := c.Get(address)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to get available service brokers: %v", err.Error())
+		log.Error(msg)
+		return nil, misc.InternalServerError{Context: msg}
+	}
+
+	if response.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Failed to get available service brokers: Status code %d, Error %v", response.StatusCode,
+			misc.ReaderToString(response.Body))
+		log.Error(msg)
+		return nil, misc.InternalServerError{Context: msg}
+	}
+
+	brokers := new(types.CfServiceBrokerResources)
+	if err := json.NewDecoder(response.Body).Decode(brokers); err != nil {
+		msg := fmt.Sprintf("Failed to parse broker list response: %v", err.Error())
+		log.Error(msg)
+		return nil, misc.InternalServerError{Context: msg}
+	}
+	return brokers, nil
 }

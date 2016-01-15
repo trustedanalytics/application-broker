@@ -22,6 +22,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/misc/http-utils"
 	"github.com/trustedanalytics/application-broker/types"
 	"net/http"
 )
@@ -83,6 +84,61 @@ func (c *CfAPI) deleteServiceInstance(id string) error {
 	if err != nil {
 		log.Errorf("Error deleting service instance %v", id)
 		return err
+	}
+	return nil
+}
+
+func (c *CfAPI) getServiceOfName(name string) (*types.CfServiceResource, error) {
+	address := fmt.Sprintf("%v/v2/services?q=label:%v", c.BaseAddress, name)
+	resp, err := c.Get(address)
+
+	if err != nil {
+		log.Errorf("Could not get service of name provided: [%v]", err)
+		return nil, misc.InternalServerError{Context: "Request CF for service with given name, failed"}
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Errorf("Problem while getting service of specified name: [%v]", err)
+		return nil, misc.InternalServerError{Context: "Wrong status code from CF API after trying to get specific service"}
+	}
+
+	resource := new(types.CfServicesResources)
+	json.NewDecoder(resp.Body).Decode(resource)
+	if resource.TotalResults > 0 {
+		log.Debugf("Service with name [%v] found", name)
+		return &resource.Resources[0], nil
+	}
+	return nil, nil
+}
+
+func (c *CfAPI) purgeService(serviceID string, serviceName string, servicePlansURL string) error {
+	log.Infof("Purge service: [%v]", serviceID)
+	resp, err := c.Get(c.BaseAddress + servicePlansURL)
+	plans := new(types.CfServicePlansResources)
+	json.NewDecoder(resp.Body).Decode(plans)
+
+	for _, plan := range plans.Resources {
+		address := fmt.Sprintf("%v/v2/service_plans/%v", c.BaseAddress, plan.Meta.GUID)
+		if err := c.deleteEntity(address, "service plan"); err != nil {
+			return err
+		}
+	}
+
+	address := fmt.Sprintf("%v/v2/services/%v", c.BaseAddress, serviceID)
+	err = c.deleteEntity(address, "service")
+	if err != nil {
+		msg := fmt.Sprintf("Could not delete service %s: [%v]", serviceName, err)
+		log.Error(msg)
+		return misc.InternalServerError{Context: msg}
+	}
+	log.Debugf("Delete service %s response code: %d", serviceName, resp.StatusCode)
+
+	if resp.StatusCode == http.StatusNotFound {
+		log.Infof("%v already does not exist", serviceName)
+	} else if !httputils.IsSuccessStatus(resp.StatusCode) {
+		msg := fmt.Sprintf("Delete %s failed. Response from CC: (%d) [%v]",
+			serviceName, resp.StatusCode, misc.ReaderToString(resp.Body))
+		log.Error(msg)
+		return misc.InternalServerError{Context: msg}
 	}
 	return nil
 }

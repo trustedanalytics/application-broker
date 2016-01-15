@@ -25,4 +25,5 @@ type API interface {
 	Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error)
 	Deprovision(appGUID string) error
 	UpdateBroker(brokerName string, brokerURL string, username string, password string) error
+	CheckIfServiceExists(serviceName string) error
 }

@@ -103,6 +103,7 @@ var _ = Describe("Launching service", func() {
 					Service:      basic,
 				}
 				dataCatalog.On("Append", service).Return()
+				cfMock.On("CheckIfServiceExists", service.Name).Return(nil)
 
 				sut := New(dataCatalog, cfMock, nats, CreationStatusFactory{})
 				err := sut.InsertToCatalog(service)
@@ -158,7 +159,7 @@ var _ = Describe("Launching service", func() {
 		})
 
 		Context("the only service in catalog", func() {
-			It("should thron an error", func() {
+			It("should throw an error", func() {
 				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
 				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
 				dataCatalog.On("HasInstancesOf", "fakeId").Return(false, nil)

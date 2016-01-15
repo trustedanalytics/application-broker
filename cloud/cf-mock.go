@@ -49,3 +49,8 @@ func (c *CfMock) UpdateBroker(brokerName string, brokerUri string, username stri
 	}
 	return args.Get(0).(error)
 }
+
+func (c *CfMock) CheckIfServiceExists(serviceName string) error {
+	c.Called(serviceName)
+	return nil
+}

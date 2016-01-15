@@ -59,7 +59,7 @@ func (c *CfAPI) getAppSummary(id string) (*types.CfAppSummary, error) {
 
 	toReturn := new(types.CfAppSummary)
 	if err := json.NewDecoder(resp.Body).Decode(toReturn); err != nil {
-		log.Errorf("Error decoding AppSummary response: [%v]", err);
+		log.Errorf("Error decoding AppSummary response: [%v]", err)
 		return nil, err
 	}
 	log.Debugf("getAppSummary status code: [%v]", resp.StatusCode)

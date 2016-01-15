@@ -80,6 +80,7 @@ var _ = Describe("Handler", func() {
 
 			BeforeEach(func() {
 				mongoMock.On("Append", mock.Anything).Return()
+				cfMock.On("CheckIfServiceExists", "dummy").Return(nil)
 			})
 
 			It("should return status created", func() {

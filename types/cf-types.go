@@ -15,6 +15,12 @@
  */
 package types
 
+import (
+	"bytes"
+	"encoding/json"
+	"github.com/trustedanalytics/application-broker/misc"
+)
+
 // cfAppsResponse describes the Cloud Controller API result for a list of apps
 type CfAppsResponse struct {
 	Count     int             `json:"total_results"`
@@ -83,9 +89,24 @@ type CfBindingResource struct {
 	Entity CfBinding `json:"entity"`
 }
 
+type CfServicesResources struct {
+	TotalResults int                 `json:"total_results"`
+	Resources    []CfServiceResource `json:"resources"`
+}
+
 type CfServiceResource struct {
 	Meta   CfMeta    `json:"metadata"`
 	Entity CfService `json:"entity"`
+}
+
+type CfServicePlansResources struct {
+	TotalResults int                     `json:"total_results"`
+	Resources    []CfServicePlanResource `json:"resources"`
+}
+
+type CfServicePlanResource struct {
+	Meta   CfMeta                  `json:"metadata"`
+	Entity CfAppSummaryServicePlan `json:"entity"`
 }
 
 type CfMeta struct {
@@ -105,9 +126,9 @@ type CfJobResponse struct {
 }
 
 type CfService struct {
-	GUID       string `json:"guid"`
 	Name       string `json:"label"`
 	Provider   string `json:"provider"`
+	PlansURL   string `json:"service_plans_url"`
 	BrokerGUID string `json:"service_broker_guid"`
 }
 
@@ -251,4 +272,11 @@ func NewCfServiceBindingRequest(appGUID string, svcInstanceGUID string) *CfServi
 	return &CfServiceBindingCreateRequest{
 		AppGUID:             appGUID,
 		ServiceInstanceGUID: svcInstanceGUID}
+}
+
+func GetVcapApplication() CfVcapApplication {
+	vcapSerialized := misc.GetEnvVarAsString("VCAP_APPLICATION", "{}")
+	vcap := CfVcapApplication{}
+	json.NewDecoder(bytes.NewReader([]byte(vcapSerialized))).Decode(&vcap)
+	return vcap
 }
