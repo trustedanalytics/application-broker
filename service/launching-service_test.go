@@ -184,6 +184,7 @@ var _ = Describe("Launching service", func() {
 					Service:      svc,
 				}
 				dataCatalog.On("Find", mock.Anything).Return(svcExt)
+				dataCatalog.On("AppendInstance", mock.Anything).Return()
 				request := new(cf.ServiceCreationRequest)
 				request.Parameters = make(map[string]string)
 
@@ -197,6 +198,7 @@ var _ = Describe("Launching service", func() {
 				cfApi.AssertExpectations(GinkgoT())
 				Expect(resp).To(BeNil())
 				Expect(err).To(Equal(expectedErr))
+				dataCatalog.AssertCalled(GinkgoT(), "AppendInstance", mock.Anything)
 			})
 		})
 
@@ -224,6 +226,7 @@ var _ = Describe("Launching service", func() {
 
 				cfApi.AssertExpectations(GinkgoT())
 				Expect(resp).NotTo(BeNil())
+				dataCatalog.AssertCalled(GinkgoT(), "AppendInstance", mock.Anything)
 			})
 		})
 

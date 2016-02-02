@@ -166,17 +166,16 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	if err != nil {
 		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning failed with error: "+err.Error())
 		p.msgBus.Publish(msg)
+
+		if appendErr := p.appendInstance(r, resp); appendErr != nil {
+			log.Errorf("Failed to append instance %v to database: [%v]", r.InstanceID, appendErr.Error())
+		}
 		return nil, err
 	}
 	msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning succeded")
 	p.msgBus.Publish(msg)
 
-	toAppend := types.ServiceInstanceExtension{
-		App:       resp.App,
-		ID:        r.InstanceID,
-		ServiceID: r.ServiceID,
-	}
-	if err := p.db.AppendInstance(toAppend); err != nil {
+	if err := p.appendInstance(r, resp); err != nil {
 		return nil, err
 	}
 	return &resp.ServiceCreationResponse, nil
@@ -226,4 +225,17 @@ func (p *LaunchingService) UpdateBroker() error {
 	url := fmt.Sprintf("http://%v", vcap.Uris[0])
 
 	return p.cloud.UpdateBroker(vcap.Name, url, username, password)
+}
+
+func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *types.ServiceCreationResponse) error {
+	var app types.CfAppResource
+	if res != nil {
+		app = res.App
+	}
+	toAppend := types.ServiceInstanceExtension{
+		App:       app,
+		ID:        req.InstanceID,
+		ServiceID: req.ServiceID,
+	}
+	return p.db.AppendInstance(toAppend)
 }

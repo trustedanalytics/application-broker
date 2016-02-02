@@ -168,8 +168,10 @@ func handleServiceError(err error) (int, string) {
 		return marshalEntity(responseEntity{http.StatusConflict, empty})
 	case misc.InvalidInputError{}:
 		return marshalEntity(responseEntity{http.StatusBadRequest, empty})
-	case misc.InstanceNotFoundError{}, misc.ServiceNotFoundError{}:
+	case misc.ServiceNotFoundError{}:
 		return marshalEntity(responseEntity{http.StatusNotFound, empty})
+	case misc.InstanceNotFoundError{}:
+		return marshalEntity(responseEntity{http.StatusGone, empty})
 	case misc.InternalServerError{}:
 		return marshalEntity(responseEntity{http.StatusInternalServerError, err.(misc.InternalServerError).Context})
 	default:

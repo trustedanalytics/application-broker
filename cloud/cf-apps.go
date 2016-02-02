@@ -181,24 +181,34 @@ func (c *CfAPI) startApp(app *types.CfAppResource) error {
 
 	var err error
 	asyncErr := make(chan error)
-	go c.waitForAppRunning(app.Meta.GUID, asyncErr)
+	done := make(chan bool)
+
+	go c.waitForAppRunning(app.Meta.GUID, asyncErr, done)
+
 	select {
 	case err = <-asyncErr:
 		if err != nil {
 			return err
 		}
 	case <-time.After(5 * time.Minute):
+		done <- true
 		return misc.TimeoutOccurredError{}
 	}
 	return nil
 }
 
-func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error) {
+func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error, done chan bool) {
 	address := fmt.Sprintf("%v/v2/apps/%v/instances", c.BaseAddress, appGUID)
 	log.Infof("Waiting for app running, checking instances: %v", address)
 
 	timeout := time.Second * 5
 	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+
 		resp, err := c.Get(address)
 		if err != nil {
 			log.Errorf("Could not get app instances: [%v]", err)

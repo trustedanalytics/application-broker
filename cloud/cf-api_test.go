@@ -195,8 +195,9 @@ var _ = Describe("Cf api", func() {
 				httpmock.RegisterResponder("GET", instances, positiveGetInstancesResponder)
 
 				asyncErr := make(chan error)
+				done := make(chan bool)
 				sut := CfAPI{Client: http.DefaultClient}
-				go sut.waitForAppRunning(app.Meta.GUID, asyncErr)
+				go sut.waitForAppRunning(app.Meta.GUID, asyncErr, done)
 
 				select {
 				case err := <-asyncErr:

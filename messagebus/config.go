@@ -36,23 +36,45 @@ type Config struct {
 func (c *Config) TryInitialize(cfEnv *cfenv.App) bool {
 	log.Info("initializing nats config...")
 
-	if cfEnv == nil {
-		c.url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
-		c.subject = misc.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
+	service := c.getNatsService(cfEnv)
+	c.url = c.getUri(service)
+	c.subject = c.getSubject(service)
 
-		if len(c.url) == 0 || len(c.subject) == 0 {
-			log.Debug("Unable to collect nats configuration from local envs")
-			return false
-		}
-		return true
+	log.Infof("Fetched nats config: [%v] [%v]", c.url, c.subject)
+
+	return len(c.url) > 0 && len(c.subject) > 0
+}
+
+func (c *Config) getUri(service *cfenv.Service) string {
+	var url string
+	if service != nil {
+		url = service.Credentials["uri"].(string)
+	}
+	if len(url) == 0 {
+		url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
+	}
+	return url
+}
+
+func (c *Config) getSubject(service *cfenv.Service) string {
+	var subject string
+	if service != nil {
+		subject = service.Credentials["service-creation-subject"].(string)
+	}
+	if len(subject) == 0 {
+		subject = misc.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
+	}
+	return subject
+}
+
+func (c *Config) getNatsService(cfEnv *cfenv.App) *cfenv.Service {
+	if cfEnv != nil {
+		return nil
 	}
 
 	service, err := cfEnv.Services.WithName("nats-provider")
 	if err != nil {
-		log.Debug("Cannot locate nats service in CF environment")
-		return false
+		log.Warn("Cannot locate nats service in CF environment")
 	}
-	c.url = service.Credentials["url"].(string)
-	c.subject = service.Credentials["service-creation-subject"].(string)
-	return true
+	return service
 }

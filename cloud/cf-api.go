@@ -91,16 +91,21 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 		return nil, err
 	}
 
+	toReturn := types.ServiceCreationResponse{
+		App: *destApp,
+		ServiceCreationResponse: cf.ServiceCreationResponse{DashboardURL: ""},
+	}
+
 	asyncErr := make(chan error)
 	go c.copyBits(sourceAppGUID, destApp.Meta.GUID, asyncErr)
 
 	route, err := c.createRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, r.SpaceGUID})
 	if err != nil {
-		return nil, err
+		return &toReturn, err
 	}
 
 	if err := c.associateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
-		return nil, err
+		return &toReturn, err
 	}
 
 	wg := sync.WaitGroup{}
@@ -112,25 +117,22 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	}
 	wg.Wait()
 	if err := misc.FirstNonEmpty(results, len(sourceAppSummary.Services)); err != nil {
-		return nil, err
+		return &toReturn, err
 	}
 
 	//Waiting for copy_bits finish
 	err = <-asyncErr
 	if err != nil {
-		return nil, err
+		return &toReturn, err
 	}
 
 	if err := c.startApp(destApp); err != nil {
-		return nil, err
+		return &toReturn, err
 	}
 
 	log.Infof("Service instance [%v] created", requestedName)
 	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
-	toReturn := types.ServiceCreationResponse{
-		App: *destApp,
-		ServiceCreationResponse: cf.ServiceCreationResponse{DashboardURL: ""},
-	}
+
 	return &toReturn, nil
 }
 
