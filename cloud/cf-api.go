@@ -112,8 +112,10 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	wg.Add(len(sourceAppSummary.Services))
 	results := make(chan error, len(sourceAppSummary.Services))
 	// Create dependent services and bind them
+	commonUUID, _ := uuid.NewV4()
+	suffix := commonUUID.String()[:8]
 	for _, svcToCopy := range sourceAppSummary.Services {
-		go c.createDependencies(destApp, svcToCopy, &wg, results)
+		go c.createDependencies(destApp, svcToCopy, suffix, &wg, results)
 	}
 	wg.Wait()
 	if err := misc.FirstNonEmpty(results, len(sourceAppSummary.Services)); err != nil {
@@ -200,10 +202,9 @@ func (c *CfAPI) CheckIfServiceExists(serviceName string) error {
 	return nil
 }
 
-func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfAppSummaryService, wg *sync.WaitGroup, errors chan error) {
+func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfAppSummaryService, suffix string, wg *sync.WaitGroup, errors chan error) {
 	defer wg.Done()
-	serviceNameGuid, _ := uuid.NewV4()
-	serviceName := svc.Name + "-" + serviceNameGuid.String()[:8]
+	serviceName := svc.Name + "-" + suffix
 	log.Debugf("Create dependent service: service=[%v] ([%v], [%v])", serviceName, svc.Plan.Service.Label, svc.Plan.Name)
 
 	// Create service
