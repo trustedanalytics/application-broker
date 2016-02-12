@@ -103,6 +103,12 @@ To locally develop this service broker, we encourage you to use lightweight refe
 Additionally you will need mongodb instance. Install it by using package-manager your distro provides. For Ubuntu/Debian it will be: `sudo apt-get install mongodb`. Local Application Broker will connect to it on default port so no additional configuration is needed.
 
 ### Running locally
+
+Install project dependencies:
+```
+godep restore ./...
+```
+
 You can run the Application Broker locally via [gin](https://github.com/codegangsta/gin), which will automatically reload any file changes during development. Our application needs several environment variables to work properly. Ensure that they are exported before starting. Running following commands is sufficient to run the Application Broker correctly:
 
 ```
