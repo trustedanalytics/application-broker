@@ -18,7 +18,7 @@ package types
 
 import (
 	log "github.com/cihub/seelog"
-	"github.com/cloudfoundry-community/types-cf"
+	cf "github.com/cloudfoundry-community/types-cf"
 	"github.com/nu7hatch/gouuid"
 )
 
