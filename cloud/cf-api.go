@@ -92,7 +92,7 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	}
 
 	toReturn := types.ServiceCreationResponse{
-		App: *destApp,
+		App: destApp,
 		ServiceCreationResponse: cf.ServiceCreationResponse{DashboardURL: ""},
 	}
 
@@ -107,6 +107,8 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	if err := c.associateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
 		return &toReturn, err
 	}
+
+	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(sourceAppSummary.Services))
@@ -133,8 +135,6 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	}
 
 	log.Infof("Service instance [%v] created", requestedName)
-	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
-
 	return &toReturn, nil
 }
 

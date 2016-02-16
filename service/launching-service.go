@@ -229,8 +229,8 @@ func (p *LaunchingService) UpdateBroker() error {
 
 func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *types.ServiceCreationResponse) error {
 	var app types.CfAppResource
-	if res != nil {
-		app = res.App
+	if res != nil && res.App != nil {
+		app = *res.App
 	}
 	toAppend := types.ServiceInstanceExtension{
 		App:       app,
