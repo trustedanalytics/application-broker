@@ -17,6 +17,8 @@ package misc
 
 import (
 	"bytes"
+	"crypto/rand"
+	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/nu7hatch/gouuid"
 	"io"
@@ -104,4 +106,23 @@ func ReaderToString(reader io.Reader) string {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(reader)
 	return buf.String()
+}
+
+func GenerateRandomString(length int) string {
+	dictionary := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, length)
+	rand.Read(bytes)
+	for k, v := range bytes {
+		bytes[k] = dictionary[v%byte(len(dictionary))]
+	}
+	return string(bytes)
+}
+
+func ReplaceWithRandom(value string) string {
+	for i := 8; i <= 32; i += 8 {
+		for strings.Contains(value, fmt.Sprintf("$RANDOM%d", i)) {
+			value = strings.Replace(value, fmt.Sprintf("$RANDOM%d", i), GenerateRandomString(i), 1)
+		}
+	}
+	return value
 }

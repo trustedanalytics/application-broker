@@ -17,6 +17,7 @@
 package cloud
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
@@ -230,10 +231,15 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 			errors <- err
 			return
 		}
-		log.Debugf("Dependent user provided service retrieved: %+v", response)
+		log.Infof("Dependent user provided service retrieved: %+v", response)
 		// Create UPS
 		response.Entity.Name = serviceName
 		response.Entity.SpaceGUID = destApp.Entity.SpaceGUID
+		credentials, err := json.Marshal(response.Entity.Credentials)
+		credentialsStr := string(credentials)
+		credentialsStr = misc.ReplaceWithRandom(credentialsStr)
+		log.Debugf("UPS credentials as string: %+v", credentialsStr)
+		json.Unmarshal([]byte(credentialsStr), &response.Entity.Credentials)
 		response, err = c.createUserProvidedServiceInstance(&response.Entity)
 		if err != nil {
 			errors <- err
