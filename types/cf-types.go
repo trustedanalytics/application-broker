@@ -132,6 +132,19 @@ type CfService struct {
 	BrokerGUID string `json:"service_broker_guid"`
 }
 
+type CfUserProvidedService struct {
+	Name            string                 `json:"name"`
+	SpaceGUID       string                 `json:"space_guid"`
+	SyslogDrainURL  string                 `json:"syslog_drain_url,omitempty"`
+	Credentials     map[string]interface{} `json:"credentials,omitempty"`
+	RouteServiceURL string                 `json:"route_service_url,omitempty"`
+}
+
+type CfUserProvidedServiceResource struct {
+	Meta   CfMeta                `json:"metadata"`
+	Entity CfUserProvidedService `json:"entity"`
+}
+
 type CfApp struct {
 	Name          string                 `json:"name"`
 	SpaceGUID     string                 `json:"space_guid"`

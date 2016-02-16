@@ -204,22 +204,52 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 	serviceName := svc.Name + "-" + serviceNameGuid.String()[:8]
 	log.Debugf("Create dependent service: service=[%v] ([%v], [%v])", serviceName, svc.Plan.Service.Label, svc.Plan.Name)
 
-	// Create service
-	svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, destApp.Entity.SpaceGUID, svc.Plan)
-	response, err := c.createServiceInstance(svcInstanceReq)
-	if err != nil {
-		errors <- err
-		return
+	if len(svc.Plan.Service.Label) > 0 {
+		// svc is a normal service
+		// Create service
+		svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, destApp.Entity.SpaceGUID, svc.Plan)
+		response, err := c.createServiceInstance(svcInstanceReq)
+		if err != nil {
+			errors <- err
+			return
+		}
+		log.Debugf("Dependent service created: Service Instance GUID=[%v]", response.Meta.GUID)
+		// Bind created service
+		svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, response.Meta.GUID)
+		svcBindingResp, err := c.createServiceBinding(svcBindingReq)
+		if err != nil {
+			errors <- err
+			return
+		}
+		log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
+	} else {
+		// svc is a user provided service
+		// Retrieve UPS
+		response, err := c.getUserProvidedService(svc.GUID)
+		if err != nil {
+			errors <- err
+			return
+		}
+		log.Debugf("Dependent user provided service retrieved: %+v", response)
+		// Create UPS
+		response.Entity.Name = serviceName
+		response.Entity.SpaceGUID = destApp.Entity.SpaceGUID
+		response, err = c.createUserProvidedServiceInstance(&response.Entity)
+		if err != nil {
+			errors <- err
+			return
+		}
+		log.Debugf("Dependent user provided service created: %+v", response)
+		// Bind created service
+		svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, response.Meta.GUID)
+		svcBindingResp, err := c.createServiceBinding(svcBindingReq)
+		if err != nil {
+			errors <- err
+			return
+		}
+		log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
 	}
-	log.Debugf("Dependent service created: Service Instance GUID=[%v]", response.Meta.GUID)
-	// Bind created service
-	svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, response.Meta.GUID)
-	svcBindingResp, err := c.createServiceBinding(svcBindingReq)
-	if err != nil {
-		errors <- err
-		return
-	}
-	log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
+
 	errors <- nil
 	return
 }
