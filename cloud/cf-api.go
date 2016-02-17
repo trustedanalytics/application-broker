@@ -25,9 +25,12 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/types"
+	"github.com/twmb/algoimpl/go/graph"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 )
 
@@ -52,8 +55,84 @@ func NewCfAPI() *CfAPI {
 	return toReturn
 }
 
+// Returns a list of services and apps which would be provisioned in normal run
+func (c *CfAPI) DryRun(sourceAppGUID string) ([]string, error) {
+	g := graph.New(graph.Directed)
+	root := g.MakeNode()
+	*root.Value = sourceAppGUID
+
+	_ = c.addDependenciesToGraph(g, root, sourceAppGUID)
+	// Calculations
+	sorted := g.TopologicalSort()
+	log.Infof("Topological Order:\n")
+	ret := make([]string, len(sorted))
+	for i, node := range sorted {
+		log.Infof("%v", *node.Value)
+		ret[len(sorted)-1-i] = fmt.Sprint(*node.Value)
+	}
+	if c.graphHasCycles(g) {
+		log.Errorf("Graph has cycles and stack cannot be copied")
+		return nil, misc.InternalServerError{Context: ""}
+	} else {
+		log.Infof("Graph has no cycles")
+	}
+	return ret, nil
+}
+
+func (c *CfAPI) graphHasCycles(g *graph.Graph) bool {
+	components := g.StronglyConnectedComponents()
+	for _, comp := range components {
+		if len(comp) > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, sourceAppGUID string) error {
+	log.Infof("addDependenciesToGraph for parent %v", *parent.Value)
+	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
+	if err != nil {
+		return err
+	}
+	for _, svc := range sourceAppSummary.Services {
+		node := g.MakeNode()
+		if c.isNormalService(svc) {
+			*node.Value = svc.Name
+			g.MakeEdgeWeight(parent, node, 1)
+		} else {
+			*node.Value = svc.Name
+			g.MakeEdgeWeight(parent, node, 1)
+			// Retrieve UPS
+			response, err := c.getUserProvidedService(svc.GUID)
+			if err != nil {
+				return err
+			}
+			if val, ok := response.Entity.Credentials["url"]; ok {
+				if urlStr, ok := val.(string); ok {
+					appID, err := c.getAppIdFromSpaceByUrl(sourceAppSummary.SpaceGUID, urlStr)
+					if err != nil {
+						return err
+					}
+					if len(appID) > 0 {
+						log.Infof("Application %v is bound using %v", appID, svc.Name)
+						node2 := g.MakeNode()
+						*node2.Value = appID
+						g.MakeEdgeWeight(node, node2, 1)
+						_ = c.addDependenciesToGraph(g, node2, appID)
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // Provision instantiates service of given type
 func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error) {
+	order, err := c.DryRun(sourceAppGUID) // TEST EXECUTION
+	log.Infof("Dry run: [%v]", order)
+
 	// Gather reference app summary to be used later for creating new instance
 	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
 	if err != nil {
@@ -205,7 +284,8 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 	serviceName := svc.Name + "-" + serviceNameGuid.String()[:8]
 	log.Debugf("Create dependent service: service=[%v] ([%v], [%v])", serviceName, svc.Plan.Service.Label, svc.Plan.Name)
 
-	if len(svc.Plan.Service.Label) > 0 {
+	var spawnedServiceInstanceGUID string
+	if c.isNormalService(svc) {
 		// svc is a normal service
 		// Create service
 		svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, destApp.Entity.SpaceGUID, svc.Plan)
@@ -214,15 +294,8 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 			errors <- err
 			return
 		}
-		log.Debugf("Dependent service created: Service Instance GUID=[%v]", response.Meta.GUID)
-		// Bind created service
-		svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, response.Meta.GUID)
-		svcBindingResp, err := c.createServiceBinding(svcBindingReq)
-		if err != nil {
-			errors <- err
-			return
-		}
-		log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
+		spawnedServiceInstanceGUID = response.Meta.GUID
+		log.Debugf("Dependent service created: Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
 	} else {
 		// svc is a user provided service
 		// Retrieve UPS
@@ -235,29 +308,116 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 		// Create UPS
 		response.Entity.Name = serviceName
 		response.Entity.SpaceGUID = destApp.Entity.SpaceGUID
-		credentials, err := json.Marshal(response.Entity.Credentials)
-		credentialsStr := string(credentials)
-		credentialsStr = misc.ReplaceWithRandom(credentialsStr)
-		log.Debugf("UPS credentials as string: %+v", credentialsStr)
-		json.Unmarshal([]byte(credentialsStr), &response.Entity.Credentials)
+
+		if val, ok := response.Entity.Credentials["url"]; ok {
+			if urlStr, ok := val.(string); ok {
+				appID, err := c.getAppIdFromSpaceByUrl(destApp.Entity.SpaceGUID, urlStr)
+				if err != nil {
+					errors <- err
+					return
+				}
+				log.Infof("Application %v is bound using %v", appID, svc.Name)
+			}
+		}
+
+		_ = c.applyAdditionalReplacementsInUPSCredentials(response)
+
 		response, err = c.createUserProvidedServiceInstance(&response.Entity)
 		if err != nil {
 			errors <- err
 			return
 		}
-		log.Debugf("Dependent user provided service created: %+v", response)
-		// Bind created service
-		svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, response.Meta.GUID)
-		svcBindingResp, err := c.createServiceBinding(svcBindingReq)
-		if err != nil {
-			errors <- err
-			return
-		}
-		log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
+		spawnedServiceInstanceGUID = response.Meta.GUID
+		log.Debugf("Dependent user provided service created. Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
+
 	}
+	// Bind created service
+	svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, spawnedServiceInstanceGUID)
+	svcBindingResp, err := c.createServiceBinding(svcBindingReq)
+	if err != nil {
+		errors <- err
+		return
+	}
+	log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
 
 	errors <- nil
 	return
+}
+
+func (c *CfAPI) isNormalService(svc types.CfAppSummaryService) bool {
+	// Normal services require plan.
+	// User provided services does not support Plans so this field is empty then.
+	return len(svc.Plan.Service.Label) > 0
+}
+
+func (c *CfAPI) doesUrlMatchApplication(appUrlStr, appID string) (bool, error) {
+	appURL, err := url.Parse(appUrlStr)
+	if err != nil {
+		return false, err
+	}
+	appSummary, err := c.getAppSummary(appID)
+	log.Infof("App summary retrieved is [%+v]", appSummary)
+	if err != nil {
+		return false, err
+	}
+	for i := range appSummary.Routes {
+		route := appSummary.Routes[i]
+		if appURL.Host == fmt.Sprintf("%v.%v", route.Host, route.Domain.Name) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (c *CfAPI) applyAdditionalReplacementsInUPSCredentials(response *types.CfUserProvidedServiceResource) error {
+	credentials, err := json.Marshal(response.Entity.Credentials)
+	if err != nil {
+		return err
+	}
+	credentialsStr := string(credentials)
+	credentialsStr = misc.ReplaceWithRandom(credentialsStr)
+	json.Unmarshal([]byte(credentialsStr), &response.Entity.Credentials)
+	return nil
+}
+
+func (c *CfAPI) getAppIdFromSpaceByUrl(spaceGUID, urlStr string) (string, error) {
+	appURL, err := url.Parse(urlStr)
+	if err != nil {
+		log.Infof("[%v] is not a correct URL. Parsing failed.", urlStr)
+		return "", err
+	}
+	log.Infof("URL Host %v", appURL.Host)
+	routes, err := c.getSpaceRoutesForHostname(spaceGUID, strings.Split(appURL.Host, ".")[0])
+	if err != nil {
+		return "", err
+	}
+	if routes.Count > 0 {
+		log.Infof("%v route(s) retrieved for host %v", routes.Count, appURL.Host)
+		routeGUID := routes.Resources[0].Meta.GUID
+		apps, err := c.getAppsFromRoute(routeGUID)
+		if err != nil {
+			return "", err
+		}
+		if apps.Count > 0 {
+			app := apps.Resources[0]
+			log.Infof("APP [%+v]", app)
+			isSearched, err := c.doesUrlMatchApplication(urlStr, app.Meta.GUID)
+			if err != nil {
+				return "", err
+			}
+			if isSearched {
+				log.Infof("Found app match url in user provided service")
+				return app.Meta.GUID, nil
+			} else {
+				log.Infof("url of found app does not match url in user provided service")
+			}
+		} else {
+			log.Infof("No apps bound to route: [%v]", routeGUID)
+		}
+	} else {
+		log.Infof("No routes found for host: %v", appURL.Host)
+	}
+	return "", nil
 }
 
 func (c *CfAPI) deleteBoundServices(appGUID string, result chan error, doneWaitGroup *sync.WaitGroup) {

@@ -89,6 +89,34 @@ func (c *CfAPI) getAppRoutes(appID string) (*types.CfRoutesResponse, error) {
 	return toReturn, nil
 }
 
+func (c *CfAPI) getSpaceRoutesForHostname(spaceGUID, hostname string) (*types.CfRoutesResponse, error) {
+	address := fmt.Sprintf("%v/v2/spaces/%v/routes?q=host:%v", c.BaseAddress, spaceGUID, hostname)
+	response, err := c.getEntity(address, "routes")
+	if err != nil {
+		return nil, err
+	}
+
+	toReturn := new(types.CfRoutesResponse)
+	json.NewDecoder(response.Body).Decode(toReturn)
+	log.Debugf("Get routes status code: [%v]", response.StatusCode)
+	log.Debugf("Retrieved %v route(s)", toReturn.Count)
+	return toReturn, nil
+}
+
+func (c *CfAPI) getAppsFromRoute(routeGUID string) (*types.CfAppsResponse, error) {
+	address := fmt.Sprintf("%v/v2/routes/%v/apps", c.BaseAddress, routeGUID)
+	response, err := c.getEntity(address, "apps")
+	if err != nil {
+		return nil, err
+	}
+
+	toReturn := new(types.CfAppsResponse)
+	json.NewDecoder(response.Body).Decode(toReturn)
+	log.Debugf("Get apps status code: [%v]", response.StatusCode)
+	log.Debugf("Retrieved %v app(s)", toReturn.Count)
+	return toReturn, nil
+}
+
 func (c *CfAPI) deleteRoute(routeID string) error {
 	address := fmt.Sprintf("%v/v2/routes/%v", c.BaseAddress, routeID)
 	err := c.deleteEntity(address, "route")
