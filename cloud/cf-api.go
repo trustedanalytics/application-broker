@@ -67,7 +67,11 @@ func (c *CfAPI) DryRun(sourceAppGUID string) ([]string, error) {
 	log.Infof("Topological Order:\n")
 	ret := make([]string, len(sorted))
 	for i, node := range sorted {
-		log.Infof("%v", *node.Value)
+		text := ""
+		for _, n := range g.Neighbors(node) {
+			text += fmt.Sprint(*n.Value) + ","
+		}
+		log.Infof("%v [%v]", *node.Value, text)
 		ret[len(sorted)-1-i] = fmt.Sprint(*node.Value)
 	}
 	if c.graphHasCycles(g) {
