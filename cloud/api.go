@@ -22,6 +22,7 @@ import (
 )
 
 type API interface {
+	DryRun(sourceAppGUID string) ([]types.Component, error)
 	Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error)
 	Deprovision(appGUID string) error
 	UpdateBroker(brokerName string, brokerURL string, username string, password string) error

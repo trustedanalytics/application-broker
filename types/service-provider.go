@@ -33,6 +33,9 @@ type ServiceProviderExtension interface {
 	// GetCatalog returns the catalog of services managed by this broker
 	GetCatalog() (*CatalogExtension, error)
 
+	// DryRun returns a list of components which service consists of
+	DryRun(sourceAppGUID string) ([]Component, error)
+
 	// CreateService creates a service instance for specific plan
 	CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error)
 

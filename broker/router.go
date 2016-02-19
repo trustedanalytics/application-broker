@@ -56,6 +56,7 @@ func newRouter(h *handler) *router {
 	m.Delete(catalogServiceIdURLPattern, responseHandler(h.remove))
 	m.Put(catalogServiceIdURLPattern, responseHandler(h.update))
 	m.Get(catalogURLPattern, responseHandler(h.catalog))
+	m.Get(provisioningURLPattern, responseHandler(h.dry_run))
 	m.Put(provisioningURLPattern, responseHandler(h.provision))
 	m.Delete(provisioningURLPattern, responseHandler(h.deprovision))
 	m.Put(bindingURLPattern, responseHandler(h.bind))

@@ -135,6 +135,14 @@ func (p *LaunchingService) GetCatalog() (*types.CatalogExtension, error) {
 	return &toReturn, nil
 }
 
+func (p *LaunchingService) DryRun(sourceAppGUID string) ([]types.Component, error) {
+	resp, err := p.cloud.DryRun(sourceAppGUID)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 // CreateService creates a service instance
 func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error) {
 	service, err := p.db.Find(r.ServiceID)

@@ -95,6 +95,21 @@ func (h *handler) catalog(r *http.Request, params martini.Params) (int, string) 
 	return marshalEntity(responseEntity{http.StatusOK, catalog})
 }
 
+func (h *handler) dry_run(req *http.Request, params martini.Params) (int, string) {
+	var resp []types.Component
+	var err error
+	if sourceAppGUID, ok := params["instance_id"]; ok && len(sourceAppGUID) > 0 {
+		resp, err = h.provider.DryRun(sourceAppGUID)
+	} else {
+		err = misc.InstanceNotFoundError{}
+	}
+	if err != nil {
+		return handleServiceError(err)
+	}
+	log.Debugf("handler dry run - response: [%+v]", resp)
+	return marshalEntity(responseEntity{http.StatusCreated, resp})
+}
+
 func (h *handler) provision(req *http.Request, params martini.Params) (int, string) {
 	preq := &cf.ServiceCreationRequest{InstanceID: params["instance_id"]}
 	if err := json.NewDecoder(req.Body).Decode(&preq); err != nil {

@@ -55,22 +55,8 @@ func NewCfAPI() *CfAPI {
 	return toReturn
 }
 
-type ComponentType string
-
-const (
-	ComponentService ComponentType = "Service"
-	ComponentUPS                   = "User provided service"
-	ComponentApp                   = "Application"
-)
-
-type Component struct {
-	GUID string
-	Name string
-	Type ComponentType
-}
-
 // Returns a list of services and apps which would be provisioned in normal run
-func (c *CfAPI) DryRun(sourceAppGUID string) ([]Component, error) {
+func (c *CfAPI) DryRun(sourceAppGUID string) ([]types.Component, error) {
 	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
 	if err != nil {
 		return nil, err
@@ -78,24 +64,26 @@ func (c *CfAPI) DryRun(sourceAppGUID string) ([]Component, error) {
 
 	g := graph.New(graph.Directed)
 	root := g.MakeNode()
-	*root.Value = Component{
-		GUID: sourceAppGUID,
-		Name: sourceAppSummary.Name,
-		Type: ComponentApp,
+	*root.Value = types.Component{
+		GUID:         sourceAppGUID,
+		Name:         sourceAppSummary.Name,
+		Type:         types.ComponentApp,
+		DependencyOf: []string{},
+		Clone:        true,
 	}
 
 	_ = c.addDependenciesToGraph(g, root, sourceAppGUID)
 	// Calculations
 	sorted := g.TopologicalSort()
 	log.Infof("Topological Order:\n")
-	ret := make([]Component, len(sorted))
+	ret := make([]types.Component, len(sorted))
 	for i, node := range sorted {
 		text := ""
 		for _, n := range g.Neighbors(node) {
 			text += fmt.Sprint(*n.Value) + ","
 		}
 		log.Infof("%v [%v]", *node.Value, text)
-		ret[len(sorted)-1-i] = (*node.Value).(Component)
+		ret[len(sorted)-1-i] = (*node.Value).(types.Component)
 	}
 	ret = c.removeDuplicates(ret)
 
@@ -108,16 +96,19 @@ func (c *CfAPI) DryRun(sourceAppGUID string) ([]Component, error) {
 	return ret, nil
 }
 
-func (c *CfAPI) removeDuplicates(ret []Component) []Component {
-	m := make(map[string]Component)
-	for i, n := range ret {
-		if c, ok := m[n.GUID]; !ok {
-			m[n.GUID] = c
-			if i+1 < len(ret) {
-				ret = append(ret[:i], ret[i+1:]...)
-			} else {
-				ret = ret[:i]
-			}
+func (c *CfAPI) removeDuplicates(components []types.Component) []types.Component {
+	m := make(map[string]int)
+	var ret []types.Component
+	for _, n := range components {
+		j, ok := m[n.GUID]
+		if !ok {
+			ret = append(ret, n)
+			m[n.GUID] = len(ret) - 1
+			continue
+		} else {
+			log.Infof("Duplicated %v on position %v", n.Name, j)
+			ret[j].DependencyOf = append(ret[j].DependencyOf, n.DependencyOf...)
+			log.Infof("Merged dependencies %v", ret[j].DependencyOf)
 		}
 	}
 	return ret
@@ -142,17 +133,21 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 	for _, svc := range sourceAppSummary.Services {
 		node := g.MakeNode()
 		if c.isNormalService(svc) {
-			*node.Value = Component{
-				GUID: svc.GUID,
-				Name: svc.Name,
-				Type: ComponentService,
+			*node.Value = types.Component{
+				GUID:         svc.GUID,
+				Name:         svc.Name,
+				Type:         types.ComponentService,
+				DependencyOf: []string{(*parent.Value).(types.Component).GUID},
+				Clone:        true,
 			}
 			g.MakeEdgeWeight(parent, node, 1)
 		} else {
-			*node.Value = Component{
-				GUID: svc.GUID,
-				Name: svc.Name,
-				Type: ComponentUPS,
+			*node.Value = types.Component{
+				GUID:         svc.GUID,
+				Name:         svc.Name,
+				Type:         types.ComponentUPS,
+				DependencyOf: []string{(*parent.Value).(types.Component).GUID},
+				Clone:        true,
 			}
 			g.MakeEdgeWeight(parent, node, 1)
 			// Retrieve UPS
@@ -162,17 +157,19 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 			}
 			if val, ok := response.Entity.Credentials["url"]; ok {
 				if urlStr, ok := val.(string); ok {
-					appID, err := c.getAppIdFromSpaceByUrl(sourceAppSummary.SpaceGUID, urlStr)
+					appID, appName, err := c.getAppIdAndNameFromSpaceByUrl(sourceAppSummary.SpaceGUID, urlStr)
 					if err != nil {
 						return err
 					}
 					if len(appID) > 0 {
 						log.Infof("Application %v is bound using %v", appID, svc.Name)
 						node2 := g.MakeNode()
-						*node2.Value = Component{
-							GUID: appID,
-							Name: sourceAppSummary.Name,
-							Type: ComponentApp,
+						*node2.Value = types.Component{
+							GUID:         appID,
+							Name:         appName,
+							Type:         types.ComponentApp,
+							DependencyOf: []string{(*node.Value).(types.Component).GUID},
+							Clone:        true,
 						}
 						g.MakeEdgeWeight(node, node2, 1)
 						_ = c.addDependenciesToGraph(g, node2, appID)
@@ -367,12 +364,12 @@ func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfApp
 
 		if val, ok := response.Entity.Credentials["url"]; ok {
 			if urlStr, ok := val.(string); ok {
-				appID, err := c.getAppIdFromSpaceByUrl(destApp.Entity.SpaceGUID, urlStr)
+				appID, appName, err := c.getAppIdAndNameFromSpaceByUrl(destApp.Entity.SpaceGUID, urlStr)
 				if err != nil {
 					errors <- err
 					return
 				}
-				log.Infof("Application %v is bound using %v", appID, svc.Name)
+				log.Infof("Application %v (%v) is bound using %v", appID, appName, svc.Name)
 			}
 		}
 
@@ -436,34 +433,34 @@ func (c *CfAPI) applyAdditionalReplacementsInUPSCredentials(response *types.CfUs
 	return nil
 }
 
-func (c *CfAPI) getAppIdFromSpaceByUrl(spaceGUID, urlStr string) (string, error) {
+func (c *CfAPI) getAppIdAndNameFromSpaceByUrl(spaceGUID, urlStr string) (string, string, error) {
 	appURL, err := url.Parse(urlStr)
 	if err != nil {
 		log.Infof("[%v] is not a correct URL. Parsing failed.", urlStr)
-		return "", err
+		return "", "", err
 	}
 	log.Infof("URL Host %v", appURL.Host)
 	routes, err := c.getSpaceRoutesForHostname(spaceGUID, strings.Split(appURL.Host, ".")[0])
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if routes.Count > 0 {
 		log.Infof("%v route(s) retrieved for host %v", routes.Count, appURL.Host)
 		routeGUID := routes.Resources[0].Meta.GUID
 		apps, err := c.getAppsFromRoute(routeGUID)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 		if apps.Count > 0 {
 			app := apps.Resources[0]
 			log.Infof("APP [%+v]", app)
 			isSearched, err := c.doesUrlMatchApplication(urlStr, app.Meta.GUID)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			if isSearched {
 				log.Infof("Found app match url in user provided service")
-				return app.Meta.GUID, nil
+				return app.Meta.GUID, app.Entity.Name, nil
 			} else {
 				log.Infof("url of found app does not match url in user provided service")
 			}
@@ -473,7 +470,7 @@ func (c *CfAPI) getAppIdFromSpaceByUrl(spaceGUID, urlStr string) (string, error)
 	} else {
 		log.Infof("No routes found for host: %v", appURL.Host)
 	}
-	return "", nil
+	return "", "", nil
 }
 
 func (c *CfAPI) deleteBoundServices(appGUID string, result chan error, doneWaitGroup *sync.WaitGroup) {
