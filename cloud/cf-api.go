@@ -55,25 +55,50 @@ func NewCfAPI() *CfAPI {
 	return toReturn
 }
 
+type ComponentType string
+
+const (
+	ComponentService ComponentType = "Service"
+	ComponentUPS                   = "User provided service"
+	ComponentApp                   = "Application"
+)
+
+type Component struct {
+	GUID string
+	Name string
+	Type ComponentType
+}
+
 // Returns a list of services and apps which would be provisioned in normal run
-func (c *CfAPI) DryRun(sourceAppGUID string) ([]string, error) {
+func (c *CfAPI) DryRun(sourceAppGUID string) ([]Component, error) {
+	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
+	if err != nil {
+		return nil, err
+	}
+
 	g := graph.New(graph.Directed)
 	root := g.MakeNode()
-	*root.Value = sourceAppGUID
+	*root.Value = Component{
+		GUID: sourceAppGUID,
+		Name: sourceAppSummary.Name,
+		Type: ComponentApp,
+	}
 
 	_ = c.addDependenciesToGraph(g, root, sourceAppGUID)
 	// Calculations
 	sorted := g.TopologicalSort()
 	log.Infof("Topological Order:\n")
-	ret := make([]string, len(sorted))
+	ret := make([]Component, len(sorted))
 	for i, node := range sorted {
 		text := ""
 		for _, n := range g.Neighbors(node) {
 			text += fmt.Sprint(*n.Value) + ","
 		}
 		log.Infof("%v [%v]", *node.Value, text)
-		ret[len(sorted)-1-i] = fmt.Sprint(*node.Value)
+		ret[len(sorted)-1-i] = (*node.Value).(Component)
 	}
+	ret = c.removeDuplicates(ret)
+
 	if c.graphHasCycles(g) {
 		log.Errorf("Graph has cycles and stack cannot be copied")
 		return nil, misc.InternalServerError{Context: ""}
@@ -81,6 +106,21 @@ func (c *CfAPI) DryRun(sourceAppGUID string) ([]string, error) {
 		log.Infof("Graph has no cycles")
 	}
 	return ret, nil
+}
+
+func (c *CfAPI) removeDuplicates(ret []Component) []Component {
+	m := make(map[string]Component)
+	for i, n := range ret {
+		if c, ok := m[n.GUID]; !ok {
+			m[n.GUID] = c
+			if i+1 < len(ret) {
+				ret = append(ret[:i], ret[i+1:]...)
+			} else {
+				ret = ret[:i]
+			}
+		}
+	}
+	return ret
 }
 
 func (c *CfAPI) graphHasCycles(g *graph.Graph) bool {
@@ -102,10 +142,18 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 	for _, svc := range sourceAppSummary.Services {
 		node := g.MakeNode()
 		if c.isNormalService(svc) {
-			*node.Value = svc.Name
+			*node.Value = Component{
+				GUID: svc.GUID,
+				Name: svc.Name,
+				Type: ComponentService,
+			}
 			g.MakeEdgeWeight(parent, node, 1)
 		} else {
-			*node.Value = svc.Name
+			*node.Value = Component{
+				GUID: svc.GUID,
+				Name: svc.Name,
+				Type: ComponentUPS,
+			}
 			g.MakeEdgeWeight(parent, node, 1)
 			// Retrieve UPS
 			response, err := c.getUserProvidedService(svc.GUID)
@@ -121,7 +169,11 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 					if len(appID) > 0 {
 						log.Infof("Application %v is bound using %v", appID, svc.Name)
 						node2 := g.MakeNode()
-						*node2.Value = appID
+						*node2.Value = Component{
+							GUID: appID,
+							Name: sourceAppSummary.Name,
+							Type: ComponentApp,
+						}
 						g.MakeEdgeWeight(node, node2, 1)
 						_ = c.addDependenciesToGraph(g, node2, appID)
 					}
