@@ -99,3 +99,27 @@ func (c *CfAPI) createUserProvidedServiceBinding(req *types.CfServiceBindingCrea
 	log.Debugf("createServiceBinding returned GUID: [%v]", toReturn.Meta.GUID)
 	return toReturn, nil
 }
+
+func (c *CfAPI) deleteUserProvidedServiceInstance(id string) error {
+	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v", c.BaseAddress, id)
+	err := c.deleteEntity(address, "UPS instance")
+	if err != nil {
+		log.Errorf("Error deleting service instance %v", id)
+		return err
+	}
+	return nil
+}
+
+func (c *CfAPI) getUserProvidedServiceBindings(id string) (*types.CfBindingsResources, error) {
+	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v/service_bindings", c.BaseAddress, id)
+	response, err := c.getEntity(address, "service bindings")
+	if err != nil {
+		return nil, err
+	}
+
+	toReturn := new(types.CfBindingsResources)
+	json.NewDecoder(response.Body).Decode(toReturn)
+	log.Debugf("Get bindings status code: [%v]", response.StatusCode)
+	log.Debugf("Bindings retrieved. Got %d of %d results", len(toReturn.Resources), toReturn.TotalResults)
+	return toReturn, nil
+}

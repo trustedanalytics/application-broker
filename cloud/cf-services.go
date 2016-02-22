@@ -78,6 +78,20 @@ func (c *CfAPI) createServiceBinding(req *types.CfServiceBindingCreateRequest) (
 	return toReturn, nil
 }
 
+func (c *CfAPI) getServiceBindings(id string) (*types.CfBindingsResources, error) {
+	address := fmt.Sprintf("%v/v2/service_instances/%v/service_bindings", c.BaseAddress, id)
+	response, err := c.getEntity(address, "service bindings")
+	if err != nil {
+		return nil, err
+	}
+
+	toReturn := new(types.CfBindingsResources)
+	json.NewDecoder(response.Body).Decode(toReturn)
+	log.Debugf("Get bindings status code: [%v]", response.StatusCode)
+	log.Debugf("Bindings retrieved. Got %d of %d results", len(toReturn.Resources), toReturn.TotalResults)
+	return toReturn, nil
+}
+
 func (c *CfAPI) deleteServiceInstance(id string) error {
 	address := fmt.Sprintf("%v/v2/service_instances/%v", c.BaseAddress, id)
 	err := c.deleteEntity(address, "service instance")

@@ -15,3 +15,8 @@ type Component struct {
 	DependencyOf []string
 	Clone        bool
 }
+
+type ComponentClone struct {
+	Component Component
+	CloneGUID string
+}

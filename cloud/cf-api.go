@@ -22,6 +22,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
+	"github.com/juju/errors"
 	"github.com/nu7hatch/gouuid"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/types"
@@ -89,7 +90,7 @@ func (c *CfAPI) DryRun(sourceAppGUID string) ([]types.Component, error) {
 
 	if c.graphHasCycles(g) {
 		log.Errorf("Graph has cycles and stack cannot be copied")
-		return nil, misc.InternalServerError{Context: ""}
+		return nil, misc.InternalServerError{Context: "Graph has cycles and stack cannot be copied"}
 	} else {
 		log.Infof("Graph has no cycles")
 	}
@@ -185,83 +186,141 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error) {
 	order, err := c.DryRun(sourceAppGUID) // TEST EXECUTION
 	log.Infof("Dry run: [%v]", order)
+	log.Infof("%v components to spawn:", len(order))
 
-	// Gather reference app summary to be used later for creating new instance
-	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
-	if err != nil {
-		switch err {
-		case misc.EntityNotFoundError{}:
-			log.Errorf("Application %v not found", sourceAppGUID)
-			return nil, misc.InternalServerError{Context: err.Error()}
-		default:
-			log.Errorf("Failed to get application summary: %v", err.Error())
-			return nil, err
+	componentsToSpawn := make(map[types.ComponentType][]types.Component)
+	componentsToSpawn[types.ComponentApp] = []types.Component{}
+	componentsToSpawn[types.ComponentUPS] = []types.Component{}
+	componentsToSpawn[types.ComponentService] = []types.Component{}
+	for _, comp := range order {
+		if _, ok := componentsToSpawn[comp.Type]; ok {
+			componentsToSpawn[comp.Type] = append(componentsToSpawn[comp.Type], comp)
+		} else {
+			componentsToSpawn[comp.Type] = []types.Component{comp}
 		}
 	}
-	requestedName := r.Parameters["name"]
-	delete(r.Parameters, "name")
+	log.Infof("%+v", componentsToSpawn)
 
-	if len(sourceAppSummary.Routes) == 0 {
-		return nil, misc.InternalServerError{Context: "Reference app has no route associated"}
-	}
-	domainGUID := sourceAppSummary.Routes[0].Domain.GUID
-	domainName := sourceAppSummary.Routes[0].Domain.Name
+	commonUUID, _ := uuid.NewV4()
+	suffix := commonUUID.String()[:8]
 
-	//Newly spawned app instance shall have almost identical config as reference app
-	destApp := types.NewCfAppResource(*sourceAppSummary, requestedName, r.SpaceGUID)
-	if destApp.Entity.Envs == nil && len(r.Parameters) > 0 {
-		destApp.Entity.Envs = map[string]interface{}{}
+	destAppsResources := make(map[string]*types.CfAppResource)
+
+	log.Infof("Creating main application")
+	destApp, err := c.createApplication(sourceAppGUID, r.SpaceGUID, r.Parameters)
+	if err != nil {
+		return nil, err
 	}
-	for k, v := range r.Parameters {
-		log.Debugf("Setting additional env: %v:%v", k, v)
-		if _, ok := destApp.Entity.Envs[k]; ok {
-			log.Warnf("Env %v already exists (overriding)", k)
+	destAppsResources[sourceAppGUID] = destApp
+	log.Infof("Creating dependent applications")
+	for _, app := range componentsToSpawn[types.ComponentApp] {
+		if _, ok := destAppsResources[app.GUID]; !ok {
+			name := fmt.Sprintf("%v-%v", app.Name, suffix)
+			params := map[string]string{"name": name}
+			appRes, err := c.createApplication(app.GUID, r.SpaceGUID, params)
+			if err != nil {
+				return nil, err
+			}
+			destAppsResources[app.GUID] = appRes
 		}
-		destApp.Entity.Envs[k] = v
-	}
-	destApp, err = c.createApp(destApp.Entity)
-	if err != nil {
-		return nil, err
 	}
 
-	asyncErr := make(chan error)
-	go c.copyBits(sourceAppGUID, destApp.Meta.GUID, asyncErr)
-
-	route, err := c.createRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, r.SpaceGUID})
-	if err != nil {
-		return nil, err
-	}
-
-	if err := c.associateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
-		return nil, err
+	log.Infof("Copying applications data")
+	copyBitsAsyncErrors := make(chan error, len(destAppsResources))
+	for _, appRes := range destAppsResources {
+		go c.copyBits(sourceAppGUID, appRes.Meta.GUID, copyBitsAsyncErrors)
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(len(sourceAppSummary.Services))
-	results := make(chan error, len(sourceAppSummary.Services))
-	// Create dependent services and bind them
-	commonUUID, _ := uuid.NewV4()
-	suffix := commonUUID.String()[:8]
-	for _, svcToCopy := range sourceAppSummary.Services {
-		go c.createDependencies(destApp, svcToCopy, suffix, &wg, results)
+	wg.Add(len(componentsToSpawn[types.ComponentService]))
+	errors := make(chan error, len(componentsToSpawn[types.ComponentService]))
+	results := make(chan types.ComponentClone, len(componentsToSpawn[types.ComponentService]))
+	// Create dependent services
+	log.Infof("Creating dependent services")
+	required_bindings := 0
+	for _, comp := range componentsToSpawn[types.ComponentService] {
+		required_bindings += len(comp.DependencyOf)
+		go c.createService(destApp.Entity.SpaceGUID, comp, suffix, &wg, results, errors)
 	}
 	wg.Wait()
-	if err := misc.FirstNonEmpty(results, len(sourceAppSummary.Services)); err != nil {
+	close(errors)
+	close(results)
+	if err := misc.FirstNonEmpty(errors, len(componentsToSpawn[types.ComponentService])); err != nil {
+		return nil, err
+	}
+	log.Infof("Required bindings: %v", required_bindings)
+	wg.Add(required_bindings)
+	errorsBind := make(chan error, required_bindings)
+	// Bind services
+	log.Infof("Binding dependent services")
+	for clone := range results {
+		for _, dependent := range clone.Component.DependencyOf {
+			go c.bindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, &wg, errorsBind)
+		}
+	}
+	wg.Wait()
+	close(errorsBind)
+	if err := misc.FirstNonEmpty(errorsBind, required_bindings); err != nil {
+		return nil, err
+	}
+
+	wg.Add(len(componentsToSpawn[types.ComponentUPS]))
+	errorsUPS := make(chan error, len(componentsToSpawn[types.ComponentUPS]))
+	resultsUPS := make(chan types.ComponentClone, len(componentsToSpawn[types.ComponentUPS]))
+	// Create dependent UPSes
+	log.Infof("Creating dependent user provided services")
+	required_bindings = 0
+	for _, comp := range componentsToSpawn[types.ComponentUPS] {
+		required_bindings += len(comp.DependencyOf)
+		url := ""
+		for _, app := range componentsToSpawn[types.ComponentApp] {
+			for _, dep := range app.DependencyOf {
+				if comp.GUID == dep {
+					url = destAppsResources[app.GUID].Meta.URL
+				}
+			}
+		}
+		go c.createUserProvidedService(destApp.Entity.SpaceGUID, comp, suffix, url, &wg, resultsUPS, errorsUPS)
+	}
+	wg.Wait()
+	close(errorsUPS)
+	close(resultsUPS)
+	if err := misc.FirstNonEmpty(errorsUPS, len(componentsToSpawn[types.ComponentUPS])); err != nil {
+		return nil, err
+	}
+	log.Infof("Required bindings: %v", required_bindings)
+	wg.Add(required_bindings)
+	errorsBindUPS := make(chan error, required_bindings)
+	// Bind UPSes
+	log.Infof("Binding dependent user provided services")
+	for clone := range resultsUPS {
+		for _, dependent := range clone.Component.DependencyOf {
+			go c.bindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, &wg, errorsBindUPS)
+		}
+	}
+	wg.Wait()
+	close(errorsBindUPS)
+	if err := misc.FirstNonEmpty(errorsBindUPS, required_bindings); err != nil {
 		return nil, err
 	}
 
 	//Waiting for copy_bits finish
-	err = <-asyncErr
-	if err != nil {
+	log.Infof("Waiting for copy bits completion")
+	if err := misc.FirstNonEmpty(copyBitsAsyncErrors, len(destAppsResources)); err != nil {
 		return nil, err
 	}
 
-	if err := c.startApp(destApp); err != nil {
-		return nil, err
+	// Starting applications one by one, not in parallel
+	log.Infof("Starting applications")
+	for _, comp := range componentsToSpawn[types.ComponentApp] {
+		if err := c.startApp(destAppsResources[comp.GUID]); err != nil {
+			return nil, err
+		}
+		log.Infof("Application %v started", destAppsResources[comp.GUID].Entity.Name)
 	}
 
-	log.Infof("Service instance [%v] created", requestedName)
-	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
+	log.Infof("Service instance [%v] created", destApp.Entity.Name)
+
 	toReturn := types.ServiceCreationResponse{
 		App: *destApp,
 		ServiceCreationResponse: cf.ServiceCreationResponse{DashboardURL: ""},
@@ -271,32 +330,80 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 
 // Deprovision remove instance of given application (that stands behind service instance though)
 func (c *CfAPI) Deprovision(appGUID string) error {
-	summary, err := c.getAppSummary(appGUID)
+	order, err := c.DryRun(appGUID) // TEST EXECUTION
 	if err != nil {
-		switch err {
-		case misc.EntityNotFoundError{}:
-			log.Warnf("Application %v not found. Aborting deprovision silently...", appGUID)
-			return nil
-		default:
-			log.Errorf("Failed to get application summary: %v", err.Error())
-			return err
+		return err
+	}
+	log.Infof("Dry run: [%v]", order)
+	log.Infof("%v components to remove:", len(order))
+
+	componentsToRemove := make(map[types.ComponentType][]types.Component)
+	componentsToRemove[types.ComponentApp] = []types.Component{}
+	componentsToRemove[types.ComponentUPS] = []types.Component{}
+	componentsToRemove[types.ComponentService] = []types.Component{}
+	for _, comp := range order {
+		if _, ok := componentsToRemove[comp.Type]; ok {
+			componentsToRemove[comp.Type] = append(componentsToRemove[comp.Type], comp)
+		} else {
+			componentsToRemove[comp.Type] = []types.Component{comp}
 		}
 	}
+	log.Infof("%+v", componentsToRemove)
 
-	results := make(chan error, 2)
 	wg := sync.WaitGroup{}
-	wg.Add(2)
 
-	go c.deleteBoundServices(appGUID, results, &wg)
-	go c.deleteRoutes(appGUID, summary.Routes, results, &wg)
-
+	// Unbind services and UPSes
+	log.Infof("Unbinding services and user provided services")
+	results := make(chan error, len(componentsToRemove[types.ComponentApp]))
+	wg.Add(len(componentsToRemove[types.ComponentApp]))
+	for _, app := range componentsToRemove[types.ComponentApp] {
+		go c.unbindAppServices(app.GUID, results, &wg)
+	}
 	wg.Wait()
-	if err := misc.FirstNonEmpty(results, 2); err != nil {
+	close(results)
+	if err := misc.FirstNonEmpty(results, len(componentsToRemove[types.ComponentApp])); err != nil {
 		return err
 	}
 
-	if err := c.deleteApp(appGUID); err != nil {
+	log.Infof("Removing service instances without bindings")
+	resultsSvc := make(chan error, len(componentsToRemove[types.ComponentService]))
+	wg.Add(len(componentsToRemove[types.ComponentService]))
+	for _, svc := range componentsToRemove[types.ComponentService] {
+		go c.deleteServiceInstIfUnbound(svc, resultsSvc, &wg)
+	}
+	wg.Wait()
+	close(resultsSvc)
+	if err := misc.FirstNonEmpty(resultsSvc, len(componentsToRemove[types.ComponentService])); err != nil {
 		return err
+	}
+
+	log.Infof("Removing user provided service instances without bindings")
+	resultsUPS := make(chan error, len(componentsToRemove[types.ComponentUPS]))
+	wg.Add(len(componentsToRemove[types.ComponentUPS]))
+	for _, ups := range componentsToRemove[types.ComponentUPS] {
+		go c.deleteUPSInstIfUnbound(ups, resultsUPS, &wg)
+	}
+	wg.Wait()
+	close(resultsUPS)
+	if err := misc.FirstNonEmpty(resultsUPS, len(componentsToRemove[types.ComponentUPS])); err != nil {
+		return err
+	}
+
+	log.Infof("Unbinding and deleting application routes")
+	resultsRoutes := make(chan error, len(componentsToRemove[types.ComponentApp]))
+	wg.Add(len(componentsToRemove[types.ComponentApp]))
+	for _, app := range componentsToRemove[types.ComponentApp] {
+		go c.deleteRoutes(app.GUID, resultsRoutes, &wg)
+	}
+	wg.Wait()
+	close(resultsRoutes)
+	if err := misc.FirstNonEmpty(resultsRoutes, len(componentsToRemove[types.ComponentApp])); err != nil {
+		return err
+	}
+
+	log.Infof("Deleting applications")
+	for _, app := range componentsToRemove[types.ComponentApp] {
+		_ = c.deleteApp(app.GUID)
 	}
 
 	return nil
@@ -333,67 +440,154 @@ func (c *CfAPI) CheckIfServiceExists(serviceName string) error {
 	return nil
 }
 
-func (c *CfAPI) createDependencies(destApp *types.CfAppResource, svc types.CfAppSummaryService, suffix string, wg *sync.WaitGroup, errors chan error) {
+func (c *CfAPI) createService(spaceGUID string, comp types.Component, suffix string,
+	wg *sync.WaitGroup, results chan types.ComponentClone, errorsCh chan error) {
+
 	defer wg.Done()
+
+	if len(comp.DependencyOf) == 0 {
+		errorsCh <- errors.New("Service not attached to any application")
+	}
+	parentApp, err := c.getAppSummary(comp.DependencyOf[0])
+	if err != nil {
+		errorsCh <- err
+		return
+	}
+
+	var svc types.CfAppSummaryService
+	for _, s := range parentApp.Services {
+		if s.GUID == comp.GUID {
+			svc = s
+		}
+	}
+
 	serviceName := svc.Name + "-" + suffix
 	log.Debugf("Create dependent service: service=[%v] ([%v], [%v])", serviceName, svc.Plan.Service.Label, svc.Plan.Name)
 
-	var spawnedServiceInstanceGUID string
-	if c.isNormalService(svc) {
-		// svc is a normal service
-		// Create service
-		svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, destApp.Entity.SpaceGUID, svc.Plan)
-		response, err := c.createServiceInstance(svcInstanceReq)
-		if err != nil {
-			errors <- err
-			return
-		}
-		spawnedServiceInstanceGUID = response.Meta.GUID
-		log.Debugf("Dependent service created: Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
-	} else {
-		// svc is a user provided service
-		// Retrieve UPS
-		response, err := c.getUserProvidedService(svc.GUID)
-		if err != nil {
-			errors <- err
-			return
-		}
-		log.Infof("Dependent user provided service retrieved: %+v", response)
-		// Create UPS
-		response.Entity.Name = serviceName
-		response.Entity.SpaceGUID = destApp.Entity.SpaceGUID
-
-		if val, ok := response.Entity.Credentials["url"]; ok {
-			if urlStr, ok := val.(string); ok {
-				appID, appName, err := c.getAppIdAndNameFromSpaceByUrl(destApp.Entity.SpaceGUID, urlStr)
-				if err != nil {
-					errors <- err
-					return
-				}
-				log.Infof("Application %v (%v) is bound using %v", appID, appName, svc.Name)
-			}
-		}
-
-		_ = c.applyAdditionalReplacementsInUPSCredentials(response)
-
-		response, err = c.createUserProvidedServiceInstance(&response.Entity)
-		if err != nil {
-			errors <- err
-			return
-		}
-		spawnedServiceInstanceGUID = response.Meta.GUID
-		log.Debugf("Dependent user provided service created. Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
-
+	// Create service
+	svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, spaceGUID, svc.Plan)
+	response, err := c.createServiceInstance(svcInstanceReq)
+	if err != nil {
+		errorsCh <- err
+		return
 	}
+	spawnedServiceInstanceGUID := response.Meta.GUID
+	log.Debugf("Dependent service created: Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
+
+	results <- types.ComponentClone{
+		Component: comp,
+		CloneGUID: spawnedServiceInstanceGUID,
+	}
+	errorsCh <- nil
+	return
+}
+
+func (c *CfAPI) createApplication(sourceAppGUID, spaceGUID string, parameters map[string]string) (*types.CfAppResource, error) {
+	// Gather reference app summary to be used later for creating new instance
+	sourceAppSummary, err := c.getAppSummary(sourceAppGUID)
+	if err != nil {
+		switch err {
+		case misc.EntityNotFoundError{}:
+			log.Errorf("Application %v not found", sourceAppGUID)
+			return nil, misc.InternalServerError{Context: err.Error()}
+		default:
+			log.Errorf("Failed to get application summary: %v", err.Error())
+			return nil, err
+		}
+	}
+	requestedName := parameters["name"]
+	delete(parameters, "name")
+
+	if len(sourceAppSummary.Routes) == 0 {
+		return nil, misc.InternalServerError{Context: "Reference app has no route associated"}
+	}
+
+	//Newly spawned app instance shall have almost identical config as reference app
+	destApp := types.NewCfAppResource(*sourceAppSummary, requestedName, spaceGUID)
+	if destApp.Entity.Envs == nil && len(parameters) > 0 {
+		destApp.Entity.Envs = map[string]interface{}{}
+	}
+	for k, v := range parameters {
+		log.Debugf("Setting additional env: %v:%v", k, v)
+		if _, ok := destApp.Entity.Envs[k]; ok {
+			log.Warnf("Env %v already exists (overriding)", k)
+		}
+		destApp.Entity.Envs[k] = v
+	}
+	destApp, err = c.createApp(destApp.Entity)
+	if err != nil {
+		return nil, err
+	}
+
+	domainGUID := sourceAppSummary.Routes[0].Domain.GUID
+	domainName := sourceAppSummary.Routes[0].Domain.Name
+
+	route, err := c.createRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, spaceGUID})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.associateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
+		return nil, err
+	}
+
+	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
+	return destApp, nil
+}
+
+func (c *CfAPI) createUserProvidedService(spaceGUID string, comp types.Component, suffix, url string,
+	wg *sync.WaitGroup, results chan types.ComponentClone, errorsCh chan error) {
+
+	defer wg.Done()
+	serviceName := comp.Name + "-" + suffix
+	log.Debugf("Create dependent user provided service: service=[%v])", serviceName)
+
+	// Retrieve UPS
+	response, err := c.getUserProvidedService(comp.GUID)
+	if err != nil {
+		errorsCh <- err
+		return
+	}
+	log.Infof("Dependent user provided service retrieved: %+v", response)
+
+	// Create UPS
+	response.Entity.Name = serviceName
+	response.Entity.SpaceGUID = spaceGUID
+
+	// Replace url to match clone application route
+	if len(url) > 0 {
+		response.Entity.Credentials["url"] = fmt.Sprintf("http://%v", url)
+		response.Entity.Name = fmt.Sprintf("%v-ups", strings.Split(url, ".")[0])
+	}
+	// Generate random values where needed
+	_ = c.applyAdditionalReplacementsInUPSCredentials(response)
+
+	response, err = c.createUserProvidedServiceInstance(&response.Entity)
+	if err != nil {
+		errorsCh <- err
+		return
+	}
+	spawnedServiceInstanceGUID := response.Meta.GUID
+	log.Debugf("Dependent user provided service created. Service Instance GUID=[%v]", spawnedServiceInstanceGUID)
+
+	results <- types.ComponentClone{
+		Component: comp,
+		CloneGUID: spawnedServiceInstanceGUID,
+	}
+	errorsCh <- nil
+	return
+}
+
+func (c *CfAPI) bindService(appGUID, serviceGUID string, wg *sync.WaitGroup, errors chan error) {
+	defer wg.Done()
 	// Bind created service
-	svcBindingReq := types.NewCfServiceBindingRequest(destApp.Meta.GUID, spawnedServiceInstanceGUID)
+	svcBindingReq := types.NewCfServiceBindingRequest(appGUID, serviceGUID)
 	svcBindingResp, err := c.createServiceBinding(svcBindingReq)
 	if err != nil {
 		errors <- err
 		return
 	}
 	log.Debugf("Dependent service binding created: Service Binding GUID=[%v]", svcBindingResp.Meta.GUID)
-
 	errors <- nil
 	return
 }
@@ -430,6 +624,7 @@ func (c *CfAPI) applyAdditionalReplacementsInUPSCredentials(response *types.CfUs
 	}
 	credentialsStr := string(credentials)
 	credentialsStr = misc.ReplaceWithRandom(credentialsStr)
+	log.Infof("Final UPS %v content %v", response.Entity.Name, credentialsStr)
 	json.Unmarshal([]byte(credentialsStr), &response.Entity.Credentials)
 	return nil
 }
@@ -474,7 +669,49 @@ func (c *CfAPI) getAppIdAndNameFromSpaceByUrl(spaceGUID, urlStr string) (string,
 	return "", "", nil
 }
 
-func (c *CfAPI) deleteBoundServices(appGUID string, result chan error, doneWaitGroup *sync.WaitGroup) {
+func (c *CfAPI) deleteServiceInstIfUnbound(comp types.Component, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
+	defer doneWaitGroup.Done()
+
+	bindings, err := c.getServiceBindings(comp.GUID)
+	if err != nil {
+		errorsCh <- err
+		return
+	}
+	if bindings.TotalResults == 0 {
+		log.Infof("Service %v is not bound to anything", comp.Name)
+		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
+		if err := c.deleteServiceInstance(comp.GUID); err != nil {
+			errorsCh <- err
+			return
+		}
+	} else {
+		log.Infof("%v instance %v is bound to %v apps. Not deleting instance.", comp.Type, comp.Name, bindings.TotalResults)
+	}
+	errorsCh <- nil
+}
+
+func (c *CfAPI) deleteUPSInstIfUnbound(comp types.Component, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
+	defer doneWaitGroup.Done()
+
+	bindings, err := c.getUserProvidedServiceBindings(comp.GUID)
+	if err != nil {
+		errorsCh <- err
+		return
+	}
+	if bindings.TotalResults == 0 {
+		log.Infof("Service %v is not bound to anything", comp.Name)
+		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
+		if err := c.deleteUserProvidedServiceInstance(comp.GUID); err != nil {
+			errorsCh <- err
+			return
+		}
+	} else {
+		log.Infof("%v instance %v is bound to %v apps. Not deleting instance.", comp.Type, comp.Name, bindings.TotalResults)
+	}
+	errorsCh <- nil
+}
+
+func (c *CfAPI) unbindAppServices(appGUID string, result chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
 	bindings, err := c.getAppBindigs(appGUID)
@@ -493,10 +730,6 @@ func (c *CfAPI) deleteBoundServices(appGUID string, result chan error, doneWaitG
 				results <- err
 				return
 			}
-			if err := c.deleteServiceInstance(binding.Entity.ServiceInstanceGUID); err != nil {
-				results <- err
-				return
-			}
 			results <- nil
 		}(loopBinding)
 	}
@@ -504,8 +737,13 @@ func (c *CfAPI) deleteBoundServices(appGUID string, result chan error, doneWaitG
 	result <- misc.FirstNonEmpty(results, len(bindings.Resources))
 }
 
-func (c *CfAPI) deleteRoutes(appGUID string, routes []types.CfAppSummaryRoute, result chan error, doneWaitGroup *sync.WaitGroup) {
+func (c *CfAPI) deleteRoutes(appGUID string, result chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
+	appSummary, err := c.getAppSummary(appGUID)
+	if err != nil {
+		result <- err
+	}
+	routes := appSummary.Routes
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(routes))
