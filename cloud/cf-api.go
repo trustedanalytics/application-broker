@@ -184,7 +184,7 @@ func (c *CfAPI) addDependenciesToGraph(g *graph.Graph, parent graph.Node, source
 
 // Provision instantiates service of given type
 func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error) {
-	order, err := c.DryRun(sourceAppGUID) // TEST EXECUTION
+	order, _ := c.DryRun(sourceAppGUID)
 	log.Infof("Dry run: [%v]", order)
 	log.Infof("%v components to spawn:", len(order))
 
@@ -330,10 +330,7 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 
 // Deprovision remove instance of given application (that stands behind service instance though)
 func (c *CfAPI) Deprovision(appGUID string) error {
-	order, err := c.DryRun(appGUID) // TEST EXECUTION
-	if err != nil {
-		return err
-	}
+	order, _ := c.DryRun(appGUID)
 	log.Infof("Dry run: [%v]", order)
 	log.Infof("%v components to remove:", len(order))
 
@@ -362,7 +359,9 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 	wg.Wait()
 	close(results)
 	if err := misc.FirstNonEmpty(results, len(componentsToRemove[types.ComponentApp])); err != nil {
-		return err
+		if !c.isErrorAcceptedDuringDeprovision(err) {
+			return err
+		}
 	}
 
 	log.Infof("Removing service instances without bindings")
@@ -374,7 +373,9 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 	wg.Wait()
 	close(resultsSvc)
 	if err := misc.FirstNonEmpty(resultsSvc, len(componentsToRemove[types.ComponentService])); err != nil {
-		return err
+		if !c.isErrorAcceptedDuringDeprovision(err) {
+			return err
+		}
 	}
 
 	log.Infof("Removing user provided service instances without bindings")
@@ -386,7 +387,9 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 	wg.Wait()
 	close(resultsUPS)
 	if err := misc.FirstNonEmpty(resultsUPS, len(componentsToRemove[types.ComponentUPS])); err != nil {
-		return err
+		if !c.isErrorAcceptedDuringDeprovision(err) {
+			return err
+		}
 	}
 
 	log.Infof("Unbinding and deleting application routes")
@@ -398,7 +401,9 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 	wg.Wait()
 	close(resultsRoutes)
 	if err := misc.FirstNonEmpty(resultsRoutes, len(componentsToRemove[types.ComponentApp])); err != nil {
-		return err
+		if !c.isErrorAcceptedDuringDeprovision(err) {
+			return err
+		}
 	}
 
 	log.Infof("Deleting applications")
@@ -407,6 +412,15 @@ func (c *CfAPI) Deprovision(appGUID string) error {
 	}
 
 	return nil
+}
+
+func (c *CfAPI) isErrorAcceptedDuringDeprovision(err error) bool {
+	switch err {
+	case misc.EntityNotFoundError{}, misc.InstanceNotFoundError{}, misc.ServiceNotFoundError{}:
+		log.Errorf("Accepted error occured during deprovisioning: %v", err.Error())
+		return true
+	}
+	return false
 }
 
 // UpdateBroker registers or updates catalog in CF
