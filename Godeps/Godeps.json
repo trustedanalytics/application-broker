@@ -31,6 +31,10 @@
 			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
 		},
 		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
 			"Rev": "5f01fdde266ce8448600f4a510bb1c05a8d288f1"
 		},
@@ -58,6 +62,10 @@
 		{
 			"ImportPath": "github.com/jarcoal/httpmock",
 			"Rev": "145b10d659265440f062c31ea15326166bae56ee"
+		},
+		{
+			"ImportPath": "github.com/juju/errors",
+			"Rev": "1b5e39b83d1835fa480e0c2ddefb040ee82d58b3"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/auth",
@@ -91,6 +99,10 @@
 			"Rev": "2152b45fa28a361beba9aab0885972323a444e28"
 		},
 		{
+			"ImportPath": "github.com/pmezard/go-difflib/difflib",
+			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
+		},
+		{
 			"ImportPath": "github.com/stretchr/objx",
 			"Rev": "cbeaeb16a013161a98496fad62933b1d21786672"
 		},
@@ -105,22 +117,16 @@
 			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
 		},
 		{
-			"ImportPath": "github.com/stretchr/testify/require",
-			"Comment": "v1.0-40-g7c2b1e5",
-			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/suite",
-			"Comment": "v1.0-40-g7c2b1e5",
-			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+			"ImportPath": "github.com/twmb/algoimpl/go/graph",
+			"Rev": "716f8e78b563212cfefb120bedc265741f51d1a4"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "ea47fc708ee3e20177f3ca3716217c4ab75942cb"
+			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
 		},
 		{
 			"ImportPath": "golang.org/x/oauth2",
-			"Rev": "397fe7649477ff2e8ced8fc0b2696f781e53745a"
+			"Rev": "9ecad5029bb3332276edfb7b23add78b0387a9f3"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
