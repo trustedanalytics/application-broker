@@ -17,6 +17,8 @@ package service
 
 import (
 	"fmt"
+	"strings"
+
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/trustedanalytics/application-broker/cloud"
@@ -150,6 +152,13 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 
 	if r.Parameters["name"] == "" {
 		r.Parameters["name"] = service.Name
+	}
+
+	// Suffix required for ATK
+	idx := strings.Index(r.InstanceID, "-")
+	if idx > 0 {
+		// Take only first part of the GUID
+		r.Parameters["name"] = r.Parameters["name"] + "-" + r.InstanceID[0:idx]
 	}
 
 	name := r.Parameters["name"]
