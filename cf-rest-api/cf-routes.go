@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cloud
+package api
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func (c *CfAPI) createRoute(req *types.CfCreateRouteRequest) (*types.CfRouteResource, error) {
+func (c *CfAPI) CreateRoute(req *types.CfCreateRouteRequest) (*types.CfRouteResource, error) {
 	address := c.BaseAddress + "/v2/routes"
 	log.Infof("Requesting route creation: %v", address)
 	marshalled, err := json.Marshal(req)
@@ -51,7 +51,7 @@ func (c *CfAPI) createRoute(req *types.CfCreateRouteRequest) (*types.CfRouteReso
 	return toReturn, nil
 }
 
-func (c *CfAPI) associateRoute(appID string, routeID string) error {
+func (c *CfAPI) AssociateRoute(appID string, routeID string) error {
 	address := fmt.Sprintf("%v/v2/apps/%v/routes/%v", c.BaseAddress, appID, routeID)
 	log.Infof("Requesting route association: %v", address)
 	req, _ := http.NewRequest("PUT", address, nil)
@@ -66,7 +66,7 @@ func (c *CfAPI) associateRoute(appID string, routeID string) error {
 	return nil
 }
 
-func (c *CfAPI) unassociateRoute(appID string, routeID string) error {
+func (c *CfAPI) UnassociateRoute(appID string, routeID string) error {
 	address := fmt.Sprintf("%v/v2/apps/%v/routes/%v", c.BaseAddress, appID, routeID)
 	err := c.deleteEntity(address, "route mapping")
 	if err != nil {
@@ -76,7 +76,7 @@ func (c *CfAPI) unassociateRoute(appID string, routeID string) error {
 	return nil
 }
 
-func (c *CfAPI) getAppRoutes(appID string) (*types.CfRoutesResponse, error) {
+func (c *CfAPI) GetAppRoutes(appID string) (*types.CfRoutesResponse, error) {
 	address := fmt.Sprintf("%v/v2/apps/%v/routes", c.BaseAddress, appID)
 	response, err := c.getEntity(address, "routes")
 	if err != nil {
@@ -89,7 +89,7 @@ func (c *CfAPI) getAppRoutes(appID string) (*types.CfRoutesResponse, error) {
 	return toReturn, nil
 }
 
-func (c *CfAPI) getSpaceRoutesForHostname(spaceGUID, hostname string) (*types.CfRoutesResponse, error) {
+func (c *CfAPI) GetSpaceRoutesForHostname(spaceGUID, hostname string) (*types.CfRoutesResponse, error) {
 	address := fmt.Sprintf("%v/v2/spaces/%v/routes?q=host:%v", c.BaseAddress, spaceGUID, hostname)
 	response, err := c.getEntity(address, "routes")
 	if err != nil {
@@ -103,7 +103,7 @@ func (c *CfAPI) getSpaceRoutesForHostname(spaceGUID, hostname string) (*types.Cf
 	return toReturn, nil
 }
 
-func (c *CfAPI) getAppsFromRoute(routeGUID string) (*types.CfAppsResponse, error) {
+func (c *CfAPI) GetAppsFromRoute(routeGUID string) (*types.CfAppsResponse, error) {
 	address := fmt.Sprintf("%v/v2/routes/%v/apps", c.BaseAddress, routeGUID)
 	response, err := c.getEntity(address, "apps")
 	if err != nil {
@@ -117,7 +117,7 @@ func (c *CfAPI) getAppsFromRoute(routeGUID string) (*types.CfAppsResponse, error
 	return toReturn, nil
 }
 
-func (c *CfAPI) deleteRoute(routeID string) error {
+func (c *CfAPI) DeleteRoute(routeID string) error {
 	address := fmt.Sprintf("%v/v2/routes/%v", c.BaseAddress, routeID)
 	err := c.deleteEntity(address, "route")
 	if err != nil {

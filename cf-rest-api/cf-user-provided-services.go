@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cloud
+package api
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 	"net/http"
 )
 
-func (c *CfAPI) createUserProvidedServiceInstance(req *types.CfUserProvidedService) (*types.CfUserProvidedServiceResource, error) {
+func (c *CfAPI) CreateUserProvidedServiceInstance(req *types.CfUserProvidedService) (*types.CfUserProvidedServiceResource, error) {
 	address := c.BaseAddress + "/v2/user_provided_service_instances"
 	log.Infof("Requesting user provided service instance creation: %v", address)
 	marshalled, err := json.Marshal(req)
@@ -52,7 +52,7 @@ func (c *CfAPI) createUserProvidedServiceInstance(req *types.CfUserProvidedServi
 	return toReturn, nil
 }
 
-func (c *CfAPI) getUserProvidedService(guid string) (*types.CfUserProvidedServiceResource, error) {
+func (c *CfAPI) GetUserProvidedService(guid string) (*types.CfUserProvidedServiceResource, error) {
 	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v", c.BaseAddress, guid)
 	log.Infof("Requesting user provided service retrieval: %v", address)
 	resp, err := c.Get(address)
@@ -75,7 +75,7 @@ func (c *CfAPI) getUserProvidedService(guid string) (*types.CfUserProvidedServic
 	return resource, nil
 }
 
-func (c *CfAPI) createUserProvidedServiceBinding(req *types.CfServiceBindingCreateRequest) (*types.CfServiceBindingCreateResponse, error) {
+func (c *CfAPI) CreateUserProvidedServiceBinding(req *types.CfServiceBindingCreateRequest) (*types.CfServiceBindingCreateResponse, error) {
 	address := c.BaseAddress + "/v2/service_bindings"
 	log.Infof("Requesting service binding creation: %v", address)
 	marshalled, err := json.Marshal(req)
@@ -100,7 +100,7 @@ func (c *CfAPI) createUserProvidedServiceBinding(req *types.CfServiceBindingCrea
 	return toReturn, nil
 }
 
-func (c *CfAPI) deleteUserProvidedServiceInstance(id string) error {
+func (c *CfAPI) DeleteUserProvidedServiceInstance(id string) error {
 	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v", c.BaseAddress, id)
 	err := c.deleteEntity(address, "UPS instance")
 	if err != nil {
@@ -110,7 +110,7 @@ func (c *CfAPI) deleteUserProvidedServiceInstance(id string) error {
 	return nil
 }
 
-func (c *CfAPI) getUserProvidedServiceBindings(id string) (*types.CfBindingsResources, error) {
+func (c *CfAPI) GetUserProvidedServiceBindings(id string) (*types.CfBindingsResources, error) {
 	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v/service_bindings", c.BaseAddress, id)
 	response, err := c.getEntity(address, "service bindings")
 	if err != nil {

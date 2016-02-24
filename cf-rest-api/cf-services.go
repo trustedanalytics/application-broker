@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cloud
+package api
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 	"net/http"
 )
 
-func (c *CfAPI) createServiceInstance(req *types.CfServiceInstanceCreateRequest) (*types.CfServiceInstanceCreateResponse, error) {
+func (c *CfAPI) CreateServiceInstance(req *types.CfServiceInstanceCreateRequest) (*types.CfServiceInstanceCreateResponse, error) {
 	address := c.BaseAddress + "/v2/service_instances?accepts_incomplete=false"
 	log.Infof("Requesting service instance creation: %v", address)
 	marshalled, err := json.Marshal(req)
@@ -53,7 +53,7 @@ func (c *CfAPI) createServiceInstance(req *types.CfServiceInstanceCreateRequest)
 	return toReturn, nil
 }
 
-func (c *CfAPI) createServiceBinding(req *types.CfServiceBindingCreateRequest) (*types.CfServiceBindingCreateResponse, error) {
+func (c *CfAPI) CreateServiceBinding(req *types.CfServiceBindingCreateRequest) (*types.CfServiceBindingCreateResponse, error) {
 	address := c.BaseAddress + "/v2/service_bindings"
 	log.Infof("Requesting service binding creation: %v", address)
 	marshalled, err := json.Marshal(req)
@@ -78,7 +78,7 @@ func (c *CfAPI) createServiceBinding(req *types.CfServiceBindingCreateRequest) (
 	return toReturn, nil
 }
 
-func (c *CfAPI) getServiceBindings(id string) (*types.CfBindingsResources, error) {
+func (c *CfAPI) GetServiceBindings(id string) (*types.CfBindingsResources, error) {
 	address := fmt.Sprintf("%v/v2/service_instances/%v/service_bindings", c.BaseAddress, id)
 	response, err := c.getEntity(address, "service bindings")
 	if err != nil {
@@ -92,7 +92,7 @@ func (c *CfAPI) getServiceBindings(id string) (*types.CfBindingsResources, error
 	return toReturn, nil
 }
 
-func (c *CfAPI) deleteServiceInstance(id string) error {
+func (c *CfAPI) DeleteServiceInstance(id string) error {
 	address := fmt.Sprintf("%v/v2/service_instances/%v", c.BaseAddress, id)
 	err := c.deleteEntity(address, "service instance")
 	if err != nil {
@@ -102,7 +102,7 @@ func (c *CfAPI) deleteServiceInstance(id string) error {
 	return nil
 }
 
-func (c *CfAPI) getServiceOfName(name string) (*types.CfServiceResource, error) {
+func (c *CfAPI) GetServiceOfName(name string) (*types.CfServiceResource, error) {
 	address := fmt.Sprintf("%v/v2/services?q=label:%v", c.BaseAddress, name)
 	resp, err := c.Get(address)
 
@@ -124,7 +124,7 @@ func (c *CfAPI) getServiceOfName(name string) (*types.CfServiceResource, error) 
 	return nil, nil
 }
 
-func (c *CfAPI) purgeService(serviceID string, serviceName string, servicePlansURL string) error {
+func (c *CfAPI) PurgeService(serviceID string, serviceName string, servicePlansURL string) error {
 	log.Infof("Purge service: [%v]", serviceID)
 	resp, err := c.Get(c.BaseAddress + servicePlansURL)
 	plans := new(types.CfServicePlansResources)

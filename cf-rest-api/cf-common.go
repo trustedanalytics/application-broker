@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cloud
+package api
 
 import (
 	"fmt"

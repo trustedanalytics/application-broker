@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cloud
+package api
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-func (c *CfAPI) createApp(app types.CfApp) (*types.CfAppResource, error) {
+func (c *CfAPI) CreateApp(app types.CfApp) (*types.CfAppResource, error) {
 	address := c.BaseAddress + "/v2/apps"
 	log.Infof("Requesting app creation: %v", address)
 	m, _ := json.Marshal(app)
@@ -50,7 +50,7 @@ func (c *CfAPI) createApp(app types.CfApp) (*types.CfAppResource, error) {
 	return toReturn, nil
 }
 
-func (c *CfAPI) getAppSummary(id string) (*types.CfAppSummary, error) {
+func (c *CfAPI) GetAppSummary(id string) (*types.CfAppSummary, error) {
 	address := fmt.Sprintf("%v/v2/apps/%v/summary", c.BaseAddress, id)
 	resp, err := c.getEntity(address, "application summary")
 	if err != nil {
@@ -67,12 +67,12 @@ func (c *CfAPI) getAppSummary(id string) (*types.CfAppSummary, error) {
 	return toReturn, nil
 }
 
-func (c *CfAPI) deleteApp(id string) error {
+func (c *CfAPI) DeleteApp(id string) error {
 	address := fmt.Sprintf("%v/v2/apps/%v", c.BaseAddress, id)
 	return c.deleteEntity(address, "application")
 }
 
-func (c *CfAPI) getAppBindigs(id string) (*types.CfBindingsResources, error) {
+func (c *CfAPI) GetAppBindigs(id string) (*types.CfBindingsResources, error) {
 	address := fmt.Sprintf("%v/v2/apps/%v/service_bindings", c.BaseAddress, id)
 	response, err := c.getEntity(address, "app bindings")
 	if err != nil {
@@ -86,7 +86,7 @@ func (c *CfAPI) getAppBindigs(id string) (*types.CfBindingsResources, error) {
 	return toReturn, nil
 }
 
-func (c *CfAPI) deleteBinding(binding types.CfBindingResource) error {
+func (c *CfAPI) DeleteBinding(binding types.CfBindingResource) error {
 	address := fmt.Sprintf("%v/v2/apps/%v/service_bindings/%v", c.BaseAddress, binding.Entity.AppGUID, binding.Meta.GUID)
 	err := c.deleteEntity(address, "binding")
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *CfAPI) deleteBinding(binding types.CfBindingResource) error {
 	return nil
 }
 
-func (c *CfAPI) copyBits(sourceID string, destID string, asyncError chan error) {
+func (c *CfAPI) CopyBits(sourceID string, destID string, asyncError chan error) {
 	address := fmt.Sprintf("%v/v2/apps/%v/copy_bits", c.BaseAddress, destID)
 	log.Infof("Requesting copy_bits: %v", address)
 	request := types.CfCopyBitsRequest{SrcAppGUID: sourceID}
@@ -136,7 +136,7 @@ func (c *CfAPI) copyBits(sourceID string, destID string, asyncError chan error) 
 	asyncError <- nil
 }
 
-func (c *CfAPI) restageApp(appGUID string) error {
+func (c *CfAPI) RestageApp(appGUID string) error {
 	address := fmt.Sprintf("%v/v2/apps/%v/restage", c.BaseAddress, appGUID)
 	log.Infof("Requesting restage: %v", address)
 
@@ -157,7 +157,7 @@ func (c *CfAPI) restageApp(appGUID string) error {
 	return nil
 }
 
-func (c *CfAPI) updateApp(app *types.CfAppResource) error {
+func (c *CfAPI) UpdateApp(app *types.CfAppResource) error {
 	address := fmt.Sprintf("%v/v2/apps/%v", c.BaseAddress, app.Meta.GUID)
 	log.Infof("Updating an app: %v", address)
 	raw, _ := json.Marshal(app.Entity)
@@ -173,9 +173,9 @@ func (c *CfAPI) updateApp(app *types.CfAppResource) error {
 	return nil
 }
 
-func (c *CfAPI) startApp(app *types.CfAppResource) error {
+func (c *CfAPI) StartApp(app *types.CfAppResource) error {
 	app.Entity.State = types.AppStarted
-	if err := c.updateApp(app); err != nil {
+	if err := c.UpdateApp(app); err != nil {
 		return err
 	}
 

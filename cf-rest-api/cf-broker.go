@@ -1,4 +1,20 @@
-package cloud
+/**
+ * Copyright (c) 2015 Intel Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package api
 
 import (
 	"bytes"
@@ -11,7 +27,7 @@ import (
 	"net/http"
 )
 
-func (c *CfAPI) registerBroker(brokerName string, brokerURL string, username string, password string) error {
+func (c *CfAPI) RegisterBroker(brokerName string, brokerURL string, username string, password string) error {
 	address := fmt.Sprintf("%v/v2/service_brokers", c.BaseAddress)
 
 	req := types.CfServiceBroker{Name: brokerName, URL: brokerURL, Username: username, Password: password}
@@ -42,7 +58,7 @@ func (c *CfAPI) registerBroker(brokerName string, brokerURL string, username str
 	return nil
 }
 
-func (c *CfAPI) updateBroker(brokerGUID string, brokerURL string, username string, password string) error {
+func (c *CfAPI) UpdateBroker(brokerGUID string, brokerURL string, username string, password string) error {
 	address := fmt.Sprintf("%v/v2/service_brokers/%v", c.BaseAddress, brokerGUID)
 
 	req := types.CfServiceBroker{URL: brokerURL, Username: username, Password: password}
@@ -74,7 +90,7 @@ func (c *CfAPI) updateBroker(brokerGUID string, brokerURL string, username strin
 	return nil
 }
 
-func (c *CfAPI) getBrokers(brokerName string) (*types.CfServiceBrokerResources, error) {
+func (c *CfAPI) GetBrokers(brokerName string) (*types.CfServiceBrokerResources, error) {
 	address := fmt.Sprintf("%v/v2/service_brokers?q=name:%v", c.BaseAddress, brokerName)
 	response, err := c.Get(address)
 	if err != nil {
