@@ -3,9 +3,10 @@
 Application Broker for Cloud Foundry
 ==============================================
 
-A service broker to provision an application, including dependent service instances.
+A service broker to provision an application stack - set of applications, services and user provided services.
 
-**This is a second experimental version and may be subject to severe changes in the future.**
+**This is a third version, which support copying full application stacks, binding same services to multiple apps in single stack and generating random passwords when copying source ups with e.g. $RANDOM16.**
+**Second version used REST API of CF to retrieve and add data.**
 **First implementation was based on cf/cli calls which was considered bad solution due to concurrency problems. Now we are using regular REST requests under the hood.**
 
 
@@ -17,6 +18,14 @@ To easily create service offerings without implementing separate broker you may 
 
 References:
 [Custom Services](https://docs.cloudfoundry.org/services/)
+
+Features 
+--------
+
+* Publishing application stack in marketplace
+* Cloning existing stacks of apps, services and user provided services if they create a DAG with single root
+* Replacing $RANDOM8, $RANDOM16, $RANDOM24 and $RANDOM32 in user provided services copied with random string of width 8, 16, 24 or 32 from characterset [A-Za-z0-9]. This can be used to generate new password for every stack spawned. Parts for replacement can be on different levels of JSON in UPS.
+* Linking apps with user provided service with url field with value http://<host>.<domain>. App mentioned has to be in the same space as source app. Cloned user provided service has updated url for cloned application. Convention for user provided services names linking apps is <host>-ups.
 
 Usage
 -----
@@ -171,6 +180,4 @@ Command above places all dependencies from `$GOPATH`, your app uses, in Godeps a
 
 Limitations
 -----------------------
-Actually, Application Broker does not handle user-provided services bound to reference app. Having said that, all newly spawned instances won't have user-provided services associated.
-
 Additionally, in special circumstances, some problems may occur when spawning new instance with dependencies. Imagine referenceApp with dependencyServiceInstance bound to it. It is possible to spawn copy of referenceApp to space that dependencyService is not enabled in. In such situation provision operation will end up with failure.
