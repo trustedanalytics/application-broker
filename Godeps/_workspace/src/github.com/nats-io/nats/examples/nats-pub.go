@@ -1,4 +1,4 @@
-// Copyright 2012-2015 Apcera Inc. All rights reserved.
+// Copyright 2012-2016 Apcera Inc. All rights reserved.
 // +build ignore
 
 package main
@@ -6,18 +6,17 @@ package main
 import (
 	"flag"
 	"log"
-	"strings"
 
 	"github.com/nats-io/nats"
 )
 
+// NOTE: Use tls scheme for TLS, e.g. nats-pub -s tls://demo.nats.io:4443 foo hello
 func usage() {
-	log.Fatalf("Usage: nats-pub [-s server] [--ssl] [-t] <subject> <msg> \n")
+	log.Fatalf("Usage: nats-pub [-s server (%s)] <subject> <msg> \n", nats.DefaultURL)
 }
 
 func main() {
 	var urls = flag.String("s", nats.DefaultURL, "The nats server URLs (separated by comma)")
-	var ssl = flag.Bool("ssl", false, "Use Secure Connection")
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -28,23 +27,16 @@ func main() {
 		usage()
 	}
 
-	opts := nats.DefaultOptions
-	opts.Servers = strings.Split(*urls, ",")
-	for i, s := range opts.Servers {
-		opts.Servers[i] = strings.Trim(s, " ")
-	}
-
-	opts.Secure = *ssl
-
-	nc, err := opts.Connect()
+	nc, err := nats.Connect(*urls)
 	if err != nil {
-		log.Fatalf("Can't connect: %v\n", err)
+		log.Fatal(err)
 	}
+	defer nc.Close()
 
 	subj, msg := args[0], []byte(args[1])
 
 	nc.Publish(subj, msg)
-	nc.Close()
+	nc.Flush()
 
 	log.Printf("Published [%s] : '%s'\n", subj, msg)
 }

@@ -12,13 +12,13 @@
 		},
 		{
 			"ImportPath": "github.com/cihub/seelog",
-			"Comment": "go1.1-81-gc510775",
-			"Rev": "c510775bb50d98213cfafca75a4bc5e3fddc8d8f"
+			"Comment": "v2.6-1-g3549fbb",
+			"Rev": "3549fbb0ea07f15a54dba3d16ccb22785a813d30"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/go-cfenv",
-			"Comment": "v1.12",
-			"Rev": "c682e189b94b0b2ec6edf12363df2eecf29d7256"
+			"Comment": "v1.12-2-gb4bebec",
+			"Rev": "b4bebec47a425334d2a076cf99329464c9e611f3"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-community/types-cf",
@@ -36,16 +36,16 @@
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "5f01fdde266ce8448600f4a510bb1c05a8d288f1"
+			"Rev": "9c474d0715937065f7e5b9f8d724a72ba55763e7"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "5f01fdde266ce8448600f4a510bb1c05a8d288f1"
+			"Rev": "9c474d0715937065f7e5b9f8d724a72ba55763e7"
 		},
 		{
 			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-134-g184178f",
-			"Rev": "184178ffc6b2f7b86b8b99c2a411de8771708a0a"
+			"Comment": "v1.0-171-gc8e367e",
+			"Rev": "c8e367e964da242333b34f0cc2b01b91e16fa52a"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -57,15 +57,11 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/sessions",
-			"Rev": "b6bcae186ac3099dba8fafce125dc930393f1e5e"
+			"Rev": "715060ac0b7d99d95d1600df329f5da94809023a"
 		},
 		{
 			"ImportPath": "github.com/jarcoal/httpmock",
 			"Rev": "145b10d659265440f062c31ea15326166bae56ee"
-		},
-		{
-			"ImportPath": "github.com/juju/errors",
-			"Rev": "1b5e39b83d1835fa480e0c2ddefb040ee82d58b3"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/auth",
@@ -81,8 +77,8 @@
 		},
 		{
 			"ImportPath": "github.com/nats-io/nats",
-			"Comment": "v1.0.9-7-g1ea4e49",
-			"Rev": "1ea4e496a729ec69571dc639682671bc5db5c9e1"
+			"Comment": "v1.1.6-58-g9749706",
+			"Rev": "9749706127ac417665d0a4fe25916c52b9408d95"
 		},
 		{
 			"ImportPath": "github.com/nu7hatch/gouuid",
@@ -90,13 +86,13 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.2.0-22-g39d2c24",
-			"Rev": "39d2c24f8a92c88f7e7f4d8ec6c80d3cc8f5ac65"
+			"Comment": "v1.2.0-36-g3341026",
+			"Rev": "33410268c3881642c746ada23c04eeb331212596"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-71-g2152b45",
-			"Rev": "2152b45fa28a361beba9aab0885972323a444e28"
+			"Comment": "v1.0-77-g28f13bc",
+			"Rev": "28f13bc54cf0f72e3fa395ba9d3added0b3b849c"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
@@ -104,21 +100,33 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/objx",
-			"Rev": "cbeaeb16a013161a98496fad62933b1d21786672"
+			"Rev": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.0-40-g7c2b1e5",
-			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+			"Comment": "v1.1.3",
+			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/mock",
-			"Comment": "v1.0-40-g7c2b1e5",
-			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+			"Comment": "v1.1.3",
+			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
 		},
 		{
-			"ImportPath": "github.com/twmb/algoimpl/go/graph",
-			"Rev": "716f8e78b563212cfefb120bedc265741f51d1a4"
+			"ImportPath": "github.com/trustedanalytics/go-cf-lib/api",
+			"Rev": "e5ef6c62e2a5ef18ea3142222fb32904b0923d16"
+		},
+		{
+			"ImportPath": "github.com/trustedanalytics/go-cf-lib/helpers",
+			"Rev": "e5ef6c62e2a5ef18ea3142222fb32904b0923d16"
+		},
+		{
+			"ImportPath": "github.com/trustedanalytics/go-cf-lib/types",
+			"Rev": "e5ef6c62e2a5ef18ea3142222fb32904b0923d16"
+		},
+		{
+			"ImportPath": "github.com/trustedanalytics/go-cf-lib/wrapper",
+			"Rev": "e5ef6c62e2a5ef18ea3142222fb32904b0923d16"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
@@ -130,8 +138,8 @@
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
-			"Comment": "r2015.06.03-4-gf4923a5",
-			"Rev": "f4923a569136442e900b8cf5c1a706c0a8b0883c"
+			"Comment": "r2015.12.06-2-g03c9f3e",
+			"Rev": "03c9f3ee4c14c8e51ee521a6a7d0425658dd6f64"
 		}
 	]
 }
