@@ -68,7 +68,7 @@ func (c *Config) getSubject(service *cfenv.Service) string {
 }
 
 func (c *Config) getNatsService(cfEnv *cfenv.App) *cfenv.Service {
-	if cfEnv != nil {
+	if cfEnv == nil {
 		return nil
 	}
 

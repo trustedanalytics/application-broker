@@ -48,11 +48,14 @@ func main() {
 	}
 	natsConfig := messagebus.Config{}
 	natsAvailable := natsConfig.TryInitialize(cfEnv)
+
 	if natsAvailable {
-		mbus, err = messagebus.NewNatsMessageBus(natsConfig)
-	}
-	if err != nil || !natsAvailable {
-		log.Warn("Failed to initialize nats. Events information publishing will be skipped.")
+		if mbus, err = messagebus.NewNatsMessageBus(natsConfig); err != nil {
+			log.Warnf("Failed to initialize NATS. Events information publishing will be skipped. [%v]", err)
+			mbus = &messagebus.DevNullBus{}
+		}
+	} else {
+		log.Warn("NATS not available. Events information publishing will be skipped.")
 		mbus = &messagebus.DevNullBus{}
 	}
 
