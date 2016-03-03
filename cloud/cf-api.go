@@ -21,7 +21,6 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/nu7hatch/gouuid"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/types"
 	"golang.org/x/oauth2"
@@ -114,8 +113,7 @@ func (c *CfAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*
 	wg.Add(len(sourceAppSummary.Services))
 	results := make(chan error, len(sourceAppSummary.Services))
 	// Create dependent services and bind them
-	commonUUID, _ := uuid.NewV4()
-	suffix := commonUUID.String()[:8]
+	suffix := r.InstanceID[:8]
 	for _, svcToCopy := range sourceAppSummary.Services {
 		go c.createDependencies(destApp, svcToCopy, suffix, &wg, results)
 	}
