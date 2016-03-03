@@ -48,7 +48,7 @@ func (c *Config) TryInitialize(cfEnv *cfenv.App) bool {
 func (c *Config) getUri(service *cfenv.Service) string {
 	var url string
 	if service != nil {
-		url = service.Credentials["uri"].(string)
+		url = service.Credentials["url"].(string)
 	}
 	if len(url) == 0 {
 		url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
