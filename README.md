@@ -51,7 +51,13 @@ applications:
     VERSION: "0.5.8"
 ```
 
-When manifest.yml is ready the following command can be issued:
+Application broker is using app dependency discoverer for application stack discovery. It needs url of that app in url field of app-dependency-discoverer-ups user provided service, as well as auth_user and auth_pass for basic authentication. For local run http://localhost:9998 is taken.
+Create user provided service with command:
+```
+cf cups app-dependency-discoverer-ups -p "{\"auth_pass\": \"<password>\", \"auth_user\": \"<user>\", \"url\": \"http://<hostname>.<domain>\" }"
+```
+
+When manifest.yml is ready and ups with required name is available in selected space, the following command can be issued:
 ```
 $ cf push
 ```
@@ -110,8 +116,6 @@ Development
 To locally develop this service broker, we encourage you to use lightweight reference app that will push and start fast. Testing won't take too much time. You can use sampleApp we placed in functional_tests/sampleApp directory.
 
 Additionally you will need mongodb instance. Install it by using package-manager your distro provides. For Ubuntu/Debian it will be: `sudo apt-get install mongodb`. Local Application Broker will connect to it on default port so no additional configuration is needed.
-
-Application broker is using app dependency discoverer for application stack discovery. It needs url of that app in url field of app-dependency-discoverer-ups user provided service, as well as auth_user and auth_pass for basic authentication. For local run http://localhost:9998 is taken.
 
 ### Running locally
 
