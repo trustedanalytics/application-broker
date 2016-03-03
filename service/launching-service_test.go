@@ -20,8 +20,8 @@ import (
 	"errors"
 	"github.com/cloudfoundry-community/types-cf"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
 	"github.com/trustedanalytics/application-broker/messagebus"
 	"github.com/trustedanalytics/application-broker/service/extension"
@@ -65,7 +65,7 @@ var _ = Describe("Launching service", func() {
 		Context("when catalog filled with one service", func() {
 			It("should return one service", func() {
 				services := []*extension.ServiceExtension{}
-				services = append(services, &types.ServiceExtension{
+				services = append(services, &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
 				})
 				dataCatalog.On("Get", mock.Anything).Return(services, nil)
@@ -214,7 +214,7 @@ var _ = Describe("Launching service", func() {
 				request.ServiceID = "service_id"
 				request.Parameters = make(map[string]string)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				createAppResp := &extension.ServiceCreationResponse{}
 				cfApi.On("Provision", "source_app_id", request).Return(createAppResp, nil)
 
@@ -236,7 +236,7 @@ var _ = Describe("Launching service", func() {
 
 				request := &cf.ServiceCreationRequest{}
 				request.Parameters = make(map[string]string)
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				createAppResp := &extension.ServiceCreationResponse{}
 				cfApi.On("Provision", "", request).Return(createAppResp, nil)
 
@@ -255,7 +255,7 @@ var _ = Describe("Launching service", func() {
 					App: types.CfAppResource{Meta: types.CfMeta{GUID: "appGuid"}}}
 				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				expectedErr := errors.New("ERROR!")
 				cfApi.On("Deprovision", mock.Anything).Return(expectedErr)
 
@@ -274,7 +274,7 @@ var _ = Describe("Launching service", func() {
 				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
 				dataCatalog.On("RemoveInstance", mock.Anything).Return(nil)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				cfApi.On("Deprovision", mock.Anything).Return(nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})

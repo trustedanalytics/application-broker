@@ -19,19 +19,20 @@ package service
 import (
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/stretchr/testify/mock"
+	"github.com/trustedanalytics/application-broker/service/extension"
 )
 
 type CfMock struct {
 	mock.Mock
 }
 
-func (c *CfMock) Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error) {
+func (c *CfMock) Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
 	args := c.Called(sourceAppGUID, request)
 	if args.Get(0) == nil {
 		//first return value is nil, we test error case then
 		return nil, args.Get(1).(error)
 	}
-	return args.Get(0).(*cf.ServiceCreationResponse), nil
+	return args.Get(0).(*extension.ServiceCreationResponse), nil
 }
 
 func (c *CfMock) Deprovision(appGUID string) error {
