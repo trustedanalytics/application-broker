@@ -72,9 +72,12 @@ func (w *CfAPIWrapper) DeleteUPSInstIfUnbound(comp types.Component,
 func (w *CfAPIWrapper) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	appSummary, err := w.rest.GetAppSummary(appGUID)
-	if err != nil {
-		errorsCh <- err
+	appSummary, _ := w.rest.GetAppSummary(appGUID)
+	if appSummary == nil {
+		// Application not exist so no routes to remove
+		log.Infof("Application already does not exist so no routes should be deleted")
+		errorsCh <- nil
+		return
 	}
 	routes := appSummary.Routes
 

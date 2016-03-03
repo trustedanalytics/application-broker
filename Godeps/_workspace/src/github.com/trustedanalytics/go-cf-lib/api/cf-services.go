@@ -126,6 +126,11 @@ func (c *CfAPI) GetServiceOfName(name string) (*types.CfServiceResource, error) 
 func (c *CfAPI) PurgeService(serviceID string, serviceName string, servicePlansURL string) error {
 	log.Infof("Purge service: [%v]", serviceID)
 	resp, err := c.Get(c.BaseAddress + servicePlansURL)
+	if err != nil {
+		msg := fmt.Sprintf("Could not get service plan from: %s [%v]", servicePlansURL, err)
+		log.Error(msg)
+		return types.InternalServerError{Context: msg}
+	}
 	plans := new(types.CfServicePlansResources)
 	json.NewDecoder(resp.Body).Decode(plans)
 

@@ -42,6 +42,8 @@ func (c *CfAPI) deleteEntity(url string, entityName string) error {
 
 	if resp.StatusCode == http.StatusNotFound {
 		log.Infof("%v already does not exist: %v", entityName, url)
+	} else if resp.StatusCode == http.StatusConflict {
+		log.Infof("%v deletion in progress: %v", entityName, helpers.ReaderToString(resp.Body))
 	} else if !IsSuccessStatus(resp.StatusCode) {
 		msg := fmt.Sprintf("Delete %s failed. Response from CC: (%d) [%v]",
 			entityName, resp.StatusCode, helpers.ReaderToString(resp.Body))

@@ -31,7 +31,7 @@ func (c *CfAPI) RegisterBroker(brokerName string, brokerURL string, username str
 
 	req := types.CfServiceBroker{Name: brokerName, URL: brokerURL, Username: username, Password: password}
 	serialized, _ := json.Marshal(req)
-	log.Infof("Registering broker: %v %v", address, serialized)
+	log.Infof("Registering broker: %v %+v", address, req)
 
 	request, err := http.NewRequest(MethodPost, address, bytes.NewReader(serialized))
 	if err != nil {
@@ -39,8 +39,8 @@ func (c *CfAPI) RegisterBroker(brokerName string, brokerURL string, username str
 		log.Error(msg)
 		return types.InternalServerError{Context: msg}
 	}
-	response, err := c.Do(request)
 
+	response, err := c.Do(request)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to register service broker: %v", err.Error())
 		log.Error(msg)
