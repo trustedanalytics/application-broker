@@ -15,13 +15,16 @@
                     <header>${project.basedir}/license_header.txt</header>
                     <basedir>..</basedir>
                     <includes>
-                        <include>utils/*.go</include>
-                        <include>main.go</include>
-                        <include>service/*.go</include>
                         <include>broker/*.go</include>
-                        <include>api/*.go</include>
+                        <include>cloud/*.go</include>
+                        <include>dao/*.go</include>
+                        <include>main.go</include>
+                        <include>env/*.go</include>
                         <include>license_checker/*.sh</include>
-                        <include>bin/*.sh</include>
+                        <include>logging/*.go</include>
+                        <include>messagebus/*.sh</include>
+                        <include>misc/*.sh</include>
+                        <include>service/*.go</include>
                     </includes>                  
                     <mapping>
                         <go>JAVADOC_STYLE</go>
