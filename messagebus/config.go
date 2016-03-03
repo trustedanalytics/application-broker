@@ -19,7 +19,6 @@ package messagebus
 
 import (
 	log "github.com/cihub/seelog"
-
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/trustedanalytics/application-broker/env"
 )
