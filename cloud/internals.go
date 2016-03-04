@@ -122,6 +122,8 @@ func (cl *CloudAPI) groupComponentsByType(order []types.Component) map[types.Com
 
 func (cl *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
 	switch err {
+	case nil:
+		return true
 	case types.EntityNotFoundError{}, types.InstanceNotFoundError{}, types.ServiceNotFoundError{}:
 		log.Errorf("Accepted error occured during deprovisioning: %v", err.Error())
 		return true

@@ -224,9 +224,9 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	}
 	wg.Wait()
 	close(results)
-	if err := misc.FirstNonEmpty(results, len(componentsToRemove[types.ComponentApp])); err != nil {
+	for err := range results {
 		if !cl.isErrorAcceptedDuringDeprovision(err) {
-			return err
+			log.Errorf("Error occured when unbinding services and upses: %v", err.Error())
 		}
 	}
 
@@ -238,9 +238,9 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	}
 	wg.Wait()
 	close(resultsSvc)
-	if err := misc.FirstNonEmpty(resultsSvc, len(componentsToRemove[types.ComponentService])); err != nil {
+	for err := range resultsSvc {
 		if !cl.isErrorAcceptedDuringDeprovision(err) {
-			return err
+			log.Errorf("Error occured when removing service instances: %v", err.Error())
 		}
 	}
 
@@ -252,9 +252,9 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	}
 	wg.Wait()
 	close(resultsUPS)
-	if err := misc.FirstNonEmpty(resultsUPS, len(componentsToRemove[types.ComponentUPS])); err != nil {
+	for err := range resultsUPS {
 		if !cl.isErrorAcceptedDuringDeprovision(err) {
-			return err
+			log.Errorf("Error occured when removing user provided service instances: %v", err.Error())
 		}
 	}
 
@@ -266,9 +266,9 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	}
 	wg.Wait()
 	close(resultsRoutes)
-	if err := misc.FirstNonEmpty(resultsRoutes, len(componentsToRemove[types.ComponentApp])); err != nil {
+	for err := range resultsRoutes {
 		if !cl.isErrorAcceptedDuringDeprovision(err) {
-			return err
+			log.Errorf("Error occured when unbinding and deleting application routes: %v", err.Error())
 		}
 	}
 
