@@ -81,6 +81,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	suffix := strings.Split(r.InstanceID, "-")[0]
 
 	destAppsResources := make(map[string]*types.CfAppResource)
+	transaction := NewTransaction()
 
 	log.Infof("Creating main application")
 	destApp, err := cl.cf.CreateApplicationClone(sourceAppGUID, r.SpaceGUID, r.Parameters)
@@ -88,6 +89,8 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 		return nil, err
 	}
 	destAppsResources[sourceAppGUID] = destApp
+	transaction.AddApplication(destApp)
+
 	log.Infof("Creating dependent applications")
 	for _, app := range componentsToSpawn[types.ComponentApp] {
 		if _, ok := destAppsResources[app.GUID]; !ok {
@@ -95,9 +98,11 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 			params := map[string]string{"name": name}
 			appRes, err := cl.cf.CreateApplicationClone(app.GUID, r.SpaceGUID, params)
 			if err != nil {
+				transaction.Rollback(cl)
 				return nil, err
 			}
 			destAppsResources[app.GUID] = appRes
+			transaction.AddApplication(appRes)
 		}
 	}
 
@@ -122,6 +127,10 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	close(errors)
 	close(results)
 	if err := misc.FirstNonEmpty(errors, len(componentsToSpawn[types.ComponentService])); err != nil {
+		for clone := range results {
+			transaction.AddComponentClone(&clone)
+		}
+		transaction.Rollback(cl)
 		return nil, err
 	}
 	log.Infof("Required bindings: %v", required_bindings)
@@ -137,6 +146,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	wg.Wait()
 	close(errorsBind)
 	if err := misc.FirstNonEmpty(errorsBind, required_bindings); err != nil {
+		transaction.Rollback(cl)
 		return nil, err
 	}
 
@@ -163,6 +173,10 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	close(errorsUPS)
 	close(resultsUPS)
 	if err := misc.FirstNonEmpty(errorsUPS, len(componentsToSpawn[types.ComponentUPS])); err != nil {
+		for clone := range resultsUPS {
+			transaction.AddComponentClone(&clone)
+		}
+		transaction.Rollback(cl)
 		return nil, err
 	}
 	log.Infof("Required bindings: %v", required_bindings)
@@ -178,12 +192,14 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	wg.Wait()
 	close(errorsBindUPS)
 	if err := misc.FirstNonEmpty(errorsBindUPS, required_bindings); err != nil {
+		transaction.Rollback(cl)
 		return nil, err
 	}
 
 	//Waiting for copy_bits finish
 	log.Infof("Waiting for copy bits completion")
 	if err := misc.FirstNonEmpty(copyBitsAsyncErrors, len(destAppsResources)); err != nil {
+		transaction.Rollback(cl)
 		return nil, err
 	}
 
@@ -191,6 +207,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	log.Infof("Starting applications")
 	for _, comp := range componentsToSpawn[types.ComponentApp] {
 		if err := cl.cf.StartApp(destAppsResources[comp.GUID]); err != nil {
+			transaction.Rollback(cl)
 			return nil, err
 		}
 		log.Infof("Application %v started", destAppsResources[comp.GUID].Entity.Name)
@@ -211,6 +228,10 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	log.Infof("Discovery: [%v]", order)
 	log.Infof("%v components to remove:", len(order))
 
+	return cl.deprovisionComponents(order)
+}
+
+func (cl *CloudAPI) deprovisionComponents(order []types.Component) error {
 	componentsToRemove := cl.groupComponentsByType(order)
 
 	wg := sync.WaitGroup{}
