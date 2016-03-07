@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package wrapper
+package api
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 	"sync"
 )
 
-func (w *CfAPIWrapper) CreateServiceClone(spaceGUID string, comp types.Component, suffix string,
+func (c *CfAPI) CreateServiceClone(spaceGUID string, comp types.Component, suffix string,
 	resultsCh chan types.ComponentClone, errorsCh chan error, wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -33,7 +33,7 @@ func (w *CfAPIWrapper) CreateServiceClone(spaceGUID string, comp types.Component
 		errorsCh <- errors.New("Service not attached to any application")
 		return
 	}
-	parentApp, err := w.rest.GetAppSummary(comp.DependencyOf[0])
+	parentApp, err := c.GetAppSummary(comp.DependencyOf[0])
 	if err != nil {
 		errorsCh <- err
 		return
@@ -52,7 +52,7 @@ func (w *CfAPIWrapper) CreateServiceClone(spaceGUID string, comp types.Component
 
 	// Create service
 	svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, spaceGUID, svc.Plan)
-	response, err := w.rest.CreateServiceInstance(svcInstanceReq)
+	response, err := c.CreateServiceInstance(svcInstanceReq)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -68,16 +68,16 @@ func (w *CfAPIWrapper) CreateServiceClone(spaceGUID string, comp types.Component
 	return
 }
 
-func (w *CfAPIWrapper) CreateApplicationClone(sourceAppGUID, spaceGUID string, parameters map[string]string) (*types.CfAppResource, error) {
+func (w *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, parameters map[string]string) (*types.CfAppResource, error) {
 	// Gather reference app summary to be used later for creating new instance
-	sourceAppSummary, err := w.rest.GetAppSummary(sourceAppGUID)
+	sourceAppSummary, err := w.GetAppSummary(sourceAppGUID)
 	if err != nil {
 		return nil, err
 	}
 	requestedName := parameters["name"]
 	delete(parameters, "name")
 
-	err = w.rest.AssertAppHasRoutes(sourceAppSummary)
+	err = w.AssertAppHasRoutes(sourceAppSummary)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (w *CfAPIWrapper) CreateApplicationClone(sourceAppGUID, spaceGUID string, p
 		}
 		destApp.Entity.Envs[k] = v
 	}
-	destApp, err = w.rest.CreateApp(destApp.Entity)
+	destApp, err = w.CreateApp(destApp.Entity)
 	if err != nil {
 		return nil, err
 	}
@@ -102,24 +102,15 @@ func (w *CfAPIWrapper) CreateApplicationClone(sourceAppGUID, spaceGUID string, p
 	domainGUID := sourceAppSummary.Routes[0].Domain.GUID
 	domainName := sourceAppSummary.Routes[0].Domain.Name
 
-	route, err := w.rest.CreateRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, spaceGUID})
+	route, err := w.CreateRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, spaceGUID})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := w.rest.AssociateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
+	if err := w.AssociateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
 		return nil, err
 	}
 
 	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
 	return destApp, nil
-}
-
-func (w *CfAPIWrapper) CreateUserProvidedServiceInstance(req *types.CfUserProvidedService) (*types.CfUserProvidedServiceResource, error) {
-	res, err := w.rest.CreateUserProvidedServiceInstance(req)
-	return res, err
-}
-
-func (w *CfAPIWrapper) CopyBits(sourceID string, destID string, asyncError chan error) {
-	w.rest.CopyBits(sourceID, destID, asyncError)
 }

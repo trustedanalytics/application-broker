@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package wrapper
+package api
 
 import (
 	log "github.com/cihub/seelog"
@@ -23,11 +23,11 @@ import (
 	"sync"
 )
 
-func (w *CfAPIWrapper) BindService(appGUID, serviceGUID string, errorsCh chan error, wg *sync.WaitGroup) {
+func (c *CfAPI) BindService(appGUID, serviceGUID string, errorsCh chan error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	// Bind created service
 	svcBindingReq := types.NewCfServiceBindingRequest(appGUID, serviceGUID)
-	svcBindingResp, err := w.rest.CreateServiceBinding(svcBindingReq)
+	svcBindingResp, err := c.CreateServiceBinding(svcBindingReq)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -37,10 +37,10 @@ func (w *CfAPIWrapper) BindService(appGUID, serviceGUID string, errorsCh chan er
 	return
 }
 
-func (w *CfAPIWrapper) UnbindAppServices(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
+func (w *CfAPI) UnbindAppServices(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.rest.GetAppBindigs(appGUID)
+	bindings, err := w.GetAppBindigs(appGUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -52,7 +52,7 @@ func (w *CfAPIWrapper) UnbindAppServices(appGUID string, errorsCh chan error, do
 	for _, loopBinding := range bindings.Resources {
 		go func(binding types.CfBindingResource) {
 			defer wg.Done()
-			if err := w.rest.DeleteBinding(binding); err != nil {
+			if err := w.DeleteBinding(binding); err != nil {
 				results <- err
 				return
 			}

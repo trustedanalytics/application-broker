@@ -67,7 +67,7 @@ func (c *CfAPI) UpdateBroker(brokerGUID string, brokerURL string, username strin
 
 	request, err := http.NewRequest(MethodPut, address, bytes.NewReader(serialized))
 	if err != nil {
-		msg := fmt.Sprintf("Failed to prepare request for: %v %v", MethodPost, address)
+		msg := fmt.Sprintf("Failed to prepare request for: %v %v", MethodPut, address)
 		log.Error(msg)
 		return types.InternalServerError{Context: msg}
 	}

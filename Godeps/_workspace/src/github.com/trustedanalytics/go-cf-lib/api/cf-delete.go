@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package wrapper
+package api
 
 import (
 	log "github.com/cihub/seelog"
@@ -23,11 +23,11 @@ import (
 	"sync"
 )
 
-func (w *CfAPIWrapper) DeleteServiceInstIfUnbound(comp types.Component,
+func (w *CfAPI) DeleteServiceInstIfUnbound(comp types.Component,
 	errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.rest.GetServiceBindings(comp.GUID)
+	bindings, err := w.GetServiceBindings(comp.GUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -35,7 +35,7 @@ func (w *CfAPIWrapper) DeleteServiceInstIfUnbound(comp types.Component,
 	if bindings.TotalResults == 0 {
 		log.Infof("Service %v is not bound to anything", comp.Name)
 		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
-		if err := w.rest.DeleteServiceInstance(comp.GUID); err != nil {
+		if err := w.DeleteServiceInstance(comp.GUID); err != nil {
 			errorsCh <- err
 			return
 		}
@@ -46,11 +46,11 @@ func (w *CfAPIWrapper) DeleteServiceInstIfUnbound(comp types.Component,
 	errorsCh <- nil
 }
 
-func (w *CfAPIWrapper) DeleteUPSInstIfUnbound(comp types.Component,
+func (w *CfAPI) DeleteUPSInstIfUnbound(comp types.Component,
 	errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.rest.GetUserProvidedServiceBindings(comp.GUID)
+	bindings, err := w.GetUserProvidedServiceBindings(comp.GUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -58,7 +58,7 @@ func (w *CfAPIWrapper) DeleteUPSInstIfUnbound(comp types.Component,
 	if bindings.TotalResults == 0 {
 		log.Infof("Service %v is not bound to anything", comp.Name)
 		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
-		if err := w.rest.DeleteUserProvidedServiceInstance(comp.GUID); err != nil {
+		if err := w.DeleteUserProvidedServiceInstance(comp.GUID); err != nil {
 			errorsCh <- err
 			return
 		}
@@ -69,10 +69,10 @@ func (w *CfAPIWrapper) DeleteUPSInstIfUnbound(comp types.Component,
 	errorsCh <- nil
 }
 
-func (w *CfAPIWrapper) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
+func (w *CfAPI) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	appSummary, _ := w.rest.GetAppSummary(appGUID)
+	appSummary, _ := w.GetAppSummary(appGUID)
 	if appSummary == nil {
 		// Application not exist so no routes to remove
 		log.Infof("Application already does not exist so no routes should be deleted")
@@ -88,11 +88,11 @@ func (w *CfAPIWrapper) DeleteRoutes(appGUID string, errorsCh chan error, doneWai
 	for _, loopRoute := range routes {
 		go func(route types.CfAppSummaryRoute) {
 			defer wg.Done()
-			if err := w.rest.UnassociateRoute(appGUID, route.GUID); err != nil {
+			if err := w.UnassociateRoute(appGUID, route.GUID); err != nil {
 				results <- err
 				return
 			}
-			if err := w.rest.DeleteRoute(route.GUID); err != nil {
+			if err := w.DeleteRoute(route.GUID); err != nil {
 				results <- err
 				return
 			}
@@ -101,12 +101,4 @@ func (w *CfAPIWrapper) DeleteRoutes(appGUID string, errorsCh chan error, doneWai
 	}
 	wg.Wait()
 	errorsCh <- helpers.FirstNonEmpty(results, len(routes))
-}
-
-func (w *CfAPIWrapper) DeleteApplication(id string) error {
-	return w.rest.DeleteApp(id)
-}
-
-func (w *CfAPIWrapper) PurgeService(serviceID string, serviceName string, servicePlansURL string) error {
-	return w.rest.PurgeService(serviceID, serviceName, servicePlansURL)
 }

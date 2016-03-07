@@ -55,24 +55,18 @@ func (c *CfAPI) CreateUserProvidedServiceInstance(req *types.CfUserProvidedServi
 func (c *CfAPI) GetUserProvidedService(guid string) (*types.CfUserProvidedServiceResource, error) {
 	address := fmt.Sprintf("%v/v2/user_provided_service_instances/%v", c.BaseAddress, guid)
 	log.Infof("Requesting user provided service retrieval: %v", address)
-	resp, err := c.Get(address)
-
+	resp, err := c.getEntity(address, "user provided service")
 	if err != nil {
-		log.Errorf("Could not get user provided service of guid provided: [%v]", err)
-		return nil, types.InternalServerError{Context: "Request CF for service with given name, failed"}
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Errorf("Problem while getting user provided service with guid: [%v]", err)
-		return nil, types.InternalServerError{Context: "Wrong status code from CF API after trying to get specific user provided service"}
+		return nil, err
 	}
 
-	resource := new(types.CfUserProvidedServiceResource)
-	err = json.NewDecoder(resp.Body).Decode(resource)
+	toReturn := new(types.CfUserProvidedServiceResource)
+	err = json.NewDecoder(resp.Body).Decode(toReturn)
 	if err != nil {
 		return nil, err
 	}
 	log.Debugf("User provided service with guid [%v] found", guid)
-	return resource, nil
+	return toReturn, nil
 }
 
 func (c *CfAPI) CreateUserProvidedServiceBinding(req *types.CfServiceBindingCreateRequest) (*types.CfServiceBindingCreateResponse, error) {

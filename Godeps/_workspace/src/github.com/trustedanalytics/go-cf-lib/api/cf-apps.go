@@ -235,6 +235,11 @@ func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error) {
 		running := true
 		for key, value := range decodedInstances {
 			log.Infof("Instance %v, status: %v", key, value)
+			if value.State == "FLAPPING" {
+				log.Errorf("Application flapping. Stopping spawn.")
+				asyncErr <- types.CcGetInstancesFailedError{"Application flapping"}
+				return
+			}
 			if value.State != "RUNNING" {
 				running = false
 				time.Sleep(timeout)
