@@ -24,8 +24,8 @@ import (
 	"github.com/trustedanalytics/application-broker/env"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/api"
 	"github.com/trustedanalytics/go-cf-lib/types"
-	"github.com/trustedanalytics/go-cf-lib/wrapper"
 	"strings"
 	"sync"
 )
@@ -37,13 +37,13 @@ type appDependencyDiscovererUPS struct {
 }
 
 type CloudAPI struct {
-	cf            *wrapper.CfAPIWrapper
+	cf            *api.CfAPI
 	appDepDiscUps *appDependencyDiscovererUPS
 }
 
 func NewCloudAPI(envs *cfenv.App) *CloudAPI {
 	toReturn := new(CloudAPI)
-	toReturn.cf = wrapper.NewCfAPIWrapper()
+	toReturn.cf = api.NewCfAPI()
 	toReturn.appDepDiscUps = new(appDependencyDiscovererUPS)
 	toReturn.appDepDiscUps.Url = "http://localhost:9998"
 	if envs == nil {
@@ -295,7 +295,7 @@ func (cl *CloudAPI) deprovisionComponents(order []types.Component) error {
 
 	log.Infof("Deleting applications")
 	for _, app := range componentsToRemove[types.ComponentApp] {
-		_ = cl.cf.DeleteApplication(app.GUID)
+		_ = cl.cf.DeleteApp(app.GUID)
 	}
 
 	return nil
