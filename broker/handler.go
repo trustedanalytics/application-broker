@@ -40,7 +40,7 @@ func newHandler(p types.ServiceProviderExtension) *handler {
 //
 // Appends service to the catalog managed by this broker
 //
-// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password) Consumer of this endpoint must login using basic authentication credentials (valid login and password)
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 //     Responses:
 //       201: serviceExtensionResponse
