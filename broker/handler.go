@@ -40,6 +40,8 @@ func newHandler(p types.ServiceProviderExtension) *handler {
 //
 // Appends service to the catalog managed by this broker
 //
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password) Consumer of this endpoint must login using basic authentication credentials (valid login and password)
+//
 //     Responses:
 //       201: serviceExtensionResponse
 //       400: emptyBodyBadRequest
@@ -64,6 +66,8 @@ func (h *handler) append(req *http.Request, params martini.Params) (int, string)
 // swagger:route PUT /v2/catalog/{service_id} updateService
 //
 // Updates service in the catalog managed by this broker
+//
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 //     Responses:
 //       200: serviceExtensionResponse
@@ -97,6 +101,8 @@ func (h *handler) update(req *http.Request, params martini.Params) (int, string)
 //
 // Deletes service description from the catalog
 //
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
+//
 //     Responses:
 //       204: emptyBodyNoContent
 //       400: emptyBodyBadRequest
@@ -115,6 +121,8 @@ func (h *handler) remove(req *http.Request, params martini.Params) (int, string)
 // swagger:route GET /v2/catalog getCatalog
 //
 // Implementation of Service Broker API method (for details check http://docs.cloudfoundry.org/services/api.html).
+//
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 // Returns the catalog of services managed by this broker.
 //
@@ -137,6 +145,8 @@ func (h *handler) catalog(r *http.Request, params martini.Params) (int, string) 
 // swagger:route PUT /v2/service_instances/{instance_id} provisionServiceInstance
 //
 // Implementation of Service Broker API method (for details check http://docs.cloudfoundry.org/services/api.html).
+//
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 // Creates a service instance for specific plan.
 //
@@ -167,6 +177,8 @@ func (h *handler) provision(req *http.Request, params martini.Params) (int, stri
 //
 // Implementation of Service Broker API method (for details check http://docs.cloudfoundry.org/services/api.html).
 //
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
+//
 // Deletes previously created service instance.
 //
 //     Responses:
@@ -188,6 +200,8 @@ func (h *handler) deprovision(req *http.Request, params martini.Params) (int, st
 // swagger:route PUT /service_instances/{instance_id}/service_bindings/{binding_id} bindService
 //
 // Implementation of Service Broker API method (for details check http://docs.cloudfoundry.org/services/api.html).
+//
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 // Binds to specified service instance and
 // returns credentials necessary to establish connection to that service.
@@ -224,6 +238,8 @@ func (h *handler) bind(req *http.Request, params martini.Params) (int, string) {
 // swagger:route DELETE/service_instances/{instance_id}/service_bindings/{binding_id} unbindService
 //
 // Implementation of Service Broker API method (for details check http://docs.cloudfoundry.org/services/api.html).
+//
+// Privilege level: Consumer of this endpoint must login using basic authentication credentials (valid login and password)
 //
 // Unbinds specified service instance.
 //
