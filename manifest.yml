@@ -2,6 +2,7 @@
 applications:
 - name: application-broker
   memory: 256M
+  disk_quota: 128M
   instances: 1
   path: .
   buildpack: go_buildpack
@@ -15,4 +16,4 @@ applications:
     CLIENT_SECRET: <provide oauth2 client secret>
     TOKEN_URL: <provide token url>
     CF_API: <provide api url>
-    VERSION: "0.5.42"
+    VERSION: "0.5.43"
