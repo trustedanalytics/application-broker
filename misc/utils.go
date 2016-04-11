@@ -52,6 +52,8 @@ func GenerateRandomString(length int) string {
 	return string(bytes)
 }
 
+// Available substrings for replacement are $RANDOM8, $RANDOM16, $RANDOM24, $RANDOM32.
+// They will be replaced with random alphanumeric string of length 8, 16, 24, 32 accordingly.
 func ReplaceWithRandom(value string) string {
 	for i := 8; i <= 32; i += 8 {
 		for strings.Contains(value, fmt.Sprintf("$RANDOM%d", i)) {
