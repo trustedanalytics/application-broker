@@ -23,9 +23,10 @@ import (
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
+	"github.com/trustedanalytics/application-broker/env"
 	"github.com/trustedanalytics/application-broker/messagebus"
-	"github.com/trustedanalytics/application-broker/misc"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/types"
 )
 
 // LaunchingService wraps access to db, cloud controller and messagebus
@@ -49,9 +50,9 @@ func New(db dao.Facade, cloud cloud.API, natsInstance messagebus.MessageBus, mes
 
 // InsertToCatalog adds new application description that can be spawned/duplicated on demand
 // Description is stored in underlying implementation of Catalog interface
-func (p *LaunchingService) InsertToCatalog(svc *types.ServiceExtension) error {
-	if !types.Validate(svc) {
-		return misc.InvalidInputError{}
+func (p *LaunchingService) InsertToCatalog(svc *extension.ServiceExtension) error {
+	if !extension.Validate(svc) {
+		return types.InvalidInputError{}
 	}
 
 	if err := p.db.Append(svc); err != nil {
@@ -72,9 +73,9 @@ func (p *LaunchingService) InsertToCatalog(svc *types.ServiceExtension) error {
 
 // UpdateCatalog update application description that can be spawned/duplicated on demand
 // Description is stored in underlying implementation of Catalog interface
-func (p *LaunchingService) UpdateCatalog(svc *types.ServiceExtension) error {
-	if !types.Validate(svc) {
-		return misc.InvalidInputError{}
+func (p *LaunchingService) UpdateCatalog(svc *extension.ServiceExtension) error {
+	if !extension.Validate(svc) {
+		return types.InvalidInputError{}
 	}
 	if err := p.db.Update(svc); err != nil {
 		return err
@@ -98,7 +99,7 @@ func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
 		return err
 	}
 	if len(services) <= 1 {
-		return misc.InternalServerError{Context: "Cannot delete the only service offering. Catalog cannot be empty."}
+		return types.InternalServerError{Context: "Cannot delete the only service offering. Catalog cannot be empty."}
 	}
 
 	hasInstances, err := p.db.HasInstancesOf(serviceID)
@@ -107,7 +108,7 @@ func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
 	}
 
 	if hasInstances {
-		return misc.ExistingInstancesError{}
+		return types.ExistingInstancesError{}
 	}
 
 	if err := p.db.Remove(serviceID); err != nil {
@@ -122,25 +123,17 @@ func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
 }
 
 // GetCatalog parses catalog response
-func (p *LaunchingService) GetCatalog() (*types.CatalogExtension, error) {
+func (p *LaunchingService) GetCatalog() (*extension.CatalogExtension, error) {
 	log.Debug("getting catalog...")
 
 	var err error
-	toReturn := types.CatalogExtension{}
+	toReturn := extension.CatalogExtension{}
 	toReturn.Services, err = p.db.Get()
 
 	if err != nil {
 		return nil, err
 	}
 	return &toReturn, nil
-}
-
-func (p *LaunchingService) DryRun(sourceAppGUID string) ([]types.Component, error) {
-	resp, err := p.cloud.DryRun(sourceAppGUID)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
 }
 
 // CreateService creates a service instance
@@ -180,7 +173,7 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning succeded")
 	p.msgBus.Publish(msg)
 
-	toAppend := types.ServiceInstanceExtension{
+	toAppend := extension.ServiceInstanceExtension{
 		App:       resp.App,
 		ID:        r.InstanceID,
 		ServiceID: r.ServiceID,
@@ -221,16 +214,16 @@ func (p *LaunchingService) BindService(r *cf.ServiceBindingRequest) (*types.Serv
 }
 
 func (p *LaunchingService) UpdateBroker() error {
-	vcap := types.GetVcapApplication()
-	username := misc.GetEnvVarAsString("AUTH_USER", "")
-	password := misc.GetEnvVarAsString("AUTH_PASS", "")
+	vcap := env.GetVcapApplication()
+	username := env.GetEnvVarAsString("AUTH_USER", "")
+	password := env.GetEnvVarAsString("AUTH_PASS", "")
 
 	if len(vcap.Name) == 0 {
-		return misc.InternalServerError{Context: "Application name is not set"}
+		return types.InternalServerError{Context: "Application name is not set"}
 	}
 
 	if len(vcap.Uris) == 0 || len(vcap.Uris[0]) == 0 {
-		return misc.InternalServerError{Context: "Application has no url set"}
+		return types.InternalServerError{Context: "Application has no url set"}
 	}
 	url := fmt.Sprintf("http://%v", vcap.Uris[0])
 

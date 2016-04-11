@@ -8,6 +8,7 @@ applications:
   services:
     - application-broker-mongodb
     - nats-provider
+    - app-dependency-discoverer-ups
   env:
     AUTH_USER: admin
     AUTH_PASS: password
@@ -15,4 +16,4 @@ applications:
     CLIENT_SECRET: <provide oauth2 client secret>
     TOKEN_URL: <provide token url>
     CF_API: <provide api url>
-    VERSION: "0.5.32"
+    VERSION: "0.6.0"

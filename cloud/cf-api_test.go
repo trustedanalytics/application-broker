@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package api
+package cloud
 
 import (
 	"fmt"
@@ -23,8 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/trustedanalytics/application-broker/misc"
-	"github.com/trustedanalytics/application-broker/misc/http-utils"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
 	"time"
 )

@@ -17,13 +17,13 @@
 package dao
 
 import (
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
 )
 
 type Catalog interface {
-	Append(*types.ServiceExtension) error
-	Get() ([]*types.ServiceExtension, error)
-	Find(id string) (*types.ServiceExtension, error)
+	Append(*extension.ServiceExtension) error
+	Get() ([]*extension.ServiceExtension, error)
+	Find(id string) (*extension.ServiceExtension, error)
 	Remove(string) (err error)
-	Update(*types.ServiceExtension) error
+	Update(*extension.ServiceExtension) error
 }

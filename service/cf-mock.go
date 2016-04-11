@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package api
+package service
 
 import (
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/stretchr/testify/mock"
-	"github.com/trustedanalytics/application-broker/types"
 )
 
 type CfMock struct {
 	mock.Mock
 }
 
-func (c *CfMock) Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error) {
+func (c *CfMock) Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error) {
 	args := c.Called(sourceAppGUID, request)
-	if args.Get(0) == nil { //first return value is nil, we test error case then
+	if args.Get(0) == nil {
+		//first return value is nil, we test error case then
 		return nil, args.Get(1).(error)
 	}
-	return args.Get(0).(*types.ServiceCreationResponse), nil
+	return args.Get(0).(*cf.ServiceCreationResponse), nil
 }
 
 func (c *CfMock) Deprovision(appGUID string) error {

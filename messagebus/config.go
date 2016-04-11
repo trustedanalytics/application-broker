@@ -21,7 +21,7 @@ import (
 	log "github.com/cihub/seelog"
 
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/env"
 )
 
 // Config holds values needed to set-up connection with MessageBus
@@ -37,8 +37,8 @@ func (c *Config) TryInitialize(cfEnv *cfenv.App) bool {
 	log.Info("initializing nats config...")
 
 	if cfEnv == nil {
-		c.url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
-		c.subject = misc.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
+		c.url = env.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
+		c.subject = env.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
 
 		if len(c.url) == 0 || len(c.subject) == 0 {
 			log.Debug("Unable to collect nats configuration from local envs")

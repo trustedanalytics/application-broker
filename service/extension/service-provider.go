@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package types
+package extension
 
-import "github.com/cloudfoundry-community/types-cf"
+import (
+	"github.com/cloudfoundry-community/types-cf"
+	"github.com/trustedanalytics/go-cf-lib/types"
+)
 
 // ServiceProviderExtension beside standard cf.ServiceProvider introduces additional API endpoints.
 type ServiceProviderExtension interface {
@@ -33,9 +36,6 @@ type ServiceProviderExtension interface {
 	// GetCatalog returns the catalog of services managed by this broker
 	GetCatalog() (*CatalogExtension, error)
 
-	// DryRun returns a list of components which service consists of
-	DryRun(sourceAppGUID string) ([]Component, error)
-
 	// CreateService creates a service instance for specific plan
 	CreateService(r *cf.ServiceCreationRequest) (*cf.ServiceCreationResponse, error)
 
@@ -44,5 +44,5 @@ type ServiceProviderExtension interface {
 
 	// BindService binds to specified service instance and
 	// Returns credentials necessary to establish connection to that service
-	BindService(r *cf.ServiceBindingRequest) (*ServiceBindingResponse, error)
+	BindService(r *cf.ServiceBindingRequest) (*types.ServiceBindingResponse, error)
 }

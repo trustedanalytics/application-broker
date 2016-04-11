@@ -17,13 +17,12 @@
 package broker
 
 import (
+	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"net/http"
 	"os"
 	"os/signal"
-
-	"fmt"
-	"github.com/trustedanalytics/application-broker/types"
-	"net/http"
 )
 
 // Broker represents a running CF Service Broker API
@@ -32,7 +31,7 @@ type Broker struct {
 }
 
 // New creates a loaded instance of the broker
-func New(p types.ServiceProviderExtension) (*Broker, error) {
+func New(p extension.ServiceProviderExtension) (*Broker, error) {
 	return &Broker{
 		router: newRouter(newHandler(p)),
 	}, nil

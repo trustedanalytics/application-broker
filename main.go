@@ -48,7 +48,7 @@ func main() {
 	}
 
 	db := dao.MongoFactory(cfEnv)
-	cloud := cloud.NewCloudAPI()
+	cloud := cloud.NewCloudAPI(cfEnv)
 	s := service.New(db, cloud, mbus, service.CreationStatusFactory{})
 
 	b, err := broker.New(s)

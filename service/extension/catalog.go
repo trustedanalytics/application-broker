@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package types
+package extension
 
 // CatalogExtension describes Cloud Foundry catalog but holds extended Service informations, also.
 type CatalogExtension struct {

@@ -19,47 +19,71 @@ package cloud
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/nu7hatch/gouuid"
-	"github.com/trustedanalytics/application-broker/cf-rest-api"
-	"github.com/trustedanalytics/application-broker/graph"
+	"github.com/trustedanalytics/application-broker/env"
 	"github.com/trustedanalytics/application-broker/misc"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/types"
+	"github.com/trustedanalytics/go-cf-lib/wrapper"
+	"strings"
 	"sync"
 )
 
-type CloudAPI struct {
-	cf *api.CfAPI
+type appDependencyDiscovererUPS struct {
+	Url      string `json:"url"`
+	AuthUser string `json:"auth_user"`
+	AuthPass string `json:"auth_pass"`
 }
 
-func NewCloudAPI() *CloudAPI {
+type CloudAPI struct {
+	cf            *wrapper.CfAPIWrapper
+	appDepDiscUps *appDependencyDiscovererUPS
+}
+
+func NewCloudAPI(envs *cfenv.App) *CloudAPI {
 	toReturn := new(CloudAPI)
-	toReturn.cf = api.NewCfAPI()
+	toReturn.cf = wrapper.NewCfAPIWrapper()
+	toReturn.appDepDiscUps = new(appDependencyDiscovererUPS)
+	toReturn.appDepDiscUps.Url = "http://localhost:9998"
+	if envs == nil {
+		log.Warnf("CF Env vars not exist. Using %v as app dependency discoverer url",
+			toReturn.appDepDiscUps.Url)
+		return toReturn
+	}
+	appDepUps, err := envs.Services.WithName("app-dependency-discoverer-ups")
+	if err != nil {
+		log.Warnf("app-dependency-discoverer-ups not defined. Using %v as app dependency discoverer url",
+			toReturn.appDepDiscUps.Url)
+		return toReturn
+	}
+	if url, ok := appDepUps.Credentials["url"]; ok {
+		toReturn.appDepDiscUps.Url = url.(string)
+	}
+	if auth_user, ok := appDepUps.Credentials["auth_user"]; ok {
+		toReturn.appDepDiscUps.AuthUser = auth_user.(string)
+	}
+	if auth_pass, ok := appDepUps.Credentials["auth_pass"]; ok {
+		toReturn.appDepDiscUps.AuthPass = auth_pass.(string)
+	}
+
 	return toReturn
 }
 
-// Returns a list of services and apps which would be provisioned in normal run
-func (cl *CloudAPI) DryRun(sourceAppGUID string) ([]types.Component, error) {
-	g := graph.NewGraphAPI()
-	ret, err := g.DryRun(sourceAppGUID)
-	return ret, err
-}
-
 // Provision instantiates service of given type
-func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error) {
-	order, _ := cl.DryRun(sourceAppGUID)
-	log.Infof("Dry run: [%v]", order)
+func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
+	order, _ := cl.Discovery(sourceAppGUID)
+	log.Infof("Discovery: [%v]", order)
 	log.Infof("%v components to spawn:", len(order))
 
 	componentsToSpawn := cl.groupComponentsByType(order)
 
-	commonUUID, _ := uuid.NewV4()
-	suffix := commonUUID.String()[:8]
+	suffix := strings.Split(r.InstanceID, "-")[0]
 
 	destAppsResources := make(map[string]*types.CfAppResource)
 
 	log.Infof("Creating main application")
-	destApp, err := cl.createApplication(sourceAppGUID, r.SpaceGUID, r.Parameters)
+	destApp, err := cl.cf.CreateApplicationClone(sourceAppGUID, r.SpaceGUID, r.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +93,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 		if _, ok := destAppsResources[app.GUID]; !ok {
 			name := fmt.Sprintf("%v-%v", app.Name, suffix)
 			params := map[string]string{"name": name}
-			appRes, err := cl.createApplication(app.GUID, r.SpaceGUID, params)
+			appRes, err := cl.cf.CreateApplicationClone(app.GUID, r.SpaceGUID, params)
 			if err != nil {
 				return nil, err
 			}
@@ -92,7 +116,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	required_bindings := 0
 	for _, comp := range componentsToSpawn[types.ComponentService] {
 		required_bindings += len(comp.DependencyOf)
-		go cl.createService(destApp.Entity.SpaceGUID, comp, suffix, &wg, results, errors)
+		go cl.cf.CreateServiceClone(destApp.Entity.SpaceGUID, comp, suffix, results, errors, &wg)
 	}
 	wg.Wait()
 	close(errors)
@@ -107,7 +131,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	log.Infof("Binding dependent services")
 	for clone := range results {
 		for _, dependent := range clone.Component.DependencyOf {
-			go cl.bindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, &wg, errorsBind)
+			go cl.cf.BindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, errorsBind, &wg)
 		}
 	}
 	wg.Wait()
@@ -132,7 +156,8 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 				}
 			}
 		}
-		go cl.createUserProvidedService(destApp.Entity.SpaceGUID, comp, suffix, url, &wg, resultsUPS, errorsUPS)
+		go cl.CreateUserProvidedServiceClone(destApp.Entity.SpaceGUID, comp, suffix, url,
+			resultsUPS, errorsUPS, &wg)
 	}
 	wg.Wait()
 	close(errorsUPS)
@@ -147,7 +172,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 	log.Infof("Binding dependent user provided services")
 	for clone := range resultsUPS {
 		for _, dependent := range clone.Component.DependencyOf {
-			go cl.bindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, &wg, errorsBindUPS)
+			go cl.cf.BindService(destAppsResources[dependent].Meta.GUID, clone.CloneGUID, errorsBindUPS, &wg)
 		}
 	}
 	wg.Wait()
@@ -173,7 +198,7 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 
 	log.Infof("Service instance [%v] created", destApp.Entity.Name)
 
-	toReturn := types.ServiceCreationResponse{
+	toReturn := extension.ServiceCreationResponse{
 		App: *destApp,
 		ServiceCreationResponse: cf.ServiceCreationResponse{DashboardURL: ""},
 	}
@@ -182,8 +207,8 @@ func (cl *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest
 
 // Deprovision remove instance of given application (that stands behind service instance though)
 func (cl *CloudAPI) Deprovision(appGUID string) error {
-	order, _ := cl.DryRun(appGUID)
-	log.Infof("Dry run: [%v]", order)
+	order, _ := cl.Discovery(appGUID)
+	log.Infof("Discovery: [%v]", order)
 	log.Infof("%v components to remove:", len(order))
 
 	componentsToRemove := cl.groupComponentsByType(order)
@@ -195,7 +220,7 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	results := make(chan error, len(componentsToRemove[types.ComponentApp]))
 	wg.Add(len(componentsToRemove[types.ComponentApp]))
 	for _, app := range componentsToRemove[types.ComponentApp] {
-		go cl.unbindAppServices(app.GUID, results, &wg)
+		go cl.cf.UnbindAppServices(app.GUID, results, &wg)
 	}
 	wg.Wait()
 	close(results)
@@ -209,7 +234,7 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	resultsSvc := make(chan error, len(componentsToRemove[types.ComponentService]))
 	wg.Add(len(componentsToRemove[types.ComponentService]))
 	for _, svc := range componentsToRemove[types.ComponentService] {
-		go cl.deleteServiceInstIfUnbound(svc, resultsSvc, &wg)
+		go cl.cf.DeleteServiceInstIfUnbound(svc, resultsSvc, &wg)
 	}
 	wg.Wait()
 	close(resultsSvc)
@@ -223,7 +248,7 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	resultsUPS := make(chan error, len(componentsToRemove[types.ComponentUPS]))
 	wg.Add(len(componentsToRemove[types.ComponentUPS]))
 	for _, ups := range componentsToRemove[types.ComponentUPS] {
-		go cl.deleteUPSInstIfUnbound(ups, resultsUPS, &wg)
+		go cl.cf.DeleteUPSInstIfUnbound(ups, resultsUPS, &wg)
 	}
 	wg.Wait()
 	close(resultsUPS)
@@ -237,7 +262,7 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 	resultsRoutes := make(chan error, len(componentsToRemove[types.ComponentApp]))
 	wg.Add(len(componentsToRemove[types.ComponentApp]))
 	for _, app := range componentsToRemove[types.ComponentApp] {
-		go cl.deleteRoutes(app.GUID, resultsRoutes, &wg)
+		go cl.cf.DeleteRoutes(app.GUID, resultsRoutes, &wg)
 	}
 	wg.Wait()
 	close(resultsRoutes)
@@ -249,7 +274,7 @@ func (cl *CloudAPI) Deprovision(appGUID string) error {
 
 	log.Infof("Deleting applications")
 	for _, app := range componentsToRemove[types.ComponentApp] {
-		_ = cl.cf.DeleteApp(app.GUID)
+		_ = cl.cf.DeleteApplication(app.GUID)
 	}
 
 	return nil
@@ -269,7 +294,7 @@ func (cl *CloudAPI) UpdateBroker(brokerName string, brokerURL string, username s
 }
 
 func (cl *CloudAPI) CheckIfServiceExists(serviceName string) error {
-	myData := types.GetVcapApplication()
+	myData := env.GetVcapApplication()
 	broker, err := cl.cf.GetBrokers(myData.Name)
 	duplicate, err := cl.cf.GetServiceOfName(serviceName)
 	if err != nil {
@@ -277,7 +302,7 @@ func (cl *CloudAPI) CheckIfServiceExists(serviceName string) error {
 	}
 	if duplicate != nil {
 		if broker.TotalResults == 0 || broker.Resources[0].Meta.GUID != duplicate.Entity.BrokerGUID {
-			return misc.InternalServerError{Context: "Service name already registered in different CF broker!"}
+			return types.InternalServerError{Context: "Service name already registered in different CF broker!"}
 		} else if broker.TotalResults > 0 && broker.Resources[0].Meta.GUID == duplicate.Entity.BrokerGUID {
 			log.Infof("Service name was registered in CF for THIS broker but was missing in internal DB, purging...", serviceName)
 			return cl.cf.PurgeService(duplicate.Meta.GUID, duplicate.Entity.Name, duplicate.Entity.PlansURL)
