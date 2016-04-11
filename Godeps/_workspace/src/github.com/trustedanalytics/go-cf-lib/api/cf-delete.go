@@ -23,11 +23,11 @@ import (
 	"sync"
 )
 
-func (w *CfAPI) DeleteServiceInstIfUnbound(comp types.Component,
+func (c *CfAPI) DeleteServiceInstIfUnbound(comp types.Component,
 	errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.GetServiceBindings(comp.GUID)
+	bindings, err := c.GetServiceBindings(comp.GUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -35,7 +35,7 @@ func (w *CfAPI) DeleteServiceInstIfUnbound(comp types.Component,
 	if bindings.TotalResults == 0 {
 		log.Infof("Service %v is not bound to anything", comp.Name)
 		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
-		if err := w.DeleteServiceInstance(comp.GUID); err != nil {
+		if err := c.DeleteServiceInstance(comp.GUID); err != nil {
 			errorsCh <- err
 			return
 		}
@@ -46,11 +46,11 @@ func (w *CfAPI) DeleteServiceInstIfUnbound(comp types.Component,
 	errorsCh <- nil
 }
 
-func (w *CfAPI) DeleteUPSInstIfUnbound(comp types.Component,
+func (c *CfAPI) DeleteUPSInstIfUnbound(comp types.Component,
 	errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.GetUserProvidedServiceBindings(comp.GUID)
+	bindings, err := c.GetUserProvidedServiceBindings(comp.GUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -58,7 +58,7 @@ func (w *CfAPI) DeleteUPSInstIfUnbound(comp types.Component,
 	if bindings.TotalResults == 0 {
 		log.Infof("Service %v is not bound to anything", comp.Name)
 		log.Infof("Deleting %v instance %v", comp.Type, comp.Name)
-		if err := w.DeleteUserProvidedServiceInstance(comp.GUID); err != nil {
+		if err := c.DeleteUserProvidedServiceInstance(comp.GUID); err != nil {
 			errorsCh <- err
 			return
 		}
@@ -69,10 +69,10 @@ func (w *CfAPI) DeleteUPSInstIfUnbound(comp types.Component,
 	errorsCh <- nil
 }
 
-func (w *CfAPI) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
+func (c *CfAPI) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	appSummary, _ := w.GetAppSummary(appGUID)
+	appSummary, _ := c.GetAppSummary(appGUID)
 	if appSummary == nil {
 		// Application not exist so no routes to remove
 		log.Infof("Application already does not exist so no routes should be deleted")
@@ -88,11 +88,11 @@ func (w *CfAPI) DeleteRoutes(appGUID string, errorsCh chan error, doneWaitGroup 
 	for _, loopRoute := range routes {
 		go func(route types.CfAppSummaryRoute) {
 			defer wg.Done()
-			if err := w.UnassociateRoute(appGUID, route.GUID); err != nil {
+			if err := c.UnassociateRoute(appGUID, route.GUID); err != nil {
 				results <- err
 				return
 			}
-			if err := w.DeleteRoute(route.GUID); err != nil {
+			if err := c.DeleteRoute(route.GUID); err != nil {
 				results <- err
 				return
 			}

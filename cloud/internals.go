@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
@@ -83,18 +84,18 @@ func (cl *CloudAPI) Discovery(sourceAppGUID string) ([]types.Component, error) {
 	if err != nil {
 		msg := fmt.Sprintf("Could not get application stack components: [%v]", err)
 		log.Error(msg)
-		return nil, types.InternalServerError{Context: msg}
+		return nil, errors.Annotate(types.InternalServerError, msg)
 	}
 
 	if response.StatusCode == http.StatusNotFound {
-		return nil, types.EntityNotFoundError{}
+		return nil, types.EntityNotFoundError
 	}
 
 	if response.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("Get application stack components failed. Response from CC: (%d) [%v]",
 			response.StatusCode, helpers.ReaderToString(response.Body))
 		log.Error(msg)
-		return nil, types.InternalServerError{Context: msg}
+		return nil, errors.Annotate(types.InternalServerError, msg)
 	}
 
 	toReturn := make([]types.Component, 0)
@@ -124,7 +125,7 @@ func (cl *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
 	switch err {
 	case nil:
 		return true
-	case types.EntityNotFoundError{}, types.InstanceNotFoundError{}, types.ServiceNotFoundError{}:
+	case types.EntityNotFoundError, types.InstanceNotFoundError, types.ServiceNotFoundError:
 		log.Errorf("Accepted error occured during deprovisioning: %v", err.Error())
 		return true
 	}

@@ -25,7 +25,7 @@ Features
 * Publishing application stack in marketplace
 * Cloning existing stacks of apps, services and user provided services if they create a DAG with single root
 * Replacing $RANDOM8, $RANDOM16, $RANDOM24 and $RANDOM32 in user provided services copied with random string of width 8, 16, 24 or 32 from characterset [A-Za-z0-9]. This can be used to generate new password for every stack spawned. Parts for replacement can be on different levels of JSON in UPS.
-* Linking apps with user provided service with url field with value http://<host>.<domain>. App mentioned has to be in the same space as source app. Cloned user provided service has updated url for cloned application. Convention for user provided services names linking apps is <host>-ups.
+* Linking apps by adding user provided service as JSON containing url field with value http://<host>.<domain>. App mentioned has to be in the same space as source app. Cloned user provided service contains updated url pointing cloned application. Convention for user provided services names linking apps is <host>-ups.
 
 Usage
 -----

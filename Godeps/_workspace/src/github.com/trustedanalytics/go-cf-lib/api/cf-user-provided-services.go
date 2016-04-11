@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
@@ -32,17 +33,17 @@ func (c *CfAPI) CreateUserProvidedServiceInstance(req *types.CfUserProvidedServi
 	marshalled, err := json.Marshal(req)
 	if err != nil {
 		log.Errorf("Could not marshal CfUserProvidedService: [%+v]", req)
-		return nil, types.InternalServerError{Context: "Problem with marshalling request data"}
+		return nil, errors.Annotate(types.InternalServerError, "Problem with marshalling request data")
 	}
 	resp, err := c.Post(address, "application/json", bytes.NewReader(marshalled))
 	if err != nil {
 		log.Errorf("Could not create user provided service instance: [%v]", err)
-		return nil, types.InternalServerError{Context: "Cloud Foundry API was not able to create user provided service instance"}
+		return nil, errors.Annotate(types.InternalServerError, "Cloud Foundry API was not able to create user provided service instance")
 	}
 	if !(resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusAccepted) {
 		// CF 2.07 returns HTTP 201, CF 2.22 returns HTTP 202
 		log.Errorf("createUserProvidedServiceInstance failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		return nil, types.InternalServerError{Context: "Unacceptable response code from Cloud Foundry API after trying to create service instance"}
+		return nil, errors.Annotate(types.InternalServerError, "Unacceptable response code from Cloud Foundry API after trying to create service instance")
 	}
 
 	toReturn := new(types.CfUserProvidedServiceResource)
@@ -75,16 +76,16 @@ func (c *CfAPI) CreateUserProvidedServiceBinding(req *types.CfServiceBindingCrea
 	marshalled, err := json.Marshal(req)
 	if err != nil {
 		log.Errorf("Could not marshal CfServiceInstanceCreateRequest: [%+v]", req)
-		return nil, types.InternalServerError{Context: "Problem with marshalling request data"}
+		return nil, errors.Annotate(types.InternalServerError, "Problem with marshalling request data")
 	}
 	resp, err := c.Post(address, "application/json", bytes.NewReader(marshalled))
 	if err != nil {
 		log.Errorf("Could not create service binding: [%v]", err)
-		return nil, types.InternalServerError{Context: "Cloud Foundry API was not able to create service binding"}
+		return nil, errors.Annotate(types.InternalServerError, "Cloud Foundry API was not able to create service binding")
 	}
 	if resp.StatusCode != http.StatusCreated {
 		log.Errorf("createServiceBinding failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		return nil, types.InternalServerError{Context: "Unacceptable response code from Cloud Foundry API after trying to create service binding"}
+		return nil, errors.Annotate(types.InternalServerError, "Unacceptable response code from Cloud Foundry API after trying to create service binding")
 	}
 
 	toReturn := new(types.CfServiceBindingCreateResponse)

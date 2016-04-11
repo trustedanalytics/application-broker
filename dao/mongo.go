@@ -19,6 +19,7 @@ package dao
 import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"gopkg.in/mgo.v2"
@@ -56,7 +57,7 @@ func (c *Mongo) Get() ([]*extension.ServiceExtension, error) {
 	err := services.Find(nil).All(&result)
 	if err != nil {
 		log.Errorf("Problems while getting catalog: [%v]", err)
-		return nil, types.InternalServerError{Context: "Could not get catalog from DB"}
+		return nil, errors.Annotate(types.InternalServerError, "Could not get catalog from DB")
 	}
 	return result, nil
 }
@@ -69,7 +70,7 @@ func (c *Mongo) Find(id string) (*extension.ServiceExtension, error) {
 	err := services.Find(bson.M{"service.id": id}).One(&result)
 	if err != nil || result == nil {
 		log.Errorf("No service found in catalog for id: [%v], Err: [%v]", id, err)
-		return nil, types.ServiceNotFoundError{}
+		return nil, types.ServiceNotFoundError
 	}
 	return result, nil
 }
@@ -81,18 +82,18 @@ func (c *Mongo) Append(service *extension.ServiceExtension) error {
 	count, _ := services.Find(bson.M{"service.id": service.ID}).Count()
 	if count > 0 {
 		log.Errorf("Service already exists in catalog for id: [%v]", service.ID)
-		return types.ServiceAlreadyExistsError{}
+		return types.ServiceAlreadyExistsError
 	}
 	count, _ = services.Find(bson.M{"service.name": service.Name}).Count()
 	if count > 0 {
 		log.Errorf("Service already exists in catalog for name: [%v]", service.Name)
-		return types.ServiceAlreadyExistsError{}
+		return types.ServiceAlreadyExistsError
 	}
 
 	err := services.Insert(service)
 	if err != nil {
 		log.Errorf("Could not insert service to catalog: [%v]", err)
-		err = types.InternalServerError{Context: "Problem while appending service to DB"}
+		err = errors.Annotate(types.InternalServerError, "Problem while appending service to DB")
 	}
 	return err
 }
@@ -105,7 +106,7 @@ func (c *Mongo) Update(service *extension.ServiceExtension) error {
 	err := services.Update(bson.M{"service.id": service.ID}, service)
 	if err != nil {
 		log.Errorf("Could not insert service to catalog: [%v]", err)
-		err = types.InternalServerError{Context: "Problem while appending service to DB"}
+		err = errors.Annotate(types.InternalServerError, "Problem while appending service to DB")
 	}
 	return err
 }
@@ -117,7 +118,7 @@ func (c *Mongo) Remove(serviceID string) error {
 
 	if err := services.Remove(bson.M{"service.id": serviceID}); err != nil {
 		log.Errorf("Could not remove service from catalog: [%v]", err)
-		return types.InternalServerError{Context: "Problem while removing service from DB"}
+		return errors.Annotate(types.InternalServerError, "Problem while removing service from DB")
 	}
 	return nil
 }
@@ -130,7 +131,7 @@ func (c *Mongo) AppendInstance(instance extension.ServiceInstanceExtension) erro
 	err := instances.Insert(instance)
 	if err != nil {
 		log.Errorf("Could not insert instance to database: [%v]", err)
-		return types.InternalServerError{Context: "Problem with storing svc instance in DB"}
+		return errors.Annotate(types.InternalServerError, "Problem with storing svc instance in DB")
 	}
 	return nil
 }
@@ -144,7 +145,7 @@ func (c *Mongo) FindInstance(id string) (*extension.ServiceInstanceExtension, er
 	instances.Find(bson.M{"id": id}).One(&result)
 	if len(result.ID) == 0 {
 		log.Errorf("No service instance found in database for id: [%v]", id)
-		return nil, types.InstanceNotFoundError{}
+		return nil, types.InstanceNotFoundError
 	}
 	return result, nil
 }
@@ -169,7 +170,7 @@ func (c *Mongo) RemoveInstance(id string) error {
 	err := instances.Remove(bson.M{"id": id})
 	if err != nil {
 		log.Errorf("Could not delete instance %v from database: [%v]", id, err)
-		err = types.InternalServerError{Context: err.Error()}
+		err = errors.Wrap(types.InternalServerError, err)
 	}
 	return err
 }

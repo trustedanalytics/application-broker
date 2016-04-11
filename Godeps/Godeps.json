@@ -64,6 +64,10 @@
 			"Rev": "145b10d659265440f062c31ea15326166bae56ee"
 		},
 		{
+			"ImportPath": "github.com/juju/errors",
+			"Rev": "1b5e39b83d1835fa480e0c2ddefb040ee82d58b3"
+		},
+		{
 			"ImportPath": "github.com/martini-contrib/auth",
 			"Rev": "fa62c19b7ae87da370242054c8beb11af31d327f"
 		},
@@ -114,15 +118,15 @@
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/api",
-			"Rev": "155cf7496afc3aad402fa1812b48996e66aee78c"
+			"Rev": "7070cd6e0853707b50e57ce0ad2ed35a4aada133"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/helpers",
-			"Rev": "155cf7496afc3aad402fa1812b48996e66aee78c"
+			"Rev": "7070cd6e0853707b50e57ce0ad2ed35a4aada133"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/types",
-			"Rev": "155cf7496afc3aad402fa1812b48996e66aee78c"
+			"Rev": "7070cd6e0853707b50e57ce0ad2ed35a4aada133"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

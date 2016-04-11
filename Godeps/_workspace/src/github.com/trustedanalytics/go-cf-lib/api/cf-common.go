@@ -19,6 +19,7 @@ package api
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
@@ -36,7 +37,7 @@ func (c *CfAPI) deleteEntity(url string, entityName string) error {
 	if err != nil {
 		msg := fmt.Sprintf("Could not delete %s: [%v]", entityName, err)
 		log.Error(msg)
-		return types.InternalServerError{Context: msg}
+		return errors.Annotate(types.InternalServerError, msg)
 	}
 	log.Debugf("Delete %s response code: %d", entityName, resp.StatusCode)
 
@@ -48,7 +49,7 @@ func (c *CfAPI) deleteEntity(url string, entityName string) error {
 		msg := fmt.Sprintf("Delete %s failed. Response from CC: (%d) [%v]",
 			entityName, resp.StatusCode, helpers.ReaderToString(resp.Body))
 		log.Error(msg)
-		return types.InternalServerError{Context: msg}
+		return errors.Annotate(types.InternalServerError, msg)
 	}
 
 	return nil
@@ -61,18 +62,18 @@ func (c *CfAPI) getEntity(url string, entityName string) (*http.Response, error)
 	if err != nil {
 		msg := fmt.Sprintf("Could not get %s: [%v]", entityName, err)
 		log.Error(msg)
-		return nil, types.InternalServerError{Context: msg}
+		return nil, errors.Annotate(types.InternalServerError, msg)
 	}
 
 	if response.StatusCode == http.StatusNotFound {
-		return nil, types.EntityNotFoundError{}
+		return nil, types.EntityNotFoundError
 	}
 
 	if response.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("Get %s failed. Response from CC: (%d) [%v]",
 			entityName, response.StatusCode, helpers.ReaderToString(response.Body))
 		log.Error(msg)
-		return nil, types.InternalServerError{Context: msg}
+		return nil, errors.Annotate(types.InternalServerError, msg)
 	}
 
 	return response, nil

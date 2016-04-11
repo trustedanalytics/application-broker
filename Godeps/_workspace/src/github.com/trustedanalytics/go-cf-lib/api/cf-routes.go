@@ -32,16 +32,16 @@ func (c *CfAPI) CreateRoute(req *types.CfCreateRouteRequest) (*types.CfRouteReso
 	marshalled, err := json.Marshal(req)
 	if err != nil {
 		log.Errorf("Could not marshal CfCreateRouteRequest: [%+v]", req)
-		return nil, types.InternalServerError{}
+		return nil, types.InternalServerError
 	}
 	resp, err := c.Post(address, "application/json", bytes.NewReader(marshalled))
 	if err != nil {
 		log.Errorf("Could not create route: [%v]", err)
-		return nil, types.InternalServerError{}
+		return nil, types.InternalServerError
 	}
 	if resp.StatusCode != http.StatusCreated {
 		log.Errorf("CreateRoute failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		return nil, types.InternalServerError{}
+		return nil, types.InternalServerError
 	}
 
 	toReturn := new(types.CfRouteResource)
@@ -59,7 +59,7 @@ func (c *CfAPI) AssociateRoute(appID string, routeID string) error {
 	resp, err := c.Do(req)
 	if err != nil {
 		log.Errorf("Could not associate app with route: [%v]", err)
-		return types.InternalServerError{}
+		return types.InternalServerError
 	}
 
 	log.Debugf("AssociateRoute status code: [%v]", resp.StatusCode)

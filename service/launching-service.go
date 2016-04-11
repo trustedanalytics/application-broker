@@ -21,6 +21,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
 	"github.com/trustedanalytics/application-broker/env"
@@ -52,7 +53,7 @@ func New(db dao.Facade, cloud cloud.API, natsInstance messagebus.MessageBus, mes
 // Description is stored in underlying implementation of Catalog interface
 func (p *LaunchingService) InsertToCatalog(svc *extension.ServiceExtension) error {
 	if !extension.Validate(svc) {
-		return types.InvalidInputError{}
+		return types.InvalidInputError
 	}
 
 	if err := p.db.Append(svc); err != nil {
@@ -75,7 +76,7 @@ func (p *LaunchingService) InsertToCatalog(svc *extension.ServiceExtension) erro
 // Description is stored in underlying implementation of Catalog interface
 func (p *LaunchingService) UpdateCatalog(svc *extension.ServiceExtension) error {
 	if !extension.Validate(svc) {
-		return types.InvalidInputError{}
+		return types.InvalidInputError
 	}
 	if err := p.db.Update(svc); err != nil {
 		return err
@@ -99,7 +100,7 @@ func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
 		return err
 	}
 	if len(services) <= 1 {
-		return types.InternalServerError{Context: "Cannot delete the only service offering. Catalog cannot be empty."}
+		return errors.Annotate(types.InternalServerError, "Cannot delete the only service offering. Catalog cannot be empty.")
 	}
 
 	hasInstances, err := p.db.HasInstancesOf(serviceID)
@@ -108,7 +109,7 @@ func (p *LaunchingService) DeleteFromCatalog(serviceID string) error {
 	}
 
 	if hasInstances {
-		return types.ExistingInstancesError{}
+		return types.ExistingInstancesError
 	}
 
 	if err := p.db.Remove(serviceID); err != nil {
@@ -219,11 +220,11 @@ func (p *LaunchingService) UpdateBroker() error {
 	password := env.GetEnvVarAsString("AUTH_PASS", "")
 
 	if len(vcap.Name) == 0 {
-		return types.InternalServerError{Context: "Application name is not set"}
+		return errors.Annotate(types.InternalServerError, "Application name is not set")
 	}
 
 	if len(vcap.Uris) == 0 || len(vcap.Uris[0]) == 0 {
-		return types.InternalServerError{Context: "Application has no url set"}
+		return errors.Annotate(types.InternalServerError, "Application has no url set")
 	}
 	url := fmt.Sprintf("http://%v", vcap.Uris[0])
 

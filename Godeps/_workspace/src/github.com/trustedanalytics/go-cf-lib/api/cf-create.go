@@ -68,16 +68,16 @@ func (c *CfAPI) CreateServiceClone(spaceGUID string, comp types.Component, suffi
 	return
 }
 
-func (w *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, parameters map[string]string) (*types.CfAppResource, error) {
+func (c *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, parameters map[string]string) (*types.CfAppResource, error) {
 	// Gather reference app summary to be used later for creating new instance
-	sourceAppSummary, err := w.GetAppSummary(sourceAppGUID)
+	sourceAppSummary, err := c.GetAppSummary(sourceAppGUID)
 	if err != nil {
 		return nil, err
 	}
 	requestedName := parameters["name"]
 	delete(parameters, "name")
 
-	err = w.AssertAppHasRoutes(sourceAppSummary)
+	err = c.AssertAppHasRoutes(sourceAppSummary)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (w *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, paramete
 		}
 		destApp.Entity.Envs[k] = v
 	}
-	destApp, err = w.CreateApp(destApp.Entity)
+	destApp, err = c.CreateApp(destApp.Entity)
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +102,12 @@ func (w *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, paramete
 	domainGUID := sourceAppSummary.Routes[0].Domain.GUID
 	domainName := sourceAppSummary.Routes[0].Domain.Name
 
-	route, err := w.CreateRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, spaceGUID})
+	route, err := c.CreateRoute(&types.CfCreateRouteRequest{requestedName, domainGUID, spaceGUID})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := w.AssociateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
+	if err := c.AssociateRoute(destApp.Meta.GUID, route.Meta.GUID); err != nil {
 		return nil, err
 	}
 

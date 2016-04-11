@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/juju/errors"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
@@ -36,11 +37,11 @@ func (c *CfAPI) CreateApp(app types.CfApp) (*types.CfAppResource, error) {
 
 	if err != nil {
 		log.Errorf("Could not create new app: [%v]", err)
-		return nil, types.InternalServerError{}
+		return nil, types.InternalServerError
 	}
 	if resp.StatusCode != http.StatusCreated {
 		log.Errorf("CreateApp failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		return nil, types.InternalServerError{}
+		return nil, types.InternalServerError
 	}
 
 	toReturn := new(types.CfAppResource)
@@ -55,9 +56,9 @@ func (c *CfAPI) GetAppSummary(id string) (*types.CfAppSummary, error) {
 	resp, err := c.getEntity(address, "application summary")
 	if err != nil {
 		switch err {
-		case types.EntityNotFoundError{}:
+		case types.EntityNotFoundError:
 			log.Errorf("Application %v not found", id)
-			return nil, types.InternalServerError{Context: err.Error()}
+			return nil, errors.Wrap(types.InternalServerError, err)
 		default:
 			log.Errorf("Failed to get application summary: %v", err.Error())
 			return nil, err
@@ -66,7 +67,7 @@ func (c *CfAPI) GetAppSummary(id string) (*types.CfAppSummary, error) {
 
 	toReturn := new(types.CfAppSummary)
 	if err := json.NewDecoder(resp.Body).Decode(toReturn); err != nil {
-		log.Errorf("Error decoding AppSummary response: [%v]", err)
+		log.Errorf("Error decoding AppSummary response: [%v]", err.Error())
 		return nil, err
 	}
 	log.Debugf("getAppSummary status code: [%v]", resp.StatusCode)
@@ -76,7 +77,7 @@ func (c *CfAPI) GetAppSummary(id string) (*types.CfAppSummary, error) {
 
 func (c *CfAPI) AssertAppHasRoutes(appSummary *types.CfAppSummary) error {
 	if len(appSummary.Routes) == 0 {
-		return types.InternalServerError{Context: "Reference app has no route associated"}
+		return errors.Annotate(types.InternalServerError, "Reference app has no route associated")
 	}
 	return nil
 }
@@ -121,11 +122,11 @@ func (c *CfAPI) CopyBits(sourceID string, destID string, asyncError chan error) 
 
 	if err != nil {
 		log.Errorf("Could not copy bits: [%v]", err)
-		asyncError <- types.InvalidInputError{}
+		asyncError <- types.InvalidInputError
 		return
 	} else if resp.StatusCode != http.StatusCreated {
 		log.Errorf("CopyBits failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		asyncError <- types.InternalServerError{}
+		asyncError <- types.InternalServerError
 		return
 	}
 
@@ -133,13 +134,13 @@ func (c *CfAPI) CopyBits(sourceID string, destID string, asyncError chan error) 
 	json.NewDecoder(resp.Body).Decode(jobResponse)
 	for jobResponse.Entity.Status != "finished" {
 		if resp, err = c.Get(c.BaseAddress + jobResponse.Meta.URL); err != nil {
-			asyncError <- types.CcJobFailedError{err.Error()}
+			asyncError <- errors.Wrap(types.CcJobFailedError, err)
 			return
 		}
 		json.NewDecoder(resp.Body).Decode(jobResponse)
 		log.Debugf("Copy_bits job check: [%v]", jobResponse.Entity.Status)
 		if jobResponse.Entity.Status == "failed" {
-			asyncError <- types.CcJobFailedError{jobResponse.Entity.Error}
+			asyncError <- errors.Annotate(types.CcJobFailedError, jobResponse.Entity.Error)
 			return
 		}
 		if jobResponse.Entity.Status == "queued" {
@@ -160,10 +161,10 @@ func (c *CfAPI) RestageApp(appGUID string) error {
 	resp, err := c.Do(request)
 	if err != nil {
 		log.Errorf("Could not restage app: [%v]", err)
-		return types.CcRestageFailedError{err.Error()}
+		return errors.Wrap(types.CcRestageFailedError, err)
 	} else if resp.StatusCode != http.StatusCreated {
 		log.Errorf("RestageApp finished with error: %v", helpers.ReaderToString(resp.Body))
-		return types.CcRestageFailedError{"Unexpected HTTP status returned from CC"}
+		return errors.Annotate(types.CcRestageFailedError, "Unexpected HTTP status returned from CC")
 	}
 
 	restagedApp := new(types.CfAppResource)
@@ -181,10 +182,10 @@ func (c *CfAPI) UpdateApp(app *types.CfAppResource) error {
 	resp, err := c.Do(request)
 	if err != nil {
 		log.Errorf("Could not update app: [%v]", err)
-		return types.CcUpdateFailedError{err.Error()}
+		return errors.Wrap(types.CcUpdateFailedError, err)
 	} else if resp.StatusCode != http.StatusCreated {
 		log.Errorf("UpdateApp finished with error: %v", helpers.ReaderToString(resp.Body))
-		return types.CcUpdateFailedError{"Unexpected HTTP status returned from CC:" + resp.Status}
+		return errors.Annotate(types.CcUpdateFailedError, "Unexpected HTTP status returned from CC:"+resp.Status)
 	}
 	return nil
 }
@@ -204,7 +205,7 @@ func (c *CfAPI) StartApp(app *types.CfAppResource) error {
 			return err
 		}
 	case <-time.After(5 * time.Minute):
-		return types.TimeoutOccurredError{}
+		return types.TimeoutOccurredError
 	}
 	return nil
 }
@@ -218,7 +219,7 @@ func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error) {
 		resp, err := c.Get(address)
 		if err != nil {
 			log.Errorf("Could not get app instances: [%v]", err)
-			asyncErr <- types.CcGetInstancesFailedError{err.Error()}
+			asyncErr <- errors.Wrap(types.CcGetInstancesFailedError, err)
 			return
 		} else if resp.StatusCode != http.StatusOK {
 			log.Debugf("waitForAppRunning finished with error: %v", helpers.ReaderToString(resp.Body))
@@ -228,7 +229,7 @@ func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error) {
 
 		decodedInstances := map[string]types.CfAppInstance{}
 		if err := json.NewDecoder(resp.Body).Decode(&decodedInstances); err != nil {
-			asyncErr <- types.CcGetInstancesFailedError{err.Error()}
+			asyncErr <- errors.Wrap(types.CcGetInstancesFailedError, err)
 			return
 		}
 
@@ -237,7 +238,7 @@ func (c *CfAPI) waitForAppRunning(appGUID string, asyncErr chan error) {
 			log.Infof("Instance %v, status: %v", key, value)
 			if value.State == "FLAPPING" {
 				log.Errorf("Application flapping. Stopping spawn.")
-				asyncErr <- types.CcGetInstancesFailedError{"Application flapping"}
+				asyncErr <- errors.Annotate(types.CcGetInstancesFailedError, "Application flapping")
 				return
 			}
 			if value.State != "RUNNING" {

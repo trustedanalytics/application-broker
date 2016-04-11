@@ -16,90 +16,18 @@
 
 package types
 
-type InvalidInputError struct{}
+import "github.com/juju/errors"
 
-func (i InvalidInputError) Error() string {
-	return "Invalid request body"
-}
-
-type InstanceAlreadyExistsError struct{}
-
-func (i InstanceAlreadyExistsError) Error() string {
-	return "Such an instance already exists"
-}
-
-type ServiceAlreadyExistsError struct{}
-
-func (i ServiceAlreadyExistsError) Error() string {
-	return "Service already exists"
-}
-
-type ServiceNotFoundError struct{}
-
-func (i ServiceNotFoundError) Error() string {
-	return "No such service exists"
-}
-
-type InstanceNotFoundError struct{}
-
-func (i InstanceNotFoundError) Error() string {
-	return "No such instance exists"
-}
-
-type EntityNotFoundError struct{}
-
-func (i EntityNotFoundError) Error() string {
-	return "Entity does not exist"
-}
-
-type InternalServerError struct {
-	Context string
-}
-
-func (i InternalServerError) Error() string {
-	return "Some internal error occurred: " + i.Context
-}
-
-type CcJobFailedError struct {
-	InternalCfMessage string
-}
-
-func (i CcJobFailedError) Error() string {
-	return "Error occurred while copying bits: " + i.InternalCfMessage
-}
-
-type CcRestageFailedError struct {
-	InternalCfMessage string
-}
-
-func (i CcRestageFailedError) Error() string {
-	return "Error occurred while restaging: " + i.InternalCfMessage
-}
-
-type CcUpdateFailedError struct {
-	InternalCfMessage string
-}
-
-func (i CcUpdateFailedError) Error() string {
-	return "Error occurred while app updating: " + i.InternalCfMessage
-}
-
-type CcGetInstancesFailedError struct {
-	InternalCfMessage string
-}
-
-func (i CcGetInstancesFailedError) Error() string {
-	return "Error occurred while getting app instances: " + i.InternalCfMessage
-}
-
-type TimeoutOccurredError struct{}
-
-func (i TimeoutOccurredError) Error() string {
-	return "Asynchronous call timeouted"
-}
-
-type ExistingInstancesError struct{}
-
-func (i ExistingInstancesError) Error() string {
-	return "Can't remove service with existing instances from catalog"
-}
+var InvalidInputError error = errors.New("Invalid request body")
+var InstanceAlreadyExistsError = errors.New("Such an instance already exists")
+var ServiceAlreadyExistsError = errors.New("Service already exists")
+var ServiceNotFoundError = errors.New("No such service exists")
+var InstanceNotFoundError = errors.New("No such instance exists")
+var EntityNotFoundError = errors.New("Entity does not exist")
+var InternalServerError = errors.New("Some internal error occurred")
+var CcJobFailedError = errors.New("Error occurred while copying bits")
+var CcRestageFailedError = errors.New("Error occurred while restaging")
+var CcUpdateFailedError = errors.New("Error occurred while app updating")
+var CcGetInstancesFailedError = errors.New("Error occurred while getting app instances")
+var TimeoutOccurredError = errors.New("Asynchronous call timeouted")
+var ExistingInstancesError = errors.New("Can't remove service with existing instances from catalog")

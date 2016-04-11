@@ -63,7 +63,7 @@ func (h *handler) update(req *http.Request, params martini.Params) (int, string)
 	}
 	if service_id != toUpdate.ID {
 		log.Warn("Service id in URL different from service id in body send")
-		return handleServiceError(types.InvalidInputError{})
+		return handleServiceError(types.InvalidInputError)
 	}
 	log.Debugf("handler provisioning update decoded: %+v", toUpdate)
 
@@ -162,14 +162,14 @@ func handleDecodingError(err error) (int, string) {
 func handleServiceError(err error) (int, string) {
 	log.Errorf("handler service error: %v", err)
 	switch err {
-	case types.ServiceAlreadyExistsError{}:
+	case types.ServiceAlreadyExistsError:
 		return marshalEntity(responseEntity{http.StatusConflict, empty})
-	case types.InvalidInputError{}:
+	case types.InvalidInputError:
 		return marshalEntity(responseEntity{http.StatusBadRequest, empty})
-	case types.InstanceNotFoundError{}, types.ServiceNotFoundError{}:
+	case types.InstanceNotFoundError, types.ServiceNotFoundError:
 		return marshalEntity(responseEntity{http.StatusNotFound, empty})
-	case types.InternalServerError{}:
-		return marshalEntity(responseEntity{http.StatusInternalServerError, err.(types.InternalServerError).Context})
+	case types.InternalServerError:
+		return marshalEntity(responseEntity{http.StatusInternalServerError, err.Error()})
 	default:
 		return marshalEntity(responseEntity{
 			http.StatusInternalServerError,

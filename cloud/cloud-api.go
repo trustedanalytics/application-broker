@@ -21,7 +21,8 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/trustedanalytics/application-broker/env"
+	"github.com/juju/errors"
+	"github.com/trustedanalytics/application-broker/client"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/api"
@@ -30,42 +31,15 @@ import (
 	"sync"
 )
 
-type appDependencyDiscovererUPS struct {
-	Url      string `json:"url"`
-	AuthUser string `json:"auth_user"`
-	AuthPass string `json:"auth_pass"`
-}
-
 type CloudAPI struct {
 	cf            *api.CfAPI
-	appDepDiscUps *appDependencyDiscovererUPS
+	appDepDiscUps *client.AppDependencyDiscovererUPS
 }
 
 func NewCloudAPI(envs *cfenv.App) *CloudAPI {
 	toReturn := new(CloudAPI)
 	toReturn.cf = api.NewCfAPI()
-	toReturn.appDepDiscUps = new(appDependencyDiscovererUPS)
-	toReturn.appDepDiscUps.Url = "http://localhost:9998"
-	if envs == nil {
-		log.Warnf("CF Env vars not exist. Using %v as app dependency discoverer url",
-			toReturn.appDepDiscUps.Url)
-		return toReturn
-	}
-	appDepUps, err := envs.Services.WithName("app-dependency-discoverer-ups")
-	if err != nil {
-		log.Warnf("app-dependency-discoverer-ups not defined. Using %v as app dependency discoverer url",
-			toReturn.appDepDiscUps.Url)
-		return toReturn
-	}
-	if url, ok := appDepUps.Credentials["url"]; ok {
-		toReturn.appDepDiscUps.Url = url.(string)
-	}
-	if auth_user, ok := appDepUps.Credentials["auth_user"]; ok {
-		toReturn.appDepDiscUps.AuthUser = auth_user.(string)
-	}
-	if auth_pass, ok := appDepUps.Credentials["auth_pass"]; ok {
-		toReturn.appDepDiscUps.AuthPass = auth_pass.(string)
-	}
+	toReturn.appDepDiscUps = client.NewAppDependencyDiscovererUPS(envs)
 
 	return toReturn
 }
@@ -323,7 +297,7 @@ func (cl *CloudAPI) CheckIfServiceExists(serviceName string) error {
 	}
 	if duplicate != nil {
 		if broker.TotalResults == 0 || broker.Resources[0].Meta.GUID != duplicate.Entity.BrokerGUID {
-			return types.InternalServerError{Context: "Service name already registered in different CF broker!"}
+			return errors.Annotate(types.InternalServerError, "Service name already registered in different CF broker!")
 		} else if broker.TotalResults > 0 && broker.Resources[0].Meta.GUID == duplicate.Entity.BrokerGUID {
 			log.Infof("Service name was registered in CF for THIS broker but was missing in internal DB, purging...", serviceName)
 			return cl.cf.PurgeService(duplicate.Meta.GUID, duplicate.Entity.Name, duplicate.Entity.PlansURL)
