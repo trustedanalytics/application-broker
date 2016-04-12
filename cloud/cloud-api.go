@@ -23,6 +23,7 @@ import (
 	"github.com/cloudfoundry-community/types-cf"
 	"github.com/juju/errors"
 	"github.com/trustedanalytics/application-broker/client"
+	"github.com/trustedanalytics/application-broker/env"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/api"

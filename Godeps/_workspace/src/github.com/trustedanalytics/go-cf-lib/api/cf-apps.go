@@ -87,7 +87,7 @@ func (c *CfAPI) DeleteApp(id string) error {
 	return c.deleteEntity(address, "application")
 }
 
-func (c *CfAPI) GetAppBindigs(id string) (*types.CfBindingsResources, error) {
+func (c *CfAPI) GetAppBindings(id string) (*types.CfBindingsResources, error) {
 	address := fmt.Sprintf("%v/v2/apps/%v/service_bindings", c.BaseAddress, id)
 	response, err := c.getEntity(address, "app bindings")
 	if err != nil {

@@ -40,7 +40,7 @@ func (c *CfAPI) BindService(appGUID, serviceGUID string, errorsCh chan error, wg
 func (w *CfAPI) UnbindAppServices(appGUID string, errorsCh chan error, doneWaitGroup *sync.WaitGroup) {
 	defer doneWaitGroup.Done()
 
-	bindings, err := w.GetAppBindigs(appGUID)
+	bindings, err := w.GetAppBindings(appGUID)
 	if err != nil {
 		errorsCh <- err
 		return
