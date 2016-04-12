@@ -102,7 +102,7 @@ var _ = Describe("Handler", func() {
 		Context("when service does not exist", func() {
 			It("404 not found should be returned", func() {
 				params := martini.Params{"service_id": "not-existing-id"}
-				mongoMock.On("Find", "not-existing-id").Return(nil, types.ServiceNotFoundError{})
+				mongoMock.On("Find", "not-existing-id").Return(nil, types.ServiceNotFoundError)
 
 				code, _ := sut.remove(nil, params)
 				Expect(code).To(Equal(http.StatusNotFound))

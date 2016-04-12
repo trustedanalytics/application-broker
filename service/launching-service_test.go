@@ -89,7 +89,7 @@ var _ = Describe("Launching service", func() {
 				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 				err := sut.InsertToCatalog(service)
 
-				Expect(err).To(Equal(types.InvalidInputError{}))
+				Expect(err).To(Equal(types.InvalidInputError))
 				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Append", 0)
 			})
 		})
@@ -138,7 +138,7 @@ var _ = Describe("Launching service", func() {
 
 				err := sut.DeleteFromCatalog("fakeId")
 				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError(types.ExistingInstancesError{}))
+				Expect(err).Should(MatchError(types.ExistingInstancesError))
 			})
 		})
 
