@@ -113,7 +113,9 @@ Development
 
 ### Prerequisites
 
-To locally develop this service broker, we encourage you to use lightweight reference app that will push and start fast. Testing won't take too much time. You can use sampleApp we placed in functional_tests/sampleApp directory.
+Application broker is using [app-dependency-discoverer] (https://github.com/intel-data/app-dependency-discoverer) so you need to run it locally before using application-broker. You also need to specify url and credentials to it in app-dependency-discoverer-ups with content described earlier.
+
+To locally develop this service broker, we encourage you to use lightweight reference stack that will push and start fast. Testing won't take too much time.
 
 Additionally you will need mongodb instance. Install it by using package-manager your distro provides. For Ubuntu/Debian it will be: `sudo apt-get install mongodb`. Local Application Broker will connect to it on default port so no additional configuration is needed.
 
@@ -149,22 +151,6 @@ export PATH=$PATH:$GOPATH/bin
 #commands above need to be executed just once
 ginkgo -r
 ```
-
-### Functional tests
-In functional_tests directory there is a bunch of bash scripts that help test Application Broker in broader context. Basically it needs regular CF environment to operate on. Application Broker itself is not pushed to the cloud but sampleApp is. Then, when testing provision, we request new instance creation in locally running broker but actual copy of sampleApp is done in the cloud. The same with bindings and deprovisioning.
-
- 1. To use environment of your choice execute`source envs` in two shells
-	 1. The one you run `gin` in.
-	 2. The one you execute functional tests in.
- 2. To push referenceApp automatically run `setCFandPushSampleApp.sh`
- 3. To test registering referenceApp in catalog run `registerSampleAppInCatalog.sh`
- 4. To test provisioning new service instance run `provision.sh`
- 5. To test bindingCreation of existing instance run `createBinding.sh`
- 6. To test deprovisioning of existing instance run `deprovision.sh`
-
-> Notice that scripts depend on each other. They shall be executed in order.
-
-
 
 ### IDE
 We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/) as IDE with [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin). To apply formatting automatically on every save you may use go-fmt with [File Watcher plugin](http://www.idmworks.com/blog/entry/automatically-calling-go-fmt-from-intellij).
