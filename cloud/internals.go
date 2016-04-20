@@ -30,7 +30,7 @@ import (
 )
 
 // Clones user provided service with additional replacements of its content
-func (cl *CloudAPI) CreateUserProvidedServiceClone(spaceGUID string, comp types.Component, suffix, url string,
+func (cloud *CloudAPI) CreateUserProvidedServiceClone(spaceGUID string, comp types.Component, suffix, url string,
 	results chan types.ComponentClone, errorsCh chan error, wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -38,7 +38,7 @@ func (cl *CloudAPI) CreateUserProvidedServiceClone(spaceGUID string, comp types.
 	log.Debugf("Create dependent user provided service: service=[%v])", serviceName)
 
 	// Retrieve UPS
-	response, err := cl.cf.GetUserProvidedService(comp.GUID)
+	response, err := cloud.cf.GetUserProvidedService(comp.GUID)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -55,9 +55,9 @@ func (cl *CloudAPI) CreateUserProvidedServiceClone(spaceGUID string, comp types.
 		response.Entity.Name = fmt.Sprintf("%v-ups", strings.Split(url, ".")[0])
 	}
 	// Generate random values where needed
-	_ = cl.applyAdditionalReplacementsInUPSCredentials(response)
+	_ = cloud.applyAdditionalReplacementsInUPSCredentials(response)
 
-	response, err = cl.cf.CreateUserProvidedServiceInstance(&response.Entity)
+	response, err = cloud.cf.CreateUserProvidedServiceInstance(&response.Entity)
 	if err != nil {
 		errorsCh <- err
 		return
@@ -73,13 +73,13 @@ func (cl *CloudAPI) CreateUserProvidedServiceClone(spaceGUID string, comp types.
 	return
 }
 
-func (cl *CloudAPI) Discovery(sourceAppGUID string) ([]types.Component, error) {
-	address := fmt.Sprintf("%v/v1/discover/%v", cl.appDepDiscUps.Url, sourceAppGUID)
+func (cloud *CloudAPI) Discovery(sourceAppGUID string) ([]types.Component, error) {
+	address := fmt.Sprintf("%v/v1/discover/%v", cloud.appDepDiscUps.Url, sourceAppGUID)
 	log.Infof("Getting application stack components: %v", address)
 
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", address, nil)
-	request.SetBasicAuth(cl.appDepDiscUps.AuthUser, cl.appDepDiscUps.AuthPass)
+	request.SetBasicAuth(cloud.appDepDiscUps.AuthUser, cloud.appDepDiscUps.AuthPass)
 	response, err := client.Do(request)
 	if err != nil {
 		msg := fmt.Sprintf("Could not get application stack components: [%v]", err)
@@ -105,7 +105,7 @@ func (cl *CloudAPI) Discovery(sourceAppGUID string) ([]types.Component, error) {
 	return toReturn, nil
 }
 
-func (cl *CloudAPI) groupComponentsByType(order []types.Component) map[types.ComponentType][]types.Component {
+func (cloud *CloudAPI) groupComponentsByType(order []types.Component) map[types.ComponentType][]types.Component {
 	groupedComponents := make(map[types.ComponentType][]types.Component)
 	groupedComponents[types.ComponentApp] = []types.Component{}
 	groupedComponents[types.ComponentUPS] = []types.Component{}
@@ -121,7 +121,7 @@ func (cl *CloudAPI) groupComponentsByType(order []types.Component) map[types.Com
 	return groupedComponents
 }
 
-func (cl *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
+func (cloud *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
 	switch err {
 	case nil:
 		return true
@@ -132,7 +132,7 @@ func (cl *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
 	return false
 }
 
-func (cl *CloudAPI) applyAdditionalReplacementsInUPSCredentials(response *types.CfUserProvidedServiceResource) error {
+func (cloud *CloudAPI) applyAdditionalReplacementsInUPSCredentials(response *types.CfUserProvidedServiceResource) error {
 	credentials, err := json.Marshal(response.Entity.Credentials)
 	if err != nil {
 		return err

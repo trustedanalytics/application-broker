@@ -52,7 +52,7 @@ func (t *Transaction) AddComponentClone(clone *types.ComponentClone) {
 	}
 }
 
-func (t *Transaction) Rollback(cl *CloudAPI) {
+func (t *Transaction) Rollback(cloud *CloudAPI) {
 	log.Errorf("Aborting transaction. Deprovisioning already spawned components")
-	cl.deprovisionComponents(t.components)
+	cloud.deprovisionComponents(t.components)
 }

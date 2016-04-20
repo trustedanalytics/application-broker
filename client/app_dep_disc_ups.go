@@ -31,7 +31,7 @@ func NewAppDependencyDiscovererUPS(envs *cfenv.App) *AppDependencyDiscovererUPS 
 	appDepDiscUps := new(AppDependencyDiscovererUPS)
 	appDepDiscUps.Url = "http://localhost:9998"
 	if envs == nil {
-		log.Warnf("CF Env vars not exist. Using %v as app dependency discoverer url",
+		log.Warnf("CF Env vars do not exist. Using %v as app dependency discoverer url",
 			appDepDiscUps.Url)
 		return appDepDiscUps
 	}
