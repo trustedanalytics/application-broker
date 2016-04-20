@@ -23,9 +23,35 @@ Features
 --------
 
 * Publishing application stack in marketplace
+
+[![Example stack](https://github.com/intel-data/application-broker/blob/DPNG-5455-modularization/app_in_marketplace.png)](https://github.com/intel-data/application-broker/blob/DPNG-5455-modularization/app_in_marketplace.png)
+
 * Cloning existing stacks of apps, services and user provided services if they create a DAG with single root
-* Replacing $RANDOM8, $RANDOM16, $RANDOM24 and $RANDOM32 in user provided services copied with random string of width 8, 16, 24 or 32 from characterset [A-Za-z0-9]. This can be used to generate new password for every stack spawned. Parts for replacement can be on different levels of JSON in UPS.
+
+[![Example stack](https://github.com/intel-data/app-dependency-discoverer/blob/master/example_tree.png)](https://github.com/intel-data/app-dependency-discoverer/blob/master/example_tree.png)
+
 * Linking apps by adding user provided service as JSON containing url field with value http://<host>.<domain>. App mentioned has to be in the same space as source app. Cloned user provided service contains updated url pointing cloned application. Convention for user provided services names linking apps is <host>-ups.
+
+```
+cf cups app1-ups -p url
+
+url> http://app1.<domain>
+```
+
+* Replacing $RANDOM8, $RANDOM16, $RANDOM24 and $RANDOM32 in user provided services copied with random string of width 8, 16, 24 or 32 from characterset [A-Za-z0-9]. This can be used to generate new password for every stack spawned. Parts for replacement can be on different levels of JSON in UPS. Replacement is done when copying so original user provided service is using phrase with $.
+
+```
+{
+    "credentials": {
+     "password": "$RANDOM16" -> "hTn8X07zm8KRDKr1"
+    },
+    "label": "user-provided",
+    "name": "random-ups",
+    "syslog_drain_url": "",
+    "tags": []
+}
+```
+
 
 Usage
 -----
