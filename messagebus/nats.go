@@ -18,7 +18,6 @@ package messagebus
 
 import (
 	log "github.com/cihub/seelog"
-
 	"github.com/nats-io/nats"
 )
 

@@ -18,24 +18,24 @@ package dao
 
 import (
 	"github.com/stretchr/testify/mock"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
 )
 
 type FacadeMock struct {
 	mock.Mock
 }
 
-func (c *FacadeMock) Get() ([]*types.ServiceExtension, error) {
+func (c *FacadeMock) Get() ([]*extension.ServiceExtension, error) {
 	args := c.Called()
-	return args.Get(0).([]*types.ServiceExtension), nil
+	return args.Get(0).([]*extension.ServiceExtension), nil
 }
 
-func (c *FacadeMock) Append(service *types.ServiceExtension) (err error) {
+func (c *FacadeMock) Append(service *extension.ServiceExtension) (err error) {
 	c.Called(service)
 	return nil
 }
 
-func (c *FacadeMock) Update(service *types.ServiceExtension) (err error) {
+func (c *FacadeMock) Update(service *extension.ServiceExtension) (err error) {
 	c.Called(service)
 	return nil
 }
@@ -45,22 +45,22 @@ func (c *FacadeMock) Remove(serviceID string) (err error) {
 	return nil
 }
 
-func (c *FacadeMock) Find(id string) (*types.ServiceExtension, error) {
+func (c *FacadeMock) Find(id string) (*extension.ServiceExtension, error) {
 	args := c.Called(id)
 	if args.Get(0) == nil { //first return value is nil, we test error case then
 		return nil, args.Get(1).(error)
 	}
-	return args.Get(0).(*types.ServiceExtension), nil
+	return args.Get(0).(*extension.ServiceExtension), nil
 }
 
-func (c *FacadeMock) AppendInstance(instance types.ServiceInstanceExtension) error {
+func (c *FacadeMock) AppendInstance(instance extension.ServiceInstanceExtension) error {
 	c.Called(instance)
 	return nil
 }
 
-func (c *FacadeMock) FindInstance(id string) (*types.ServiceInstanceExtension, error) {
+func (c *FacadeMock) FindInstance(id string) (*extension.ServiceInstanceExtension, error) {
 	args := c.Called(id)
-	return args.Get(0).(*types.ServiceInstanceExtension), nil
+	return args.Get(0).(*extension.ServiceInstanceExtension), nil
 }
 
 func (c *FacadeMock) HasInstancesOf(serviceID string) (bool, error) {

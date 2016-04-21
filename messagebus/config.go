@@ -19,9 +19,8 @@ package messagebus
 
 import (
 	log "github.com/cihub/seelog"
-
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/env"
 )
 
 // Config holds values needed to set-up connection with MessageBus
@@ -51,7 +50,7 @@ func (c *Config) getUri(service *cfenv.Service) string {
 		url = service.Credentials["url"].(string)
 	}
 	if len(url) == 0 {
-		url = misc.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
+		url = env.GetEnvVarAsString("NATS_URL", "nats://localhost:4222")
 	}
 	return url
 }
@@ -62,7 +61,7 @@ func (c *Config) getSubject(service *cfenv.Service) string {
 		subject = service.Credentials["service-creation-subject"].(string)
 	}
 	if len(subject) == 0 {
-		subject = misc.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
+		subject = env.GetEnvVarAsString("NATS_SERVICE_CREATION_SUBJECT", "service-creation")
 	}
 	return subject
 }

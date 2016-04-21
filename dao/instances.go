@@ -17,12 +17,12 @@
 package dao
 
 import (
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
 )
 
 type Instances interface {
-	AppendInstance(types.ServiceInstanceExtension) error
-	FindInstance(id string) (*types.ServiceInstanceExtension, error)
+	AppendInstance(extension.ServiceInstanceExtension) error
+	FindInstance(id string) (*extension.ServiceInstanceExtension, error)
 	HasInstancesOf(serviceID string) (bool, error)
 	RemoveInstance(id string) (err error)
 }

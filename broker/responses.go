@@ -14,42 +14,48 @@
  * limitations under the License.
  */
 
-
 package broker
 
-import(
-	types "github.com/trustedanalytics/application-broker/types"
+import (
 	cf "github.com/cloudfoundry-community/types-cf"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/types"
 )
 
 // OK
 // swagger:response emptyBodyOk
 type emptyBodyOk struct{}
+
 var emptyOk = emptyBodyOk{}
 
 // Created
 // swagger:response emptyBodyCreated
 type emptyBodyCreated struct{}
+
 var emptyCreated = emptyBodyCreated{}
 
 // No Content
 // swagger:response emptyBodyNoContent
 type emptyBodyNoContent struct{}
+
 var emptyNoContent = emptyBodyNoContent{}
 
 // Bad Request
 // swagger:response emptyBodyBadRequest
 type emptyBodyBadRequest struct{}
+
 var emptyBadRequest = emptyBodyBadRequest{}
 
 // Not Found
 // swagger:response emptyBodyNotFound
 type emptyBodyNotFound struct{}
+
 var emptyNotFound = emptyBodyNotFound{}
 
 // Conflict
 // swagger:response emptyBodyConflict
-type emptyBodyConflict struct {}
+type emptyBodyConflict struct{}
+
 var emptyConflict = emptyBodyConflict{}
 
 // Internal Server Error
@@ -71,14 +77,14 @@ type ServiceCreationResponse struct {
 // swagger:response serviceExtensionResponse
 type ServiceExtensionResponse struct {
 	// in: body
-	Body types.ServiceExtension
+	Body extension.ServiceExtension
 }
 
 // CatalogExtensionResponse
 // swagger:response catalogExtensionResponse
 type CatalogExtensionResponse struct {
 	// in: body
-	Body types.CatalogExtension
+	Body extension.CatalogExtension
 }
 
 // ServiceBindingResponse

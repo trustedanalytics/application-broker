@@ -18,16 +18,13 @@ package broker
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httputil"
-
 	log "github.com/cihub/seelog"
-
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/auth"
 	"github.com/martini-contrib/sessions"
-
-	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/env"
+	"net/http"
+	"net/http/httputil"
 )
 
 const (
@@ -49,7 +46,7 @@ func newRouter(h *handler) *router {
 
 	m := martini.Classic()
 
-	m.Use(auth.Basic(misc.GetEnvVarAsString("AUTH_USER", ""), misc.GetEnvVarAsString("AUTH_PASS", "")))
+	m.Use(auth.Basic(env.GetEnvVarAsString("AUTH_USER", ""), env.GetEnvVarAsString("AUTH_PASS", "")))
 
 	m.Use(sessions.Sessions("app_launcher", sessions.NewCookieStore([]byte("appsecretlauncher"))))
 	m.Post(catalogURLPattern, responseHandler(h.append))

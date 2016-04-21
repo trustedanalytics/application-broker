@@ -3,9 +3,10 @@
 Application Broker for Cloud Foundry
 ==============================================
 
-A service broker to provision an application, including dependent service instances.
+A service broker to provision an application stack - set of applications, services and user provided services.
 
-**This is a second experimental version and may be subject to severe changes in the future.**
+**This is a third version, which support copying full application stacks, binding same services to multiple apps in single stack and generating random passwords when copying source ups with e.g. $RANDOM16.**
+**Second version used REST API of CF to retrieve and add data.**
 **First implementation was based on cf/cli calls which was considered bad solution due to concurrency problems. Now we are using regular REST requests under the hood.**
 
 
@@ -17,6 +18,40 @@ To easily create service offerings without implementing separate broker you may 
 
 References:
 [Custom Services](https://docs.cloudfoundry.org/services/)
+
+Features 
+--------
+
+* Publishing application stack in marketplace
+
+[![Example stack](https://github.com/intel-data/application-broker/blob/master/app_in_marketplace.png)](https://github.com/intel-data/application-broker/blob/master/app_in_marketplace.png)
+
+* Cloning existing stacks of apps, services and user provided services if they create a DAG with single root
+
+[![Example stack](https://github.com/intel-data/app-dependency-discoverer/blob/master/example_tree.png)](https://github.com/intel-data/app-dependency-discoverer/blob/master/example_tree.png)
+
+* Linking apps by adding user provided service as JSON containing url field with value http://<host>.<domain>. App mentioned has to be in the same space as source app. Cloned user provided service contains updated url pointing cloned application. Convention for user provided services names linking apps is <host>-ups.
+
+```
+cf cups app1-ups -p url
+
+url> http://app1.<domain>
+```
+
+* Replacing $RANDOM8, $RANDOM16, $RANDOM24 and $RANDOM32 in user provided services copied with random string of width 8, 16, 24 or 32 from characterset [A-Za-z0-9]. This can be used to generate new password for every stack spawned. Parts for replacement can be on different levels of JSON in UPS. Replacement is done when copying so original user provided service is using phrase with $.
+
+```
+{
+    "credentials": {
+     "password": "$RANDOM16" -> "hTn8X07zm8KRDKr1"
+    },
+    "label": "user-provided",
+    "name": "random-ups",
+    "syslog_drain_url": "",
+    "tags": []
+}
+```
+
 
 Usage
 -----
@@ -42,7 +77,13 @@ applications:
     VERSION: "0.5.8"
 ```
 
-When manifest.yml is ready the following command can be issued:
+Application broker is using app dependency discoverer for application stack discovery. It needs url of that app in url field of app-dependency-discoverer-ups user provided service, as well as auth_user and auth_pass for basic authentication. For local run http://localhost:9998 is taken.
+Create user provided service with command:
+```
+cf cups app-dependency-discoverer-ups -p "{\"auth_pass\": \"<password>\", \"auth_user\": \"<user>\", \"url\": \"http://<hostname>.<domain>\" }"
+```
+
+When manifest.yml is ready and ups with required name is available in selected space, the following command can be issued:
 ```
 $ cf push
 ```
@@ -98,7 +139,9 @@ Development
 
 ### Prerequisites
 
-To locally develop this service broker, we encourage you to use lightweight reference app that will push and start fast. Testing won't take too much time. You can use sampleApp we placed in functional_tests/sampleApp directory.
+Application broker is using [app-dependency-discoverer] (https://github.com/intel-data/app-dependency-discoverer) so you need to run it locally before using application-broker. You also need to specify url and credentials to it in app-dependency-discoverer-ups with content described earlier.
+
+To locally develop this service broker, we encourage you to use lightweight reference stack that will push and start fast. Testing won't take too much time.
 
 Additionally you will need mongodb instance. Install it by using package-manager your distro provides. For Ubuntu/Debian it will be: `sudo apt-get install mongodb`. Local Application Broker will connect to it on default port so no additional configuration is needed.
 
@@ -135,22 +178,6 @@ export PATH=$PATH:$GOPATH/bin
 ginkgo -r
 ```
 
-### Functional tests
-In functional_tests directory there is a bunch of bash scripts that help test Application Broker in broader context. Basically it needs regular CF environment to operate on. Application Broker itself is not pushed to the cloud but sampleApp is. Then, when testing provision, we request new instance creation in locally running broker but actual copy of sampleApp is done in the cloud. The same with bindings and deprovisioning.
-
- 1. To use environment of your choice execute`source envs` in two shells
-	 1. The one you run `gin` in.
-	 2. The one you execute functional tests in.
- 2. To push referenceApp automatically run `setCFandPushSampleApp.sh`
- 3. To test registering referenceApp in catalog run `registerSampleAppInCatalog.sh`
- 4. To test provisioning new service instance run `provision.sh`
- 5. To test bindingCreation of existing instance run `createBinding.sh`
- 6. To test deprovisioning of existing instance run `deprovision.sh`
-
-> Notice that scripts depend on each other. They shall be executed in order.
-
-
-
 ### IDE
 We recommend using [IntelliJ IDEA](https://www.jetbrains.com/idea/) as IDE with [golang plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin). To apply formatting automatically on every save you may use go-fmt with [File Watcher plugin](http://www.idmworks.com/blog/entry/automatically-calling-go-fmt-from-intellij).
 
@@ -171,6 +198,4 @@ Command above places all dependencies from `$GOPATH`, your app uses, in Godeps a
 
 Limitations
 -----------------------
-Actually, Application Broker does not handle user-provided services bound to reference app. Having said that, all newly spawned instances won't have user-provided services associated.
-
 Additionally, in special circumstances, some problems may occur when spawning new instance with dependencies. Imagine referenceApp with dependencyServiceInstance bound to it. It is possible to spawn copy of referenceApp to space that dependencyService is not enabled in. In such situation provision operation will end up with failure.

@@ -18,11 +18,11 @@ package cloud
 
 import (
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
 )
 
 type API interface {
-	Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*types.ServiceCreationResponse, error)
+	Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error)
 	Deprovision(appGUID string) error
 	UpdateBroker(brokerName string, brokerURL string, username string, password string) error
 	CheckIfServiceExists(serviceName string) error

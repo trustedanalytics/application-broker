@@ -24,12 +24,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
 	"github.com/trustedanalytics/application-broker/messagebus"
-	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/service"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
 	"os"
 	"strings"
@@ -40,12 +39,12 @@ var _ = Describe("Handler", func() {
 	var (
 		sut       *handler
 		mongoMock *dao.FacadeMock
-		cfMock    *cloud.CfMock
+		cfMock    *service.CfMock
 	)
 
 	BeforeEach(func() {
 		mongoMock = new(dao.FacadeMock)
-		cfMock = new(cloud.CfMock)
+		cfMock = new(service.CfMock)
 		cfMock.On("UpdateBroker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		os.Setenv("VCAP_APPLICATION", "{\"name\":\"banana\",\"uris\":[\"http://fakeurl\"]}")
 	})
@@ -90,7 +89,7 @@ var _ = Describe("Handler", func() {
 
 				code, resp := sut.append(req, nil)
 
-				decoded := types.ServiceExtension{}
+				decoded := extension.ServiceExtension{}
 				json.NewDecoder(strings.NewReader(resp)).Decode(&decoded)
 				Expect(decoded.ID).NotTo(BeEmpty())
 				Expect(decoded.Plans).NotTo(BeNil())
@@ -103,7 +102,7 @@ var _ = Describe("Handler", func() {
 		Context("when service does not exist", func() {
 			It("404 not found should be returned", func() {
 				params := martini.Params{"service_id": "not-existing-id"}
-				mongoMock.On("Find", "not-existing-id").Return(nil, misc.ServiceNotFoundError{})
+				mongoMock.On("Find", "not-existing-id").Return(nil, types.ServiceNotFoundError)
 
 				code, _ := sut.remove(nil, params)
 				Expect(code).To(Equal(http.StatusNotFound))
@@ -115,10 +114,10 @@ var _ = Describe("Handler", func() {
 		Context("in positive scenario", func() {
 			It("204 no content should be returned", func() {
 				params := martini.Params{"service_id": "existing-id"}
-				mongoMock.On("Find", "existing-id").Return(&types.ServiceExtension{}, nil)
+				mongoMock.On("Find", "existing-id").Return(&extension.ServiceExtension{}, nil)
 				mongoMock.On("HasInstancesOf", "existing-id").Return(false, nil)
 				mongoMock.On("Remove", "existing-id").Return(nil)
-				mongoMock.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension), new(types.ServiceExtension)})
+				mongoMock.On("Get").Return([]*extension.ServiceExtension{new(extension.ServiceExtension), new(extension.ServiceExtension)})
 
 				code, _ := sut.remove(nil, params)
 				Expect(code).To(Equal(http.StatusNoContent))
@@ -128,15 +127,15 @@ var _ = Describe("Handler", func() {
 
 	Describe("when retrieving services from catalog", func() {
 		var (
-			fakeCatalog []*types.ServiceExtension
-			resp        types.CatalogExtension
+			fakeCatalog []*extension.ServiceExtension
+			resp        extension.CatalogExtension
 		)
 
 		Context("and catalog contais services", func() {
 
 			BeforeEach(func() {
-				fakeCatalog = append(fakeCatalog, &types.ServiceExtension{})
-				fakeCatalog = append(fakeCatalog, &types.ServiceExtension{})
+				fakeCatalog = append(fakeCatalog, &extension.ServiceExtension{})
+				fakeCatalog = append(fakeCatalog, &extension.ServiceExtension{})
 				mongoMock.On("Get").Return(fakeCatalog)
 			})
 
@@ -153,19 +152,19 @@ var _ = Describe("Handler", func() {
 
 	Describe("when provisioning new service instance", func() {
 		var (
-			resp        types.ServiceCreationResponse
-			testService types.ServiceExtension
+			resp        extension.ServiceCreationResponse
+			testService extension.ServiceExtension
 		)
 
 		BeforeEach(func() {
 			inner := cf.Service{ID: "fakeId"}
-			testService = types.ServiceExtension{
+			testService = extension.ServiceExtension{
 				Service:      inner,
 				ReferenceApp: types.CfAppResource{Entity: types.CfApp{Name: "appToClone"}},
 			}
 			mongoMock.On("Find", inner.ID).Return(&testService)
 			mongoMock.On("AppendInstance", mock.Anything).Return()
-			cfMock.On("Provision", testService.ReferenceApp.Meta.GUID, mock.Anything).Return(&types.ServiceCreationResponse{})
+			cfMock.On("Provision", testService.ReferenceApp.Meta.GUID, mock.Anything).Return(&extension.ServiceCreationResponse{})
 		})
 
 		Context("and requested service type exists", func() {
@@ -186,7 +185,7 @@ var _ = Describe("Handler", func() {
 	Describe("when binding service instance", func() {
 
 		BeforeEach(func() {
-			svcInstance := types.ServiceInstanceExtension{
+			svcInstance := extension.ServiceInstanceExtension{
 				App: types.CfAppResource{Meta: types.CfMeta{URL: "someUrl"}},
 			}
 			mongoMock.On("FindInstance", "fakeInstanceID").Return(&svcInstance)

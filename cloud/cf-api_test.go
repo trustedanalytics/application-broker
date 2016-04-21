@@ -23,10 +23,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/trustedanalytics/application-broker/misc"
-	"github.com/trustedanalytics/application-broker/misc/http-utils"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/go-cf-lib/api"
+	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
-	"time"
 )
 
 var _ = Describe("Cf api", func() {
@@ -79,139 +78,9 @@ var _ = Describe("Cf api", func() {
 		httpmock.DeactivateAndReset()
 	})
 
-	Describe("create app method", func() {
-		Context("with correct data passed", func() {
-			It("should respond with guid", func() {
-				httpmock.RegisterResponder("POST", "/v2/apps", positiveCreateAppResponder)
-
-				sut := CfAPI{Client: http.DefaultClient}
-				result, _ := sut.createApp(types.CfApp{Name: "appName"})
-
-				Expect(result).NotTo(BeNil())
-				Expect(result.Meta.GUID).To(Equal("super_fake_guid"))
-			})
-		})
-	})
-
-	Describe("associate app with route", func() {
-		Context("with correct data passed", func() {
-			It("should call cloudCtl and succeed", func() {
-
-				appID := "fakeAppId"
-				routeID := "fakeRouteId"
-				address := fmt.Sprintf("/v2/apps/%v/routes/%v", appID, routeID)
-				httpmock.RegisterResponder("PUT", address, positiveStatusCreatedResponder)
-
-				sut := CfAPI{Client: http.DefaultClient}
-				err := sut.associateRoute(appID, routeID)
-
-				Expect(err).To(BeNil())
-			})
-		})
-	})
-
-	Describe("copy bits method", func() {
-
-		destGUID, _ := uuid.NewV4()
-		copyBitsAddress := fmt.Sprintf("/v2/apps/%v/copy_bits", destGUID)
-
-		Context("when proper src dest guids given", func() {
-			It("should copy bits on cloudCtl and wait for job success", func() {
-				httpmock.RegisterResponder("POST", copyBitsAddress, positiveCopyBitsResponder)
-
-				sut := CfAPI{Client: http.DefaultClient}
-				asyncErr := make(chan error)
-				go sut.copyBits("fake", destGUID.String(), asyncErr)
-
-				Expect(<-asyncErr).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("when cloudCtl returns an error", func() {
-			It("error is propagated", func() {
-				httpmock.RegisterResponder("POST", copyBitsAddress, queuedCopyBitsResponder)
-				httpmock.RegisterResponder("GET", "jobUrl", failedJobResponder)
-
-				sut := CfAPI{Client: http.DefaultClient}
-				asyncErr := make(chan error)
-				go sut.copyBits("fake", destGUID.String(), asyncErr)
-
-				err := <-asyncErr
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError(misc.CcJobFailedError{"someErr"}))
-			})
-		})
-	})
-
-	Describe("restage app", func() {
-		Context("in positive scenario", func() {
-			It("should not return errors", func() {
-				appGUID, _ := uuid.NewV4()
-				restageAddress := fmt.Sprintf("/v2/apps/%v/restage", appGUID.String())
-				httpmock.RegisterResponder("POST", restageAddress, positiveRestageResponder)
-
-				sut := CfAPI{Client: http.DefaultClient}
-				err := sut.restageApp(appGUID.String())
-
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
-	})
-
-	Describe("update app", func() {
-		executeTestCase := func(responder httpmock.Responder) error {
-			guid, _ := uuid.NewV4()
-			app := types.CfAppResource{}
-			app.Meta.GUID = guid.String()
-			updateURL := fmt.Sprintf("/v2/apps/%v", app.Meta.GUID)
-
-			httpmock.RegisterResponder("PUT", updateURL, responder)
-			sut := CfAPI{Client: http.DefaultClient}
-			return sut.updateApp(&app)
-		}
-
-		Context("in positive scenario", func() {
-			It("should not return error", func() {
-				err := executeTestCase(positiveStatusCreatedResponder)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("in negative scenario", func() {
-			It("should propagate error", func() {
-				err := executeTestCase(negativeResponder)
-				Expect(err).Should(HaveOccurred())
-			})
-		})
-	})
-
-	Describe("wait for app running", func() {
-		Context("in positive scenario", func() {
-			It("should not return error", func() {
-				guid, _ := uuid.NewV4()
-				app := types.CfAppResource{}
-				app.Meta.GUID = guid.String()
-				instances := fmt.Sprintf("/v2/apps/%v/instances", app.Meta.GUID)
-				httpmock.RegisterResponder("GET", instances, positiveGetInstancesResponder)
-
-				asyncErr := make(chan error)
-				done := make(chan bool)
-				sut := CfAPI{Client: http.DefaultClient}
-				go sut.waitForAppRunning(app.Meta.GUID, asyncErr, done)
-
-				select {
-				case err := <-asyncErr:
-					Expect(err).ShouldNot(HaveOccurred())
-				case <-time.After(5 * time.Millisecond):
-					Fail("waitAppForRunning entered infinite loop")
-				}
-			})
-		})
-	})
-
 	Describe("service deprovision", func() {
 		var (
-			sut            CfAPI
+			sut            *CloudAPI
 			app            types.CfAppSummary
 			appGUID        string
 			appURL         string
@@ -233,11 +102,11 @@ var _ = Describe("Cf api", func() {
 			app.Routes = registerRoutesCleanupRequests(appGUID)
 
 			appURL = fmt.Sprintf("/v2/apps/%v", appGUID)
-			httpmock.RegisterResponder(httputils.MethodDelete, appURL, responderGenerator(204, nil))
+			httpmock.RegisterResponder(api.MethodDelete, appURL, responderGenerator(204, nil))
 			appSummaryURL = fmt.Sprintf("/v2/apps/%v/summary", appGUID)
-			httpmock.RegisterResponder(httputils.MethodGet, appSummaryURL, responderGenerator(200, app))
+			httpmock.RegisterResponder(api.MethodGet, appSummaryURL, responderGenerator(200, app))
 
-			sut = CfAPI{Client: http.DefaultClient}
+			sut = NewCloudAPI(nil)
 		})
 
 		AfterEach(func() {
@@ -253,62 +122,12 @@ var _ = Describe("Cf api", func() {
 			})
 		})
 
-		Context("Get app summary fails", func() {
-			It("should forward error", func() {
-				httpmock.RegisterResponder("GET", appSummaryURL, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Get application summary failed"))
-			})
-		})
-
-		Context("CF fails on app deletion", func() {
-			It("should forward error", func() {
-				httpmock.RegisterResponder("DELETE", appURL, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Delete application failed"))
-			})
-		})
-
-		Context("Get app bindings fails", func() {
-			It("should forward error", func() {
-				httpmock.RegisterResponder("GET", appBindingsURL, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Get app bindings failed"))
-			})
-		})
-
-		Context("Get app bindings fails", func() {
-			It("should forward error", func() {
-				httpmock.RegisterResponder("GET", appBindingsURL, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Get app bindings failed"))
-			})
-		})
-
 		Context("Binding does not exist", func() {
 			It("should continue silently", func() {
 				registerServiceUnbind(appGUID, bindings.Resources[1].Meta.GUID, responderGenerator(404, nil))
 
 				err := sut.Deprovision(appGUID)
 				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("Delete of a binding fails", func() {
-			It("should forward error", func() {
-				registerServiceUnbind(appGUID, bindings.Resources[1].Meta.GUID, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Delete binding failed"))
 			})
 		})
 
@@ -326,8 +145,7 @@ var _ = Describe("Cf api", func() {
 				registerRouteUnbind(appGUID, app.Routes[1].GUID, responderGenerator(500, nil))
 
 				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Delete route mapping failed"))
+				Expect(err).ShouldNot(HaveOccurred())
 			})
 		})
 
@@ -345,8 +163,7 @@ var _ = Describe("Cf api", func() {
 				registerRouteDelete(app.Routes[1].GUID, responderGenerator(500, nil))
 
 				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Delete route failed"))
+				Expect(err).ShouldNot(HaveOccurred())
 			})
 		})
 
@@ -356,16 +173,6 @@ var _ = Describe("Cf api", func() {
 
 				err := sut.Deprovision(appGUID)
 				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("Delete of a service instance fails", func() {
-			It("should forward error", func() {
-				registerServiceDelete(bindings.Resources[1].Entity.ServiceInstanceGUID, responderGenerator(500, nil))
-
-				err := sut.Deprovision(appGUID)
-				Expect(err).Should(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Delete service instance failed"))
 			})
 		})
 
@@ -418,22 +225,22 @@ func registerServiceCleanupRequests(appGUID string) (types.CfBindingsResources, 
 
 func registerServiceUnbind(appGUID string, bindingGUID string, response httpmock.Responder) {
 	url := fmt.Sprintf("/v2/apps/%v/service_bindings/%v", appGUID, bindingGUID)
-	httpmock.RegisterResponder(httputils.MethodDelete, url, response)
+	httpmock.RegisterResponder(api.MethodDelete, url, response)
 }
 
 func registerServiceDelete(instanceGUID string, response httpmock.Responder) {
 	url := fmt.Sprintf("/v2/service_instances/%v", instanceGUID)
-	httpmock.RegisterResponder(httputils.MethodDelete, url, response)
+	httpmock.RegisterResponder(api.MethodDelete, url, response)
 }
 
 func registerRouteUnbind(appGUID string, routeGUID string, response httpmock.Responder) {
 	url := fmt.Sprintf("/v2/apps/%v/routes/%v", appGUID, routeGUID)
-	httpmock.RegisterResponder(httputils.MethodDelete, url, response)
+	httpmock.RegisterResponder(api.MethodDelete, url, response)
 }
 
 func registerRouteDelete(routeGUID string, response httpmock.Responder) {
 	url := fmt.Sprintf("/v2/routes/%v", routeGUID)
-	httpmock.RegisterResponder(httputils.MethodDelete, url, response)
+	httpmock.RegisterResponder(api.MethodDelete, url, response)
 }
 
 func newRoute() types.CfAppSummaryRoute {

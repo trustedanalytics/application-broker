@@ -22,11 +22,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
 	"github.com/trustedanalytics/application-broker/messagebus"
-	"github.com/trustedanalytics/application-broker/misc"
-	"github.com/trustedanalytics/application-broker/types"
+	"github.com/trustedanalytics/application-broker/service/extension"
+	"github.com/trustedanalytics/go-cf-lib/types"
 	"os"
 )
 
@@ -35,14 +34,14 @@ var _ = Describe("Launching service", func() {
 	var (
 		dataCatalog *dao.FacadeMock
 		nats        messagebus.MessageBus
-		cfMock      *cloud.CfMock
+		cfMock      *CfMock
 	)
 
 	BeforeEach(func() {
 		dataCatalog = new(dao.FacadeMock)
 		nats = new(messagebus.DevNullBus)
 		os.Setenv("VCAP_APPLICATION", "{\"name\":\"banana\",\"uris\":[\"http://fakeurl\"]}")
-		cfMock = new(cloud.CfMock)
+		cfMock = new(CfMock)
 		cfMock.On("UpdateBroker", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	})
 
@@ -53,7 +52,7 @@ var _ = Describe("Launching service", func() {
 	Describe("get catalog", func() {
 		Context("when catalog is empty", func() {
 			It("should return zero services", func() {
-				dataCatalog.On("Get").Return([]*types.ServiceExtension{})
+				dataCatalog.On("Get").Return([]*extension.ServiceExtension{})
 
 				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 				catalog, _ := sut.GetCatalog()
@@ -65,8 +64,8 @@ var _ = Describe("Launching service", func() {
 
 		Context("when catalog filled with one service", func() {
 			It("should return one service", func() {
-				services := []*types.ServiceExtension{}
-				services = append(services, &types.ServiceExtension{
+				services := []*extension.ServiceExtension{}
+				services = append(services, &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
 				})
 				dataCatalog.On("Get", mock.Anything).Return(services, nil)
@@ -84,13 +83,13 @@ var _ = Describe("Launching service", func() {
 		Context("not valid service", func() {
 			It("should return error indicating bad input", func() {
 				dataCatalog.On("Append", mock.Anything).Return()
-				service := &types.ServiceExtension{
+				service := &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
 				}
 				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 				err := sut.InsertToCatalog(service)
 
-				Expect(err).To(Equal(misc.InvalidInputError{}))
+				Expect(err).To(Equal(types.InvalidInputError))
 				dataCatalog.AssertNumberOfCalls(GinkgoT(), "Append", 0)
 			})
 		})
@@ -98,7 +97,7 @@ var _ = Describe("Launching service", func() {
 		Context("valid service", func() {
 			It("should return non empty response", func() {
 				basic := cf.Service{Name: "someName", Description: "desc"}
-				service := &types.ServiceExtension{
+				service := &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "someId"}},
 					Service:      basic,
 				}
@@ -118,7 +117,7 @@ var _ = Describe("Launching service", func() {
 		Context("not existing service", func() {
 			It("should return error", func() {
 				expectedError := errors.New("No such service")
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				dataCatalog.On("Find", "fakeId").Return(nil, expectedError)
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
 
@@ -130,26 +129,26 @@ var _ = Describe("Launching service", func() {
 
 		Context("service that has instances", func() {
 			It("should return error", func() {
-				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				fakeService := extension.ServiceExtension{Service: cf.Service{ID: "ID"}}
 				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
 				dataCatalog.On("HasInstancesOf", "fakeId").Return(true, nil)
-				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension), new(types.ServiceExtension)})
+				dataCatalog.On("Get").Return([]*extension.ServiceExtension{new(extension.ServiceExtension), new(extension.ServiceExtension)})
 
 				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 
 				err := sut.DeleteFromCatalog("fakeId")
 				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(MatchError(misc.ExistingInstancesError{}))
+				Expect(err).Should(MatchError(types.ExistingInstancesError))
 			})
 		})
 
 		Context("service without instances", func() {
 			It("should succeed", func() {
-				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				fakeService := extension.ServiceExtension{Service: cf.Service{ID: "ID"}}
 				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
 				dataCatalog.On("HasInstancesOf", "fakeId").Return(false, nil)
 				dataCatalog.On("Remove", "fakeId").Return(nil)
-				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension), new(types.ServiceExtension)})
+				dataCatalog.On("Get").Return([]*extension.ServiceExtension{new(extension.ServiceExtension), new(extension.ServiceExtension)})
 
 				sut := New(dataCatalog, cfMock, nats, CreationStatusFactory{})
 
@@ -160,11 +159,11 @@ var _ = Describe("Launching service", func() {
 
 		Context("the only service in catalog", func() {
 			It("should throw an error", func() {
-				fakeService := types.ServiceExtension{Service: cf.Service{ID: "ID"}}
+				fakeService := extension.ServiceExtension{Service: cf.Service{ID: "ID"}}
 				dataCatalog.On("Find", "fakeId").Return(&fakeService, nil)
 				dataCatalog.On("HasInstancesOf", "fakeId").Return(false, nil)
 				dataCatalog.On("Remove", "fakeId").Return(nil)
-				dataCatalog.On("Get").Return([]*types.ServiceExtension{new(types.ServiceExtension)})
+				dataCatalog.On("Get").Return([]*extension.ServiceExtension{new(extension.ServiceExtension)})
 
 				sut := New(dataCatalog, nil, nats, CreationStatusFactory{})
 
@@ -179,7 +178,7 @@ var _ = Describe("Launching service", func() {
 			//TODO:make this test simplier, shorter, etc...
 			It("should propagate error", func() {
 				svc := cf.Service{Name: "super_service"}
-				svcExt := &types.ServiceExtension{
+				svcExt := &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "source_app_id"}},
 					Service:      svc,
 				}
@@ -188,7 +187,7 @@ var _ = Describe("Launching service", func() {
 				request := new(cf.ServiceCreationRequest)
 				request.Parameters = make(map[string]string)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				expectedErr := errors.New("ERROR!")
 				cfApi.On("Provision", mock.Anything, mock.Anything).Return(nil, expectedErr)
 
@@ -206,7 +205,7 @@ var _ = Describe("Launching service", func() {
 			//TODO:make this test simplier, shorter, etc...
 			It("should return non empty response", func() {
 				svc := cf.Service{Name: "super_service"}
-				svcExt := &types.ServiceExtension{
+				svcExt := &extension.ServiceExtension{
 					ReferenceApp: types.CfAppResource{Meta: types.CfMeta{GUID: "source_app_id"}},
 					Service:      svc,
 				}
@@ -217,8 +216,8 @@ var _ = Describe("Launching service", func() {
 				request.ServiceID = "service_id"
 				request.Parameters = make(map[string]string)
 
-				cfApi := new(cloud.CfMock)
-				createAppResp := &types.ServiceCreationResponse{}
+				cfApi := new(CfMock)
+				createAppResp := &extension.ServiceCreationResponse{}
 				cfApi.On("Provision", "source_app_id", request).Return(createAppResp, nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
@@ -235,13 +234,13 @@ var _ = Describe("Launching service", func() {
 				nats = new(messagebus.MessageBusMock)
 				nats.(*messagebus.MessageBusMock).On("Publish", mock.Anything).Return()
 
-				dataCatalog.On("Find", mock.Anything).Return(&types.ServiceExtension{})
+				dataCatalog.On("Find", mock.Anything).Return(&extension.ServiceExtension{})
 				dataCatalog.On("AppendInstance", mock.Anything).Return()
 
 				request := &cf.ServiceCreationRequest{}
 				request.Parameters = make(map[string]string)
-				cfApi := new(cloud.CfMock)
-				createAppResp := &types.ServiceCreationResponse{}
+				cfApi := new(CfMock)
+				createAppResp := &extension.ServiceCreationResponse{}
 				cfApi.On("Provision", "", request).Return(createAppResp, nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
@@ -255,11 +254,11 @@ var _ = Describe("Launching service", func() {
 	Describe("delete service", func() {
 		Context("in case of cloud foundry error", func() {
 			It("should propagate error", func() {
-				svcExt := &types.ServiceInstanceExtension{
+				svcExt := &extension.ServiceInstanceExtension{
 					App: types.CfAppResource{Meta: types.CfMeta{GUID: "appGuid"}}}
 				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				expectedErr := errors.New("ERROR!")
 				cfApi.On("Deprovision", mock.Anything).Return(expectedErr)
 
@@ -272,13 +271,13 @@ var _ = Describe("Launching service", func() {
 
 		Context("when deprovisioning succeeds", func() {
 			It("should return non empty response", func() {
-				svcExt := &types.ServiceInstanceExtension{
+				svcExt := &extension.ServiceInstanceExtension{
 					ID:  "entryId",
 					App: types.CfAppResource{Meta: types.CfMeta{GUID: "appGuid"}}}
 				dataCatalog.On("FindInstance", mock.Anything).Return(svcExt)
 				dataCatalog.On("RemoveInstance", mock.Anything).Return(nil)
 
-				cfApi := new(cloud.CfMock)
+				cfApi := new(CfMock)
 				cfApi.On("Deprovision", mock.Anything).Return(nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})

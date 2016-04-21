@@ -18,10 +18,9 @@ package broker
 
 import (
 	log "github.com/cihub/seelog"
-	"os"
-
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/env"
+	"os"
 )
 
 // Config hold the broker configuration
@@ -35,7 +34,7 @@ func (c *Config) Initialize(cfEnv *cfenv.App) {
 
 	if cfEnv == nil {
 		cfEnv = &cfenv.App{}
-		cfEnv.Port = misc.GetEnvVarAsInt("PORT", 9999)
+		cfEnv.Port = env.GetEnvVarAsInt("PORT", 9999)
 		cfEnv.Host = "0.0.0.0"
 		cfEnv.TempDir = os.TempDir()
 	}
