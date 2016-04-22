@@ -232,9 +232,11 @@ func (p *LaunchingService) UpdateBroker() error {
 
 func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *extension.ServiceCreationResponse) error {
 	toAppend := extension.ServiceInstanceExtension{
-		App:       res.App,
 		ID:        req.InstanceID,
 		ServiceID: req.ServiceID,
+	}
+	if res != nil {
+		toAppend.App = res.App
 	}
 	return p.db.AppendInstance(toAppend)
 }
