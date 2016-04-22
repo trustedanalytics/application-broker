@@ -11,10 +11,10 @@ applications:
     - nats-provider
     - app-dependency-discoverer-ups
   env:
-    AUTH_USER: admin
-    AUTH_PASS: password
+    AUTH_USER: placeholder #<basic auth username>
+    AUTH_PASS: placeholder #<basic auth password>
     CLIENT_ID: placeholder #<provide oauth2 client id>
     CLIENT_SECRET: placeholder #<provide oauth2 client secret>
     TOKEN_URL: placeholder #<provide token url>
     CF_API: placeholder #<provide api url>
-    VERSION: "0.6.0"
+    VERSION: "0.6.1"
