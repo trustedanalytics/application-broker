@@ -26,8 +26,11 @@ type CfMock struct {
 	mock.Mock
 }
 
-func (c *CfMock) Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
-	args := c.Called(sourceAppGUID, request)
+func (c *CfMock) Provision(sourceAppGUID string,
+	servicesConfiguration []*extension.ServiceConfiguration,
+	request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
+
+	args := c.Called(sourceAppGUID, servicesConfiguration, request)
 	if args.Get(0) == nil {
 		//first return value is nil, we test error case then
 		return nil, args.Get(1).(error)

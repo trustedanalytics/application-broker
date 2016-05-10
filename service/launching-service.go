@@ -165,7 +165,7 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 	p.msgBus.Publish(msg)
 
 	//TODO: instead of referenceApp.GUID we should pass entire app object
-	resp, err := p.cloud.Provision(service.ReferenceApp.Meta.GUID, r)
+	resp, err := p.cloud.Provision(service.ReferenceApp.Meta.GUID, service.Configuration, r)
 	if err != nil {
 		msg = p.msgFactory.NewServiceStatus(name, stype, org, "Service spawning failed with error: "+err.Error())
 		p.msgBus.Publish(msg)

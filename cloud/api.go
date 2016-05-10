@@ -22,7 +22,9 @@ import (
 )
 
 type API interface {
-	Provision(sourceAppGUID string, request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error)
+	Provision(sourceAppGUID string,
+		servicesConfiguration []*extension.ServiceConfiguration,
+		request *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error)
 	Deprovision(appGUID string) error
 	UpdateBroker(brokerName string, brokerURL string, username string, password string) error
 	CheckIfServiceExists(serviceName string) error

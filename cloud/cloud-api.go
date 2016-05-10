@@ -46,10 +46,15 @@ func NewCloudAPI(envs *cfenv.App) *CloudAPI {
 }
 
 // Provision instantiates service of given type
-func (cloud *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
+func (cloud *CloudAPI) Provision(sourceAppGUID string,
+	servicesConfiguration []*extension.ServiceConfiguration,
+	r *cf.ServiceCreationRequest) (*extension.ServiceCreationResponse, error) {
+
 	order, _ := cloud.Discovery(sourceAppGUID)
 	log.Infof("Discovery: [%v]", order)
 	log.Infof("%v components to spawn:", len(order))
+
+	cloud.logParameters(r.Parameters, servicesConfiguration)
 
 	componentsToSpawn := cloud.groupComponentsByType(order)
 
@@ -59,7 +64,11 @@ func (cloud *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequ
 	transaction := NewTransaction()
 
 	log.Infof("Creating main application")
-	destApp, err := cloud.cf.CreateApplicationClone(sourceAppGUID, r.SpaceGUID, r.Parameters)
+	paramsWithoutNS, err := cloud.removeParametersNamespaces(r.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	destApp, err := cloud.cf.CreateApplicationClone(sourceAppGUID, r.SpaceGUID, paramsWithoutNS)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +79,8 @@ func (cloud *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequ
 	for _, app := range componentsToSpawn[types.ComponentApp] {
 		if _, ok := destAppsResources[app.GUID]; !ok {
 			name := fmt.Sprintf("%v-%v", app.Name, suffix)
-			params := map[string]string{"name": name}
-			appRes, err := cloud.cf.CreateApplicationClone(app.GUID, r.SpaceGUID, params)
+			paramsWithoutNS["name"] = name
+			appRes, err := cloud.cf.CreateApplicationClone(app.GUID, r.SpaceGUID, paramsWithoutNS)
 			if err != nil {
 				transaction.Rollback(cloud)
 				return nil, err
@@ -96,7 +105,9 @@ func (cloud *CloudAPI) Provision(sourceAppGUID string, r *cf.ServiceCreationRequ
 	required_bindings := 0
 	for _, comp := range componentsToSpawn[types.ComponentService] {
 		required_bindings += len(comp.DependencyOf)
-		go cloud.cf.CreateServiceClone(destApp.Entity.SpaceGUID, comp, suffix, results, errors, &wg)
+		go cloud.cf.CreateServiceClone(destApp.Entity.SpaceGUID,
+			cloud.selectAcceptedServiceParams(comp.Name, r.Parameters, servicesConfiguration),
+			comp, suffix, results, errors, &wg)
 	}
 	wg.Wait()
 	close(errors)

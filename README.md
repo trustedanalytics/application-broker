@@ -104,6 +104,27 @@ curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X POST  \
             "name" : "<service exposed by your broker>"
         }'
 ```
+or with further possible configuration of dependent components (hdfs service in application stack will only accept parameters hdfs.key1 and hdfs.key2 when provisioned):
+```
+curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X POST  \
+    -u $AUTH_USER:$AUTH_PASS                             \
+    -H "Content-Type: application/json"                  \
+    -d '{
+            "app" : {"metadata" : {"guid" : "<referenceAppGuid>"}},
+            "id" : "<place random guid here>",
+            "plans" : [{"id" : "<place random guid here>"}],
+            "description" : "<describe your service briefly>",
+            "name" : "<service exposed by your broker>",
+            "configuration": [
+                {
+                    "service_name": "hdfs",
+                    "parameters": ["key1", "key2"]
+                }
+            ]
+        }'
+```
+If parameter name is unique, namespace based on service instance name is optional.
+
 Now Application Broker has one service registered. When asked it responds with non-empty catalog. You can check by firing:
 ```
 curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X GET -u $AUTH_USER:$AUTH_PASS

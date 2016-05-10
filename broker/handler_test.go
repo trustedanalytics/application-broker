@@ -164,7 +164,7 @@ var _ = Describe("Handler", func() {
 			}
 			mongoMock.On("Find", inner.ID).Return(&testService)
 			mongoMock.On("AppendInstance", mock.Anything).Return()
-			cfMock.On("Provision", testService.ReferenceApp.Meta.GUID, mock.Anything).Return(&extension.ServiceCreationResponse{})
+			cfMock.On("Provision", testService.ReferenceApp.Meta.GUID, mock.Anything, mock.Anything).Return(&extension.ServiceCreationResponse{})
 		})
 
 		Context("and requested service type exists", func() {

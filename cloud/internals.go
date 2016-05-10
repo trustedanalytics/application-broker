@@ -22,6 +22,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/juju/errors"
 	"github.com/trustedanalytics/application-broker/misc"
+	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
@@ -121,6 +122,94 @@ func (cloud *CloudAPI) groupComponentsByType(order []types.Component) map[types.
 	return groupedComponents
 }
 
+func (cloud *CloudAPI) selectAcceptedServiceParams(serviceName string,
+	passedParams map[string]string,
+	allServicesConfigurations []*extension.ServiceConfiguration) map[string]interface{} {
+
+	if passedParams == nil || allServicesConfigurations == nil {
+		log.Info("No additional service parameters passed or services not configurable")
+		return nil
+	}
+
+	serviceConf := cloud.selectServiceConf(serviceName, allServicesConfigurations)
+	if serviceConf == nil {
+		log.Infof("Service %v does not accept additional configuration", serviceName)
+		return nil
+	}
+
+	paramsToPass := make(map[string]interface{})
+	for k, v := range passedParams {
+		parts := strings.SplitN(k, ".", 2)
+		if len(parts) != 2 {
+			// without namespace
+			cloud.addParamIfConfigurable(k, v, serviceConf, paramsToPass)
+			continue
+		}
+		namespace := parts[0]
+		key := parts[1]
+		if namespace != serviceName {
+			// param not for this service
+			continue
+		}
+		// configurable param
+		cloud.addParamIfConfigurable(key, v, serviceConf, paramsToPass)
+	}
+	if len(paramsToPass) == 0 {
+		return nil
+	}
+	return paramsToPass
+}
+
+func (cloud *CloudAPI) selectServiceConf(serviceName string,
+	allServicesConfigurations []*extension.ServiceConfiguration) *extension.ServiceConfiguration {
+
+	for _, conf := range allServicesConfigurations {
+		if conf.ServiceName == serviceName {
+			return conf
+		}
+	}
+	return nil
+}
+
+func (cloud *CloudAPI) addParamIfConfigurable(key, value string,
+	serviceConf *extension.ServiceConfiguration,
+	paramsToPass map[string]interface{}) {
+
+	for _, allowedParam := range serviceConf.Params {
+		if key == allowedParam {
+			paramsToPass[allowedParam] = value
+			break
+		}
+	}
+}
+
+func (cloud *CloudAPI) removeParametersNamespaces(passed map[string]string) (map[string]string, error) {
+	if passed == nil {
+		return nil, nil
+	}
+	noNamespace := make(map[string]string)
+	possibleCollisions := make(map[string]bool)
+	for k, v := range passed {
+		a := strings.SplitN(k, ".", 2)
+		if len(a) != 2 {
+			if _, ok := noNamespace[k]; !ok {
+				noNamespace[k] = v
+				possibleCollisions[k] = true
+			} else {
+				return nil, errors.BadRequestf("Colision of keys in additional parameters provided. Please use namespaces for key %v", k)
+			}
+		} else {
+			if _, ok := noNamespace[a[1]]; !ok {
+				noNamespace[a[1]] = v
+			} else if _, ok := possibleCollisions[a[1]]; ok {
+				return nil, errors.BadRequestf("Colision of keys in additional parameters provided. Please use namespaces for key %v", a[1])
+			}
+		}
+
+	}
+	return noNamespace, nil
+}
+
 func (cloud *CloudAPI) isErrorAcceptedDuringDeprovision(err error) bool {
 	switch err {
 	case nil:
@@ -142,4 +231,16 @@ func (cloud *CloudAPI) applyAdditionalReplacementsInUPSCredentials(response *typ
 	log.Infof("Final UPS %v content %v", response.Entity.Name, credentialsStr)
 	json.Unmarshal([]byte(credentialsStr), &response.Entity.Credentials)
 	return nil
+}
+
+func (cloud *CloudAPI) logParameters(parameters map[string]string, servicesConfiguration []*extension.ServiceConfiguration) {
+	log.Infof("Additional parameters passed: %v", parameters)
+	if len(servicesConfiguration) > 0 {
+		log.Infof("Configurable service parameters:")
+		for _, conf := range servicesConfiguration {
+			log.Infof("%v", *conf)
+		}
+	} else {
+		log.Info("No configurable service parameters")
+	}
 }

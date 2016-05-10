@@ -189,7 +189,7 @@ var _ = Describe("Launching service", func() {
 
 				cfApi := new(CfMock)
 				expectedErr := errors.New("ERROR!")
-				cfApi.On("Provision", mock.Anything, mock.Anything).Return(nil, expectedErr)
+				cfApi.On("Provision", mock.Anything, mock.Anything, mock.Anything).Return(nil, expectedErr)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
 				resp, err := sut.CreateService(request)
@@ -218,7 +218,7 @@ var _ = Describe("Launching service", func() {
 
 				cfApi := new(CfMock)
 				createAppResp := &extension.ServiceCreationResponse{}
-				cfApi.On("Provision", "source_app_id", request).Return(createAppResp, nil)
+				cfApi.On("Provision", "source_app_id", mock.Anything, request).Return(createAppResp, nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
 				resp, _ := sut.CreateService(request)
@@ -241,7 +241,7 @@ var _ = Describe("Launching service", func() {
 				request.Parameters = make(map[string]string)
 				cfApi := new(CfMock)
 				createAppResp := &extension.ServiceCreationResponse{}
-				cfApi.On("Provision", "", request).Return(createAppResp, nil)
+				cfApi.On("Provision", "", mock.Anything, request).Return(createAppResp, nil)
 
 				sut := New(dataCatalog, cfApi, nats, CreationStatusFactory{})
 				sut.CreateService(request)

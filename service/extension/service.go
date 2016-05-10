@@ -23,10 +23,16 @@ import (
 	"github.com/trustedanalytics/go-cf-lib/types"
 )
 
+type ServiceConfiguration struct {
+	ServiceName string   `json:"service_name"`
+	Params      []string `json:"parameters"`
+}
+
 // ServiceExtension extends cf.Service with data describing application to clone.
 type ServiceExtension struct {
 	cf.Service
-	ReferenceApp types.CfAppResource `json:"app"`
+	ReferenceApp  types.CfAppResource     `json:"app"`
+	Configuration []*ServiceConfiguration `json:"configuration,omitempty"`
 }
 
 type ServiceInstanceExtension struct {

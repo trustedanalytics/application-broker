@@ -24,7 +24,7 @@ import (
 	"sync"
 )
 
-func (c *CfAPI) CreateServiceClone(spaceGUID string, comp types.Component, suffix string,
+func (c *CfAPI) CreateServiceClone(spaceGUID string, params map[string]interface{}, comp types.Component, suffix string,
 	resultsCh chan types.ComponentClone, errorsCh chan error, wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -52,6 +52,10 @@ func (c *CfAPI) CreateServiceClone(spaceGUID string, comp types.Component, suffi
 
 	// Create service
 	svcInstanceReq := types.NewCfServiceInstanceRequest(serviceName, spaceGUID, svc.Plan)
+	if params != nil {
+		log.Infof("Passing additional params for service %v: %v", serviceName, params)
+		svcInstanceReq.Params = params
+	}
 	response, err := c.CreateServiceInstance(svcInstanceReq)
 	if err != nil {
 		errorsCh <- err
