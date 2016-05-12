@@ -17,4 +17,4 @@ applications:
     CLIENT_SECRET: placeholder #<provide oauth2 client secret>
     TOKEN_URL: placeholder #<provide token url>
     CF_API: placeholder #<provide api url>
-    VERSION: "0.6.2"
+    VERSION: "0.6.3"
