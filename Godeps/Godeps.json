@@ -118,15 +118,15 @@
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/api",
-			"Rev": "ad985a2c0def614a76f0d272aef22e7ea9c59d5a"
+			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/helpers",
-			"Rev": "ad985a2c0def614a76f0d272aef22e7ea9c59d5a"
+			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/types",
-			"Rev": "ad985a2c0def614a76f0d272aef22e7ea9c59d5a"
+			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

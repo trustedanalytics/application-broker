@@ -22,6 +22,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"sync"
+	"strings"
 )
 
 func (c *CfAPI) CreateServiceClone(spaceGUID string, params map[string]interface{}, comp types.Component, suffix string,
@@ -78,7 +79,7 @@ func (c *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, paramete
 	if err != nil {
 		return nil, err
 	}
-	requestedName := parameters["name"]
+	requestedName := replaceSpacesByDashes(parameters["name"])
 	delete(parameters, "name")
 
 	err = c.AssertAppHasRoutes(sourceAppSummary)
@@ -117,4 +118,8 @@ func (c *CfAPI) CreateApplicationClone(sourceAppGUID, spaceGUID string, paramete
 
 	destApp.Meta.URL = fmt.Sprintf("%s.%s", route.Entity.Host, domainName)
 	return destApp, nil
+}
+
+func replaceSpacesByDashes(name string) (string) {
+	return strings.Replace(name, " ", "-", -1)
 }

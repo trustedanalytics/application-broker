@@ -144,17 +144,7 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 		return nil, err
 	}
 
-	if r.Parameters["name"] == "" {
-		r.Parameters["name"] = service.Name
-	}
-
-	// Suffix required for ATK
-	idx := strings.Index(r.InstanceID, "-")
-	if idx > 0 {
-		// Take only first part of the GUID
-		r.Parameters["name"] = r.Parameters["name"] + "-" + r.InstanceID[0:idx]
-	}
-
+	r.Parameters["name"] = p.normalizeInstanceName(r.InstanceID, r.Parameters["name"], service.Name)
 	name := r.Parameters["name"]
 	log.Infof("create service: [%v]", name)
 
@@ -239,4 +229,32 @@ func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *e
 		toAppend.App = res.App
 	}
 	return p.db.AppendInstance(toAppend)
+}
+
+func (p *LaunchingService) normalizeInstanceName(instanceID string, instanceName string, serviceName string) (string) {
+	nameToNormalize := getNameToNormalize(instanceName, serviceName)
+	nameToNormalize = replaceSpacesByDashes(nameToNormalize)
+	normalizedInstanceName := addInstanceIdSuffix(instanceID, nameToNormalize)
+	return normalizedInstanceName
+}
+
+func getNameToNormalize(instanceName string, serviceName string) (string) {
+	if (instanceName == "") {
+		return serviceName
+	}
+	return instanceName
+}
+
+func replaceSpacesByDashes(name string) (string) {
+	return strings.Replace(name, " ", "-", -1)
+}
+
+func addInstanceIdSuffix(instanceID string, instanceName string) (string) {
+	// Suffix required for ATK
+	idx := strings.Index(instanceID, "-")
+	if idx > 0 {
+		// Take only first part of the GUID
+		instanceName = instanceName + "-" + instanceID[0:idx]
+	}
+	return instanceName
 }
