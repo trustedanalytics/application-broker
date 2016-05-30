@@ -2,7 +2,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>application-broker</artifactId>
-    <version>0.0.3-SNAPSHOT</version>
+    <version>0.7.1</version>
     <groupId>org.trustedanalytics</groupId>
 
     <build>
@@ -12,7 +12,11 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <version>2.6</version>
                 <configuration>
-                    <header>${project.basedir}/license_header.txt</header>
+                    <header>${project.basedir}/license_header_2016.txt</header>
+                    <validHeaders>
+                        <validHeader>${project.basedir}/license_header_2015.txt</validHeader>
+                        <validHeader>${project.basedir}/license_header_2016.txt</validHeader>
+                    </validHeaders>
                     <basedir>..</basedir>
                     <includes>
                         <include>broker/*.go</include>
@@ -25,6 +29,7 @@
                         <include>messagebus/*.sh</include>
                         <include>misc/*.sh</include>
                         <include>service/*.go</include>
+                        <include>pack.sh</include>
                     </includes>                  
                     <mapping>
                         <go>JAVADOC_STYLE</go>
