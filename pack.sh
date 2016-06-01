@@ -14,6 +14,7 @@ GOPATH=`godep path`:$GOPATH go test ./...
 godep go build
 
 rm Godeps/_workspace/src/github.com/trustedanalytics/$PROJECT_NAME
+godep go clean
 
 # assemble the artifact
 PACKAGE_CATALOG=${PROJECT_NAME}-${VERSION}
