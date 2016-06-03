@@ -125,6 +125,8 @@ curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X POST  \
 ```
 If parameter name is unique, namespace based on service instance name is optional.
 
+Additionally, using param no-application-name-change=true causes main application to use name and url directly provided instead of generating one with suffix. 
+
 Now Application Broker has one service registered. When asked it responds with non-empty catalog. You can check by firing:
 ```
 curl -sL $APPLICATION_BROKER_ADDRESS/v2/catalog -X GET -u $AUTH_USER:$AUTH_PASS

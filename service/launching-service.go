@@ -144,8 +144,12 @@ func (p *LaunchingService) CreateService(r *cf.ServiceCreationRequest) (*cf.Serv
 		return nil, err
 	}
 
-	r.Parameters["name"] = p.normalizeInstanceName(r.InstanceID, r.Parameters["name"], service.Name)
-	name := r.Parameters["name"]
+	name := p.normalizeInstanceName(r.Parameters["name"], service.Name)
+	// Use param: no-application-name-change=true not to generate main application name automatically
+	if _, ok := r.Parameters["no-application-name-change"]; !ok {
+		name = addInstanceIdSuffix(r.InstanceID, name)
+	}
+	r.Parameters["name"] = name
 	log.Infof("create service: [%v]", name)
 
 	stype := service.Name
@@ -231,11 +235,10 @@ func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *e
 	return p.db.AppendInstance(toAppend)
 }
 
-func (p *LaunchingService) normalizeInstanceName(instanceID string, instanceName string, serviceName string) string {
-	nameToNormalize := getNameToNormalize(instanceName, serviceName)
-	nameToNormalize = replaceSpacesByDashes(nameToNormalize)
-	normalizedInstanceName := addInstanceIdSuffix(instanceID, nameToNormalize)
-	return normalizedInstanceName
+func (p *LaunchingService) normalizeInstanceName(instanceName string, serviceName string) string {
+	name := getNameToNormalize(instanceName, serviceName)
+	name = replaceSpacesByDashes(name)
+	return name
 }
 
 func getNameToNormalize(instanceName string, serviceName string) string {
