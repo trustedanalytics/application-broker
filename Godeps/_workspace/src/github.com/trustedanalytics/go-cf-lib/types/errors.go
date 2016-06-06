@@ -16,7 +16,7 @@
 
 package types
 
-import "github.com/juju/errors"
+import "github.com/signalfx/golib/errors"
 
 var InvalidInputError error = errors.New("Invalid request body")
 var InstanceAlreadyExistsError = errors.New("Such an instance already exists")

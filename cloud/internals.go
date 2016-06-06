@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
-	"github.com/juju/errors"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/application-broker/misc"
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
@@ -196,13 +196,13 @@ func (cloud *CloudAPI) removeParametersNamespaces(passed map[string]string) (map
 				noNamespace[k] = v
 				possibleCollisions[k] = true
 			} else {
-				return nil, errors.BadRequestf("Colision of keys in additional parameters provided. Please use namespaces for key %v", k)
+				return nil, errors.Errorf("Colision of keys in additional parameters provided. Please use namespaces for key %v", k)
 			}
 		} else {
 			if _, ok := noNamespace[a[1]]; !ok {
 				noNamespace[a[1]] = v
 			} else if _, ok := possibleCollisions[a[1]]; ok {
-				return nil, errors.BadRequestf("Colision of keys in additional parameters provided. Please use namespaces for key %v", a[1])
+				return nil, errors.Errorf("Colision of keys in additional parameters provided. Please use namespaces for key %v", a[1])
 			}
 		}
 

@@ -21,7 +21,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/juju/errors"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/application-broker/cloud"
 	"github.com/trustedanalytics/application-broker/dao"
 	"github.com/trustedanalytics/application-broker/env"
@@ -231,25 +231,25 @@ func (p *LaunchingService) appendInstance(req *cf.ServiceCreationRequest, res *e
 	return p.db.AppendInstance(toAppend)
 }
 
-func (p *LaunchingService) normalizeInstanceName(instanceID string, instanceName string, serviceName string) (string) {
+func (p *LaunchingService) normalizeInstanceName(instanceID string, instanceName string, serviceName string) string {
 	nameToNormalize := getNameToNormalize(instanceName, serviceName)
 	nameToNormalize = replaceSpacesByDashes(nameToNormalize)
 	normalizedInstanceName := addInstanceIdSuffix(instanceID, nameToNormalize)
 	return normalizedInstanceName
 }
 
-func getNameToNormalize(instanceName string, serviceName string) (string) {
-	if (instanceName == "") {
+func getNameToNormalize(instanceName string, serviceName string) string {
+	if instanceName == "" {
 		return serviceName
 	}
 	return instanceName
 }
 
-func replaceSpacesByDashes(name string) (string) {
+func replaceSpacesByDashes(name string) string {
 	return strings.Replace(name, " ", "-", -1)
 }
 
-func addInstanceIdSuffix(instanceID string, instanceName string) (string) {
+func addInstanceIdSuffix(instanceID string, instanceName string) string {
 	// Suffix required for ATK
 	idx := strings.Index(instanceID, "-")
 	if idx > 0 {

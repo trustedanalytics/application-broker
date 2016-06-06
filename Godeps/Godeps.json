@@ -64,10 +64,6 @@
 			"Rev": "145b10d659265440f062c31ea15326166bae56ee"
 		},
 		{
-			"ImportPath": "github.com/juju/errors",
-			"Rev": "1b5e39b83d1835fa480e0c2ddefb040ee82d58b3"
-		},
-		{
 			"ImportPath": "github.com/martini-contrib/auth",
 			"Rev": "fa62c19b7ae87da370242054c8beb11af31d327f"
 		},
@@ -103,6 +99,10 @@
 			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
+			"ImportPath": "github.com/signalfx/golib/errors",
+			"Rev": "93fae626851610c921ba9dfef122b6216d013903"
+		},
+		{
 			"ImportPath": "github.com/stretchr/objx",
 			"Rev": "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
 		},
@@ -118,15 +118,15 @@
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/api",
-			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
+			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/helpers",
-			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
+			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/types",
-			"Rev": "4334619a6c5788cbff14b0f8d7dd26cb10833685"
+			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

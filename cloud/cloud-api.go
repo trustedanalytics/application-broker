@@ -21,7 +21,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
 	"github.com/cloudfoundry-community/types-cf"
-	"github.com/juju/errors"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/application-broker/client"
 	"github.com/trustedanalytics/application-broker/env"
 	"github.com/trustedanalytics/application-broker/misc"
