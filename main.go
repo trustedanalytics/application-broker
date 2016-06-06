@@ -19,7 +19,7 @@
 // The purpose of this application is to easily expose Cloud Foundry applications to marketplace as service offerings
 // without implementing separate brokers for each of them.
 //
-//     Version: 0.1.0
+//     Version: 0.6.5
 //
 // swagger:meta
 package main
