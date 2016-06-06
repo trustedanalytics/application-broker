@@ -17,9 +17,9 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"sync"
 )

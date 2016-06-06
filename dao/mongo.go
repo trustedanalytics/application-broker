@@ -19,7 +19,7 @@ package dao
 import (
 	log "github.com/cihub/seelog"
 	"github.com/cloudfoundry-community/go-cfenv"
-	"github.com/juju/errors"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"gopkg.in/mgo.v2"

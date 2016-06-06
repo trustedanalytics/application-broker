@@ -19,7 +19,7 @@ package api
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
-	"github.com/juju/errors"
+	"github.com/signalfx/golib/errors"
 	"github.com/trustedanalytics/go-cf-lib/helpers"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
