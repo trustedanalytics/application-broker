@@ -39,9 +39,10 @@ func (c *CfAPI) CreateApp(app types.CfApp) (*types.CfAppResource, error) {
 		log.Errorf("Could not create new app: [%v]", err)
 		return nil, types.InternalServerError
 	}
-	if resp.StatusCode != http.StatusCreated {
-		log.Errorf("CreateApp failed. Response from CC: [%v]", helpers.ReaderToString(resp.Body))
-		return nil, types.InternalServerError
+	if !IsSuccessStatus(resp.StatusCode) {
+		message := helpers.ReaderToString(resp.Body)
+		log.Errorf("CreateApp finished with error: %v", message)
+		return nil, CreateCcError(message, types.CcCreateAppFailedError)
 	}
 
 	toReturn := new(types.CfAppResource)
@@ -162,9 +163,10 @@ func (c *CfAPI) RestageApp(appGUID string) error {
 	if err != nil {
 		log.Errorf("Could not restage app: [%v]", err)
 		return errors.Wrap(types.CcRestageFailedError, err)
-	} else if resp.StatusCode != http.StatusCreated {
-		log.Errorf("RestageApp finished with error: %v", helpers.ReaderToString(resp.Body))
-		return errors.Annotate(types.CcRestageFailedError, "Unexpected HTTP status returned from CC")
+	} else if !IsSuccessStatus(resp.StatusCode) {
+		message := helpers.ReaderToString(resp.Body)
+		log.Errorf("RestageApp finished with error: %v", message)
+		return CreateCcError(message, types.CcRestageFailedError)
 	}
 
 	restagedApp := new(types.CfAppResource)
@@ -183,9 +185,10 @@ func (c *CfAPI) UpdateApp(app *types.CfAppResource) error {
 	if err != nil {
 		log.Errorf("Could not update app: [%v]", err)
 		return errors.Wrap(types.CcUpdateFailedError, err)
-	} else if resp.StatusCode != http.StatusCreated {
-		log.Errorf("UpdateApp finished with error: %v", helpers.ReaderToString(resp.Body))
-		return errors.Annotate(types.CcUpdateFailedError, "Unexpected HTTP status returned from CC:"+resp.Status)
+	} else if !IsSuccessStatus(resp.StatusCode) {
+		message := helpers.ReaderToString(resp.Body)
+		log.Errorf("UpdateApp finished with error: %v", message)
+		return CreateCcError(message, types.CcUpdateFailedError)
 	}
 	return nil
 }

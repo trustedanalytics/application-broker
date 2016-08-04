@@ -24,6 +24,7 @@ import (
 	"github.com/trustedanalytics/application-broker/service/extension"
 	"github.com/trustedanalytics/go-cf-lib/types"
 	"net/http"
+	"github.com/signalfx/golib/errors"
 )
 
 type handler struct {
@@ -266,6 +267,7 @@ func handleDecodingError(err error) (int, string) {
 
 func handleServiceError(err error) (int, string) {
 	log.Errorf("handler service error: %v", err)
+
 	switch err {
 	case types.ServiceAlreadyExistsError:
 		return marshalEntity(responseEntity{http.StatusConflict, emptyConflict})
@@ -276,9 +278,18 @@ func handleServiceError(err error) (int, string) {
 	case types.InternalServerError:
 		return marshalEntity(responseEntity{http.StatusInternalServerError, err.Error()})
 	default:
+
+		var description string
+		chain, isChain := err.(*errors.ErrorChain)
+		if isChain {
+			description = chain.Head().Error()
+		} else {
+			description = err.Error()
+		}
+
 		return marshalEntity(responseEntity{
 			http.StatusInternalServerError,
-			cf.BrokerError{Description: err.Error()},
+			cf.BrokerError{Description: description},
 		})
 	}
 }

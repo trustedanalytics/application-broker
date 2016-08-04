@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/trustedanalytics/application-broker",
 	"GoVersion": "go1.4.2",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -118,15 +119,15 @@
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/api",
-			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
+			"Rev": "bd07618510d3ca7a42160989d6e74342fa1f7f3e"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/helpers",
-			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
+			"Rev": "bd07618510d3ca7a42160989d6e74342fa1f7f3e"
 		},
 		{
 			"ImportPath": "github.com/trustedanalytics/go-cf-lib/types",
-			"Rev": "48df9ea539e9b6446270c33f264f9b5e642f71ef"
+			"Rev": "bd07618510d3ca7a42160989d6e74342fa1f7f3e"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
